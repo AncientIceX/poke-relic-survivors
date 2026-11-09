@@ -75,20 +75,20 @@ jobs:
             --ks-key-alias pokebonk \
             --ks-pass pass:pokebonk123 \
             --key-pass pass:pokebonk123 \
-            --out PokeSurvivors-v3.6.0.apk \
+            --out PokeSurvivors-v3.7.0.apk \
             build/PokeSurvivors-aligned.apk
 
-          ls -lh PokeSurvivors-v3.6.0.apk
+          ls -lh PokeSurvivors-v3.7.0.apk
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v3.6.0"
+          TAG="v3.7.0"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" PokeSurvivors-v3.6.0.apk --clobber
+            gh release upload "$TAG" PokeSurvivors-v3.7.0.apk --clobber
           else
-            gh release create "$TAG" PokeSurvivors-v3.6.0.apk \
-              --title "PokéSurvivors v3.6.0 (空间哈希网格引擎·离屏纹理预烘焙·零GC对象池·随角色等级动态难度版)" \
-              --notes "1. 底层引擎架构级性能优化（不减少同屏怪量，满屏165+怪物与华丽技能稳定60帧）：引入 O(1) 96x96 空间哈希网格（Spatial Hash Grid）替代全表双重循环碰撞与怪群软排斥计算；移除致命耗时的 ctx.filter 实时滤镜，改用离屏 Canvas 预烘焙受击纯白剪影缓存；将180次地板瓦片绘制预烘焙为 1024x1024 离屏大块纹理（每帧仅4次Blit）；全面采用 Swap-and-Pop O(1) 数组移除、整数 UID 穿透标记、36桶 Y 轴计数排序（零对象分配、零 GC 卡顿）与 WebAudio 节流池。2. 难度曲线改为【以角色当前等级与进化阶段为核心锚点】：野生怪等级、野生怪进化阶梯、同屏怪量上限以及 Boss 强度均实时跟随主角等级（RUN.level）与进化阶段平滑攀升，既不会前期暴毙，也不会升级进化后变成无脑割草。"
+            gh release create "$TAG" PokeSurvivors-v3.7.0.apk \
+              --title "PokéSurvivors v3.7.0 (Mega超进化/羁绊变身/超极巨化/Z招式/太晶化·原始神兽觉醒·空间哈希60帧版)" \
+              --notes "1. 全 9 世代 27 只御三家专属【四阶终极突破系统】：击败传说头目掉落【🌈超进化/极巨钥石】（或升至Lv.36自动共鸣），按世代还原正作设定触发：Mega超级进化（含超级喷火龙X/Y双分支自由选择、超级妙蛙花、超级水箭龟、超级蜥蜴王、超级火焰鸡、超级巨沼怪等官方独立高清动态精灵图与立绘，种族值+100并解锁硬爪/日照/超级发射器/加速等特性）、牵绊变身（小智版甲贺忍蛙等）、超极巨化（伽勒尔三家巨型化+环绕极巨云）、专属Z招式觉醒（阿罗拉三家）、太晶王冠觉醒（帕底亚三家头顶太晶宝石王冠，本系STAB突破至2.0x）。2. 神兽头目二阶段【原始回归 / Mega超进化】：盖欧卡、固拉多、烈空坐、超梦、奈克洛兹玛等头目半血时触发原始盖欧卡、原始固拉多、超级烈空坐、超级超梦Y、究极奈克洛兹玛真实形态蜕变！"
           fi
