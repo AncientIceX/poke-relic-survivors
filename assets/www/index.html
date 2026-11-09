@@ -1,173 +1,482 @@
-<!doctype html>
-<html lang="es">
-  <head><script>window.__errors=[];window.addEventListener("error",e=>window.__errors.push(String(e.error?.stack||e.message||e.filename)),true);window.addEventListener("unhandledrejection",e=>window.__errors.push(String(e.reason?.stack||e.reason)),true);</script>
-    <meta name="pokebonk-build" content="mw88813m">
-    <script data-pb-recovery="">// Inlined before the module entry by Vite: it must work even when that entry cannot load.
-(() => {
-  const build = document.querySelector('meta[name="pokebonk-build"]')?.content || 'unknown';
-  const texts = {"es":"Reintentar","en":"Retry","pt":"Tentar de novo","fr":"Réessayer","ja":"再試行","zh":"重试","zht":"重試","ko":"다시 시도","ru":"Повторить","de":"Erneut versuchen"};
-  const tag = document.documentElement.lang.toLowerCase();
-  const lang = tag === 'zh-hant' ? 'zht' : tag.split('-')[0];
-  const retryText = texts[lang] || texts.en;
-  let ready = false, recovering = false;
-  const urls = new Set();
-  const remember = (value) => { window.__remembered = (window.__remembered || []); window.__remembered.push(value);
-    try {
-      const url = new URL(value, location.href);
-      if (url.origin === location.origin && /\/assets\/.*\.(js|css)(\?.*)?$/.test(url.pathname + url.search)) urls.add(url.href);
-    } catch { /* An error without a resource URL. */ }
-  };
-  const navigate = () => {
-    const url = new URL(location.href);
-    url.searchParams.set('pb-reload', String(Date.now()));
-    location.replace(url.href);
-  };
-  const showRetry = () => {
-    if (document.getElementById('boot-retry')) return;
-    const card = document.createElement('div');
-    card.id = 'boot-retry';
-    card.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#1a1630;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;font:700 24px system-ui;text-align:center';
-    const title = document.createElement('strong'); title.textContent = 'PokéSurvivors';
-    const btn = document.createElement('button'); btn.textContent = retryText;
-    btn.style.cssText = 'padding:14px 32px;border:0;border-radius:28px;background:#e94756;color:white;font:700 18px system-ui;cursor:pointer';
-    btn.onclick = () => { void refresh().finally(navigate); };
-    card.append(title, btn);
-    (document.body || document.documentElement).append(card);
-  };
-  const refresh = async () => {
-    document.querySelectorAll('script[type="module"][src],link[rel="stylesheet"][href],link[rel="modulepreload"][href]').forEach((el) => remember(el.src || el.href));
-    // cache:reload replaces a bad HTTP cache entry without clearing accounts or pending runs.
-    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 8000);
-    try { await Promise.allSettled([...urls].map((url) => fetch(url, { cache: 'reload', signal: ctl.signal }))); }
-    finally { clearTimeout(timer); }
-  };
-  const recover = async () => {
-    if (ready || recovering) return;
-    recovering = true;
-    showRetry();
-    let once = false;
-    try {
-      const key = 'pb.bootRetry.' + build;
-      once = sessionStorage.getItem(key) !== '1';
-      sessionStorage.setItem(key, '1');
-    } catch { /* Storage unavailable: offer the button, do not risk a reload loop. */ }
-    if (once) { try { await refresh(); } finally { navigate(); } }
-  };
-  addEventListener('error', (event) => {
-    const target = event.target;
-    if (target?.tagName === 'SCRIPT' && target.type === 'module' || target?.tagName === 'LINK' && ['stylesheet', 'modulepreload'].includes(target.rel)) {
-      remember(target.src || target.href); void recover();
-    } else if (event.filename) {
-      remember(event.filename);
-      if (urls.size) void recover();
-    }
-  }, true);
-  addEventListener('vite:preloadError', (event) => {
-    if (ready) return;
-    // Let boot.ts catch the rejection; suppressing it would falsely mark a missing module as ready.
-    const message = String(event.payload?.message || '');
-    for (const url of message.match(/https?:\/\/[^\s"'<>]+/g) || []) remember(url);
-    void recover();
-  });
-  addEventListener('pokebonk:boot-failed', () => { void recover(); });
-  addEventListener('pokebonk:modules-ready', () => { ready = true; document.getElementById('boot-retry')?.remove(); });
-  // A stalled download/font/GPU initialization must still leave a usable action, without auto-reloading slow links.
-  setTimeout(() => { if (!ready) showRetry(); }, 45000);
-})();
-</script>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>PokéSurvivors · 宝可梦幸存者 (2D 原汁原味吸血鬼幸存者版)</title>
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #120d1d;
+  color: #f4eed8;
+  font-family: "Courier New", "PingFang SC", "Microsoft YaHei", monospace, sans-serif;
+}
+canvas#game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  z-index: 1;
+}
+#ui {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+.ptr {
+  pointer-events: auto;
+}
+/* Vampire Survivors Classic Gold/Red/Dark Gothic Pixel Frames */
+.vs-panel {
+  background: linear-gradient(180deg, #2b1d38 0%, #191024 100%);
+  border: 3px solid #d4af37;
+  box-shadow: 0 0 0 2px #000, inset 0 0 0 2px #52391a, 0 10px 30px rgba(0,0,0,0.85);
+  border-radius: 6px;
+  color: #fff6d6;
+}
+.vs-btn {
+  background: linear-gradient(180deg, #9e1b24 0%, #630d14 100%);
+  border: 2px solid #f2c94c;
+  box-shadow: 0 3px 0 #2a0408, 0 0 10px rgba(242,201,76,0.25);
+  color: #fff8e7;
+  font-weight: 900;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  text-shadow: 1px 2px 0 #000;
+  transition: transform 0.08s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.vs-btn:active {
+  transform: translateY(2px);
+}
+.vs-btn.gold {
+  background: linear-gradient(180deg, #d99b16 0%, #8c5d05 100%);
+  border-color: #fff1a8;
+}
+.vs-btn.blue {
+  background: linear-gradient(180deg, #24589e 0%, #113061 100%);
+  border-color: #8cc4ff;
+}
+.vs-btn.green {
+  background: linear-gradient(180deg, #1f8a4c 0%, #0e4f29 100%);
+  border-color: #7ef2a9;
+}
 
-    <meta charset="UTF-8" />
-    <!-- On touch screens core/touch.ts rewrites the viewport (landscape phones get a wider virtual one). -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#1a1630" />
-    <!-- Light by default (dark is opt-in: Ajustes → Tema, see the script below and ui/theme.ts; meta values flip to «dark» then). «only light» stops the forced dark mode of Chrome Android, vivo, Samsung and QQ from inverting colours (reports 6292, 6173, 7280). -->
-    <meta name="color-scheme" content="only light" />
-    <meta name="supported-color-schemes" content="light" />
-    <meta name="darkreader-lock" />
-    <!-- Theme before the first paint (no white flash): same rule as src/ui/theme.ts. Saved choice, else the system's. -->
-    <script>
-      (function () {
-        try {
-          var p = localStorage.getItem('pokebonk.theme');
-          var d = p === 'dark' || (p !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
-          var r = document.documentElement;
-          r.setAttribute('data-theme', d ? 'dark' : 'light');
-          if (d) {
-            document.querySelector('meta[name="color-scheme"]').setAttribute('content', 'dark');
-            document.querySelector('meta[name="supported-color-schemes"]').setAttribute('content', 'dark');
-            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f1320');
-          }
-        } catch (e) {}
-      })();
-    </script>
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <!-- iPhone: black-translucent = the page fills the whole screen from the home screen icon (v0.8.85 changed it to «black» for everybody and iPhone players lost the full screen: reports 18109, 18415, 18739, 18817). Only iPad needs «black»: there the translucent bar hides the options (reports 17785, 17801, 16361). iOS reads the tag when the icon is added. -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <script>
-      (function () {
-        try {
-          var ipad = /iPad/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) >= 600);
-          if (ipad) document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute('content', 'black');
-        } catch (e) {}
-      })();
-    </script>
-    <link rel="manifest" href="./manifest.webmanifest" />
-    <!-- Title, description, canonical, hreflang, Open Graph, Twitter and JSON-LD come from src/seo.ts (vite.config.ts). -->
-    <title>PokéSurvivors · Survivor 3D de Pokémon gratis en el navegador</title>
-    <meta name="description" content="Survivor 3D gratis en el navegador con los 151 Pokémon de Kanto: sobrevive a hordas salvajes, evoluciona, lanza tu Ultimate y desbloquea la Liga. Fan-game no oficial." />
-    <meta name="robots" content="index, follow, max-image-preview:large" />
-    <link rel="canonical" href="https://pokebonk.com/" />
-    <link rel="alternate" hreflang="es" href="https://pokebonk.com/?lang=es" />
-    <link rel="alternate" hreflang="en" href="https://pokebonk.com/?lang=en" />
-    <link rel="alternate" hreflang="pt" href="https://pokebonk.com/?lang=pt" />
-    <link rel="alternate" hreflang="fr" href="https://pokebonk.com/?lang=fr" />
-    <link rel="alternate" hreflang="ja" href="https://pokebonk.com/?lang=ja" />
-    <link rel="alternate" hreflang="zh-CN" href="https://pokebonk.com/?lang=zh" />
-    <link rel="alternate" hreflang="zh-TW" href="https://pokebonk.com/?lang=zht" />
-    <link rel="alternate" hreflang="ko" href="https://pokebonk.com/?lang=ko" />
-    <link rel="alternate" hreflang="ru" href="https://pokebonk.com/?lang=ru" />
-    <link rel="alternate" hreflang="de" href="https://pokebonk.com/?lang=de" />
-    <link rel="alternate" hreflang="x-default" href="https://pokebonk.com/" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="PokéSurvivors" />
-    <meta property="og:title" content="PokéSurvivors · Survivor 3D de Pokémon gratis en el navegador" />
-    <meta property="og:description" content="Survivor 3D gratis en el navegador con los 151 Pokémon de Kanto: sobrevive a hordas salvajes, evoluciona, lanza tu Ultimate y desbloquea la Liga. Fan-game no oficial." />
-    <meta property="og:url" content="https://pokebonk.com/" />
-    <meta property="og:image" content="https://pokebonk.com/social/card-es.jpg" />
-    <meta property="og:image:type" content="image/jpeg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="PokéSurvivors: un bosque de mesetas con una Poké Ball en un altar. Survivor 3D gratis en el navegador." />
-    <meta property="og:locale" content="es_ES" />
-    <meta property="og:locale:alternate" content="en_US" />
-    <meta property="og:locale:alternate" content="pt_BR" />
-    <meta property="og:locale:alternate" content="fr_FR" />
-    <meta property="og:locale:alternate" content="ja_JP" />
-    <meta property="og:locale:alternate" content="zh_CN" />
-    <meta property="og:locale:alternate" content="zh_TW" />
-    <meta property="og:locale:alternate" content="ko_KR" />
-    <meta property="og:locale:alternate" content="ru_RU" />
-    <meta property="og:locale:alternate" content="de_DE" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="PokéSurvivors · Survivor 3D de Pokémon gratis en el navegador" />
-    <meta name="twitter:description" content="Survivor 3D gratis en el navegador con los 151 Pokémon de Kanto: sobrevive a hordas salvajes, evoluciona, lanza tu Ultimate y desbloquea la Liga. Fan-game no oficial." />
-    <meta name="twitter:image" content="https://pokebonk.com/social/card-es.jpg" />
-    <meta name="twitter:image:alt" content="PokéSurvivors: un bosque de mesetas con una Poké Ball en un altar. Survivor 3D gratis en el navegador." />
-    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://pokebonk.com/#website","name":"PokéSurvivors","url":"https://pokebonk.com/","inLanguage":["es","en","pt","fr","ja","zh-CN","zh-TW","ko","ru","de"]},{"@type":["VideoGame","WebApplication"],"@id":"https://pokebonk.com/#game","name":"PokéSurvivors","url":"https://pokebonk.com/","description":"Survivor 3D gratis en el navegador con los 151 Pokémon de Kanto: sobrevive a hordas salvajes, evoluciona, lanza tu Ultimate y desbloquea la Liga. Fan-game no oficial.","image":"https://pokebonk.com/social/card-es.jpg","inLanguage":"es","isPartOf":{"@id":"https://pokebonk.com/#website"},"genre":["Survivor","Roguelite","Action"],"gamePlatform":"Web browser","playMode":"SinglePlayer","applicationCategory":"GameApplication","operatingSystem":"Any (WebGL)","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"sameAs":["https://discord.gg/X7KusQqx8X"]}]}</script>
-    <meta name="application-name" content="PokéSurvivors" />
-    <meta name="apple-mobile-web-app-title" content="PokéSurvivors" />
-    <link rel="icon" href="./favicon.ico" sizes="48x48" />
-    <link rel="icon" href="./icons/favicon-96.png" type="image/png" sizes="96x96" />
-    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <script type="module" crossorigin src="./assets/main-B23CBACI-mw88813m.js"></script>
-    <link rel="modulepreload" crossorigin href="./assets/modulepreload-polyfill-P2Xu9kJm-mw88813m.js">
-    <link rel="modulepreload" crossorigin href="./assets/i18n-BGHWfjZr-mw88813m.js">
-    <link rel="modulepreload" crossorigin href="./assets/preload-helper-AjJCmoQh-mw88813m.js">
-  </head>
-  <body>
-    <noscript><main style="max-width:640px;margin:40px auto;padding:0 16px;color:#fff;font:16px/1.5 system-ui,sans-serif"><h1>PokéSurvivors</h1><p>Survivor 3D gratis en el navegador con los 151 Pokémon de Kanto: sobrevive a hordas salvajes, evoluciona, lanza tu Ultimate y desbloquea la Liga. Fan-game no oficial.</p><p>PokéSurvivors necesita JavaScript y WebGL para funcionar. Actívalos y recarga la página.</p><p><a href="/?lang=es" hreflang="es">ES</a> · <a href="/?lang=en" hreflang="en">EN</a> · <a href="/?lang=pt" hreflang="pt">PT</a> · <a href="/?lang=fr" hreflang="fr">FR</a> · <a href="/?lang=ja" hreflang="ja">JA</a> · <a href="/?lang=zh" hreflang="zh-CN">ZH</a> · <a href="/?lang=zht" hreflang="zh-TW">ZHT</a> · <a href="/?lang=ko" hreflang="ko">KO</a> · <a href="/?lang=ru" hreflang="ru">RU</a> · <a href="/?lang=de" hreflang="de">DE</a></p><p><a href="https://discord.gg/X7KusQqx8X">Discord</a> · <a href="/legal">Legal</a></p></main></noscript>
-    <canvas id="game"></canvas>
-    <div id="ui"></div>
-  </body>
+/* Screens */
+.screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, rgba(35,20,54,0.84) 0%, rgba(10,6,18,0.96) 100%);
+  padding: 12px 20px;
+  pointer-events: auto;
+}
+.topbar {
+  width: 100%;
+  max-width: 1120px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 10px;
+}
+.logo-title {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #ffe066;
+  text-shadow: 0 3px 0 #7a1c1c, 0 5px 12px #000;
+}
+.logo-title span {
+  color: #ff4d4d;
+}
+.gold-box {
+  background: #140c1c;
+  border: 2px solid #f2c94c;
+  padding: 6px 14px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffd954;
+  text-shadow: 1px 1px 0 #000;
+}
+.gold-box img, .pix-ic {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+.grid-scroll {
+  overflow-y: auto;
+  max-height: calc(100vh - 140px);
+  padding: 6px;
+}
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+.char-card {
+  background: #1e1429;
+  border: 2px solid #6b5328;
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.1s, background 0.1s;
+}
+.char-card.active {
+  background: #36224a;
+  border-color: #ffe066;
+  box-shadow: 0 0 12px rgba(255,224,102,0.45);
+}
+.char-card.locked {
+  opacity: 0.65;
+  filter: grayscale(0.75);
+}
+.char-card img.av {
+  width: 54px;
+  height: 54px;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+.char-card .cname {
+  font-size: 14px;
+  font-weight: 800;
+  margin-top: 4px;
+  color: #fff;
+}
+.char-card .cwep {
+  font-size: 11px;
+  color: #d4b872;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* HUD */
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  display: none;
+}
+.xp-bar-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: #0d0914;
+  border-bottom: 2px solid #d4af37;
+}
+.xp-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #1d6ff2 0%, #44d9ff 100%);
+  transition: width 0.1s;
+}
+.xp-bar-lv {
+  position: absolute;
+  right: 12px;
+  top: 0;
+  line-height: 18px;
+  font-weight: 900;
+  font-size: 13px;
+  color: #fff;
+  text-shadow: 1px 1px 2px #000;
+}
+.hud-top {
+  position: absolute;
+  top: 24px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.slots-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.slot-row {
+  display: flex;
+  gap: 4px;
+}
+.slot-box {
+  width: 38px;
+  height: 38px;
+  background: rgba(18, 12, 28, 0.85);
+  border: 2px solid #96783c;
+  border-radius: 4px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.slot-box.evo {
+  border-color: #ff55ff;
+  box-shadow: 0 0 8px rgba(255,85,255,0.6);
+}
+.slot-box img {
+  width: 28px;
+  height: 28px;
+  image-rendering: pixelated;
+}
+.slot-box .slv {
+  position: absolute;
+  bottom: 0px;
+  right: 2px;
+  font-size: 10px;
+  font-weight: 900;
+  color: #ffe066;
+  text-shadow: 1px 1px 0 #000;
+}
+.timer-box {
+  font-size: 28px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 0 #000, 0 0 8px rgba(0,0,0,0.8);
+  letter-spacing: 1px;
+  text-align: center;
+}
+.wave-sub {
+  font-size: 12px;
+  color: #ffd166;
+  text-shadow: 1px 1px 0 #000;
+}
+.stats-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(18, 12, 28, 0.82);
+  border: 2px solid #96783c;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-weight: 900;
+  font-size: 15px;
+}
+.pause-btn {
+  pointer-events: auto;
+  background: #36224a;
+  border: 2px solid #d4af37;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.boss-bar-wrap {
+  position: absolute;
+  top: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(460px, 75vw);
+  background: rgba(15, 8, 22, 0.9);
+  border: 2px solid #ff4d4d;
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: none;
+  text-align: center;
+}
+.boss-bar-name {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ff9999;
+  margin-bottom: 3px;
+}
+.boss-bar-track {
+  height: 10px;
+  background: #2b090c;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.boss-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ff2a2a, #ff9900);
+}
+
+/* Modal for Level Up & Chest & Pause & Game Over */
+.modal-ov {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 4, 15, 0.82);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 14px;
+  pointer-events: auto;
+}
+.lvl-card {
+  width: min(560px, 94vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 14px 18px;
+}
+.choice-btn {
+  width: 100%;
+  background: linear-gradient(180deg, #322447 0%, #201530 100%);
+  border: 2px solid #c9a347;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+.choice-btn:active, .choice-btn:hover {
+  border-color: #fff099;
+  background: #422f5e;
+}
+.choice-btn.evo-choice {
+  background: linear-gradient(180deg, #591c5e 0%, #310d38 100%);
+  border-color: #ff77ff;
+  box-shadow: 0 0 15px rgba(255,100,255,0.45);
+}
+.choice-ic {
+  width: 46px;
+  height: 46px;
+  background: #140c1f;
+  border: 2px solid #8a6d2b;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.choice-ic img {
+  width: 34px;
+  height: 34px;
+  image-rendering: pixelated;
+}
+.choice-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 900;
+  background: #d4af37;
+  color: #140c1f;
+  margin-left: 6px;
+}
+.choice-tag.evo {
+  background: #ff55ff;
+  color: #fff;
+}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="xp-bar-wrap">
+    <div id="xp-fill" class="xp-bar-fill"></div>
+    <div id="xp-lv" class="xp-bar-lv">LV 1</div>
+  </div>
+  <div class="hud-top">
+    <div class="slots-panel">
+      <div id="wep-slots" class="slot-row"></div>
+      <div id="pas-slots" class="slot-row"></div>
+    </div>
+    <div>
+      <div id="hud-timer" class="timer-box">00:00</div>
+      <div id="hud-wave" class="wave-sub">第 1 波 · 野生宝可梦袭来</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="stats-right">
+        <span title="击杀数">💀 <b id="hud-kills">0</b></span>
+        <span title="金币" style="color:#ffd954;">🪙 <b id="hud-gold">0</b></span>
+      </div>
+      <button id="btn-pause" class="pause-btn" title="暂停">❚❚</button>
+    </div>
+  </div>
+  <div id="boss-bar" class="boss-bar-wrap">
+    <div id="boss-name" class="boss-bar-name">头目宝可梦</div>
+    <div class="boss-bar-track"><div id="boss-fill" class="boss-bar-fill"></div></div>
+  </div>
+</div>
+
+<!-- Main Menu Screen -->
+<div id="scr-menu" class="screen">
+  <div class="topbar">
+    <div>
+      <div class="logo-title">Poké<span>Survivors</span></div>
+      <div style="font-size:12px;color:#cbb98b;">吸血鬼幸存者 2D 经典俯视角 · 宝可梦全世代割草生存</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div class="gold-box" title="局外金币（自动随本地时间与对局累计）">
+        <img src="./assets/ui/icons/coin.png" alt="" />
+        <span id="menu-gold">5000</span>
+      </div>
+      <button id="btn-time-claim" class="vs-btn green" style="padding:7px 12px;font-size:13px;">🎁 本地时长领金币 (+1000)</button>
+      <button id="btn-powerups" class="vs-btn gold" style="padding:7px 14px;font-size:14px;">⚡ 属性强化 (PowerUps)</button>
+      <button id="btn-evolutions" class="vs-btn blue" style="padding:7px 14px;font-size:14px;">📖 合成进化表</button>
+      <button id="btn-unlock-all" class="vs-btn" style="padding:7px 12px;font-size:13px;">🔓 一键全解锁</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns: 1.55fr 1fr;gap:12px;width:100%;max-width:1120px;height:calc(100vh - 82px);">
+    <!-- Left: Character Selection -->
+    <div class="vs-panel" style="padding:10px;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <b style="color:#ffe066;font-size:15px;">1. 选择出战宝可梦（达到 16/32 级战斗内自动形态进化）</b>
+        <span id="char-count" style="font-size:12px;color:#cbb98b;"></span>
+      </div>
+      <div id="char-grid" class="char-grid grid-scroll" style="flex:1;"></div>
+    </div>
+
+    <!-- Right: Selected Character Detail & Stage Selection -->
+    <div style="display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+      <div id="char-detail" class="vs-panel" style="padding:12px;display:flex;gap:12px;align-items:center;"></div>
+      <div class="vs-panel" style="padding:10px;flex:1;display:flex;flex-direction:column;overflow:hidden;">
+        <b style="color:#ffe066;font-size:15px;margin-bottom:6px;">2. 选择 2D 无限平面地图</b>
+        <div id="stage-list" class="grid-scroll" style="display:flex;flex-direction:column;gap:6px;flex:1;"></div>
+        <button id="btn-start-run" class="vs-btn" style="width:100%;margin-top:8px;font-size:19px;padding:12px;">⚔️ 开始生存 (START)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Overlay -->
+<div id="modal-ov" class="modal-ov">
+  <div id="modal-box" class="vs-panel lvl-card"></div>
+</div>
+
+<script src="./assets/vs-game.js"></script>
+</body>
 </html>
