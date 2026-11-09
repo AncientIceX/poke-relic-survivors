@@ -75,20 +75,20 @@ jobs:
             --ks-key-alias pokebonk \
             --ks-pass pass:pokebonk123 \
             --key-pass pass:pokebonk123 \
-            --out PokeSurvivors-v3.2.0.apk \
+            --out PokeSurvivors-v3.3.0.apk \
             build/PokeSurvivors-aligned.apk
 
-          ls -lh PokeSurvivors-v3.2.0.apk
+          ls -lh PokeSurvivors-v3.3.0.apk
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v3.2.0"
+          TAG="v3.3.0"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" PokeSurvivors-v3.2.0.apk --clobber
+            gh release upload "$TAG" PokeSurvivors-v3.3.0.apk --clobber
           else
-            gh release create "$TAG" PokeSurvivors-v3.2.0.apk \
-              --title "PokéSurvivors v3.2.0 (正作六维数值·主角4招式&场地专属TM·同伴独立升级进化版)" \
-              --notes "1. 严格遵循宝可梦正作系统：技能机与同伴宝可梦完全分槽（主控4招式槽 + 同行同伴5槽）。2. 主控宝可梦最多携带4个招式，招式无独立等级，伤害与冷却100%跟随角色当前等级、六维种族值(HP/物攻/物防/特攻/特防/速度)、1.5倍本系一致加成与18属性克制计算；场地仅刷新所选宝可梦在原版中能够合法学习的技能机(TM)，满4招式时支持原版遗忘替换。3. 同伴宝可梦拥有独立等级、独立三段进化与真实六维大数据，每只同伴仅携带1个技能且强度完全取决于该同伴自身面板，变更技能的唯一途径是同伴自身升级领悟其原版升级招式。"
+            gh release create "$TAG" PokeSurvivors-v3.3.0.apk \
+              --title "PokéSurvivors v3.3.0 (360°丝滑跟随摇杆·吸血鬼幸存者&土豆兄弟12大招式机制·动态同伴AI版)" \
+              --notes "1. 修复触屏摇杆无法连续转向的问题：加入 touch-action:none 防 WebView 手势劫持 + 原生 touchmove 动态底座跟随摇杆，单指不抬手即可360°任意丝滑变向。2. 深度融合《吸血鬼幸存者》与《土豆兄弟》打造12种本质不同的招式机制：【鞭击横扫】、【圣经环绕护卫】、【十字架回旋飞刃】、【圣水持续法阵】、【大蒜脉冲力场】、【符文全屏反弹】、【高抛重砸斧】、【天降神罚/大字爆炎】、【土豆兄弟式实体兵刃突刺/挥砍】、【宝可梦本体残影猛扑冲撞】、【巨颚咬合】与【贯穿激光束】。3. 同伴宝可梦全面动态化：具备自主索敌游走、近战绕怪扑击、远程风筝走位、本体残影冲锋、蹦跳步伐与喊招气泡。"
           fi
