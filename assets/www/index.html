@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es">
-  <head>
+  <head><script>window.__errors=[];window.addEventListener("error",e=>window.__errors.push(String(e.error?.stack||e.message||e.filename)),true);window.addEventListener("unhandledrejection",e=>window.__errors.push(String(e.reason?.stack||e.reason)),true);</script>
     <meta name="pokebonk-build" content="mw88813m">
     <script data-pb-recovery="">// Inlined before the module entry by Vite: it must work even when that entry cannot load.
 (() => {
@@ -11,7 +11,7 @@
   const retryText = texts[lang] || texts.en;
   let ready = false, recovering = false;
   const urls = new Set();
-  const remember = (value) => {
+  const remember = (value) => { window.__remembered = (window.__remembered || []); window.__remembered.push(value);
     try {
       const url = new URL(value, location.href);
       if (url.origin === location.origin && /\/assets\/.*\.(js|css)(\?.*)?$/.test(url.pathname + url.search)) urls.add(url.href);
