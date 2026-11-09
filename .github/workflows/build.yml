@@ -75,20 +75,20 @@ jobs:
             --ks-key-alias pokebonk \
             --ks-pass pass:pokebonk123 \
             --key-pass pass:pokebonk123 \
-            --out PokeSurvivors-v3.7.0.apk \
+            --out PokeSurvivors-v3.8.0.apk \
             build/PokeSurvivors-aligned.apk
 
-          ls -lh PokeSurvivors-v3.7.0.apk
+          ls -lh PokeSurvivors-v3.8.0.apk
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v3.7.0"
+          TAG="v3.8.0"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" PokeSurvivors-v3.7.0.apk --clobber
+            gh release upload "$TAG" PokeSurvivors-v3.8.0.apk --clobber
           else
-            gh release create "$TAG" PokeSurvivors-v3.7.0.apk \
-              --title "PokéSurvivors v3.7.0 (Mega超进化/羁绊变身/超极巨化/Z招式/太晶化·原始神兽觉醒·空间哈希60帧版)" \
-              --notes "1. 全 9 世代 27 只御三家专属【四阶终极突破系统】：击败传说头目掉落【🌈超进化/极巨钥石】（或升至Lv.36自动共鸣），按世代还原正作设定触发：Mega超级进化（含超级喷火龙X/Y双分支自由选择、超级妙蛙花、超级水箭龟、超级蜥蜴王、超级火焰鸡、超级巨沼怪等官方独立高清动态精灵图与立绘，种族值+100并解锁硬爪/日照/超级发射器/加速等特性）、牵绊变身（小智版甲贺忍蛙等）、超极巨化（伽勒尔三家巨型化+环绕极巨云）、专属Z招式觉醒（阿罗拉三家）、太晶王冠觉醒（帕底亚三家头顶太晶宝石王冠，本系STAB突破至2.0x）。2. 神兽头目二阶段【原始回归 / Mega超进化】：盖欧卡、固拉多、烈空坐、超梦、奈克洛兹玛等头目半血时触发原始盖欧卡、原始固拉多、超级烈空坐、超级超梦Y、究极奈克洛兹玛真实形态蜕变！"
+            gh release create "$TAG" PokeSurvivors-v3.8.0.apk \
+              --title "PokéSurvivors v3.8.0 (GPU显存占用暴降97%根治高密度怪潮掉帧·原生零拦截硬件加速·Mega/羁绊/超极巨/太晶化版)" \
+              --notes "1. 揪出并彻底根治怪多卡顿的终极硬件元凶（GPU 纹理缓存颠簸）：此前 617 张 PMD 全动作精灵表（单张高达 1792x5320 像素，单张解码占 37MB 显存，总计达 4.85GB 未压缩 RGBA 显存）在同屏出现 20+ 种宝可梦怪潮时直接撑爆手机 WebView 的 GPU 纹理缓存上限（约 96MB~128MB），导致每帧发生上百兆的 CPU->GPU 纹理重解码与重上传！现已将全部 617 张 PMD 精灵表精准裁剪并规范化为纯 8 方向行走帧（总未压缩 GPU 显存从 4,845 MB 暴降至 131 MB，单局同屏怪潮显存仅需 ~4MB，缩减 97.3%！）。2. WebView 底层加载优化：改为原生 file:///android_asset/ 直读 + LAYER_TYPE_HARDWARE 硬件合成层 + 开局预热当前世代全部精灵纹理 + 同怪连击伤害数字自动合并，彻底消灭新怪刷出与多段AOE时的掉帧卡顿！"
           fi

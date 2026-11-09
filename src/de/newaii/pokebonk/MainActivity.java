@@ -42,6 +42,7 @@ public class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setBackgroundColor(Color.parseColor("#1a1630"));
         webView.setKeepScreenOn(true);
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
@@ -49,6 +50,8 @@ public class MainActivity extends Activity {
         s.setDatabaseEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setAllowFileAccess(true);
+        s.setAllowFileAccessFromFileURLs(true);
+        s.setAllowUniversalAccessFromFileURLs(true);
         s.setAllowContentAccess(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setUseWideViewPort(false);
@@ -58,7 +61,7 @@ public class MainActivity extends Activity {
         s.setDisplayZoomControls(false);
         s.setTextZoom(100);
         String ua = s.getUserAgentString();
-        s.setUserAgentString(ua + " PokeSurvivorsAndroid/3.7.0");
+        s.setUserAgentString(ua + " PokeSurvivorsAndroid/3.8.0");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -116,7 +119,7 @@ public class MainActivity extends Activity {
         });
 
         setContentView(webView);
-        webView.loadUrl("https://pokebonk.local/index.html");
+        webView.loadUrl("file:///android_asset/www/index.html");
     }
 
     private static String guessMime(String path) {
