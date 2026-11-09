@@ -1,0 +1,94 @@
+name: Build PokéSurvivors Full Offline Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build & Sign Full Offline APK
+        run: |
+          set -e
+          BUILD_TOOLS=$(ls -1 $ANDROID_HOME/build-tools | sort -V | tail -n 1)
+          BT_DIR="$ANDROID_HOME/build-tools/$BUILD_TOOLS"
+          PLATFORM_DIR=$(ls -1d $ANDROID_HOME/platforms/android-* | sort -V | tail -n 1)
+          ANDROID_JAR="$PLATFORM_DIR/android.jar"
+
+          mkdir -p build/gen build/obj build/apk
+
+          # 1. Compile resources with aapt
+          "$BT_DIR/aapt" package -f -m \
+            -J build/gen \
+            -M AndroidManifest.xml \
+            -S res \
+            -I "$ANDROID_JAR"
+
+          # 2. Compile Java sources
+          javac -source 1.8 -target 1.8 -encoding UTF-8 \
+            -bootclasspath "$ANDROID_JAR" \
+            -classpath "$ANDROID_JAR" \
+            -d build/obj \
+            build/gen/de/newaii/pokebonk/R.java \
+            src/de/newaii/pokebonk/MainActivity.java
+
+          # 3. Convert to DEX with d8
+          "$BT_DIR/d8" --lib "$ANDROID_JAR" --release --output build/apk build/obj/de/newaii/pokebonk/*.class
+
+          # 4. Package APK with all 2,370+ offline assets
+          "$BT_DIR/aapt" package -f \
+            -M AndroidManifest.xml \
+            -S res \
+            -A assets \
+            -I "$ANDROID_JAR" \
+            -0 ogg -0 glb -0 png -0 jpg -0 webp -0 woff2 -0 woff \
+            -F build/PokeSurvivors-unsigned.apk \
+            build/apk
+
+          # 5. Zipalign
+          "$BT_DIR/zipalign" -f -p 4 build/PokeSurvivors-unsigned.apk build/PokeSurvivors-aligned.apk
+
+          # 6. Generate keystore & Sign APK
+          keytool -genkeypair -v \
+            -keystore build/release.keystore \
+            -alias pokebonk \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass pokebonk123 -keypass pokebonk123 \
+            -dname "CN=PokeSurvivors, OU=Game, O=Newaii, L=Tokyo, S=Tokyo, C=JP"
+
+          "$BT_DIR/apksigner" sign \
+            --ks build/release.keystore \
+            --ks-key-alias pokebonk \
+            --ks-pass pass:pokebonk123 \
+            --key-pass pass:pokebonk123 \
+            --out PokeSurvivors-v2.1.0.apk \
+            build/PokeSurvivors-aligned.apk
+
+          ls -lh PokeSurvivors-v2.1.0.apk
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v2.1.0"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" PokeSurvivors-v2.1.0.apk --clobber
+          else
+            gh release create "$TAG" PokeSurvivors-v2.1.0.apk \
+              --title "PokéSurvivors v2.1.0 (3D 完整移植纯离线全解锁版)" \
+              --notes "修复启动时 status() 校验 e.maintenance.on 导致的「无法连接服务器」弹窗，并将游戏名称与主视觉 Logo 全面更名为「PokéSurvivors」。内置全部 2,370 个原版资源文件与完整本地离线云端引擎。"
+          fi
