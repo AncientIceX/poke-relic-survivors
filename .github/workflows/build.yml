@@ -75,20 +75,20 @@ jobs:
             --ks-key-alias pokebonk \
             --ks-pass pass:pokebonk123 \
             --key-pass pass:pokebonk123 \
-            --out PokeSurvivors-v3.5.0.apk \
+            --out PokeSurvivors-v3.6.0.apk \
             build/PokeSurvivors-aligned.apk
 
-          ls -lh PokeSurvivors-v3.5.0.apk
+          ls -lh PokeSurvivors-v3.6.0.apk
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v3.5.0"
+          TAG="v3.6.0"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" PokeSurvivors-v3.5.0.apk --clobber
+            gh release upload "$TAG" PokeSurvivors-v3.6.0.apk --clobber
           else
-            gh release create "$TAG" PokeSurvivors-v3.5.0.apk \
-              --title "PokéSurvivors v3.5.0 (23种华丽招式视觉特效·23首正作BGM点唱机·随机词缀双神Boss·硬核生存曲线版)" \
-              --notes "1. 招式视觉表现扩充至 23 种高辨识度专属特效：包含【吸血藤链(绿光生命球抽取)】、【粒子喷射火浪】、【大字爆炎火印】、【天外斜砸陨石雨】、【大地裂变锯齿地裂&破土石笋】、【深渊聚怪水龙卷】、【超能引力黑洞】、【百裂拳影乱打】、【拔刀十文字闪光斩】、【锯齿连锁闪电弧】、【六角冰晶暴风雪】、【三层共鸣音浪】、【幻影兽潮分身奔袭】等。2. 内置曲库扩容至 23 首宝可梦历代正作高燃战斗 BGM（含心金魂银、白金、黑白2、宝石复刻、XY、日月、四天王决战等），按世代随机轮播、Boss战自动切入激燃战歌，并支持战斗内右上角【🎵切歌】一键换曲。3. 大幅提升 Boss 随机性与压迫感：支持全世代神兽跨时空乱入、6大随机头目词缀（狂暴头目/霸主气场/时空悖谬/宝主巨躯/暗影侵蚀/传说觉醒）、3大随机头目大招（全方位环形弹幕/高速预警冲锋+三连扇形炮/暗影瞬移或召唤精英护卫群），且2分钟后有概率触发【双神同屏降临】！4. 重构硬核生存难度曲线：提升怪潮等级成长斜率与移速，新增带金色光圈的远程射击精英宝可梦与每32秒一次的360度怪潮合围突袭。"
+            gh release create "$TAG" PokeSurvivors-v3.6.0.apk \
+              --title "PokéSurvivors v3.6.0 (空间哈希网格引擎·离屏纹理预烘焙·零GC对象池·随角色等级动态难度版)" \
+              --notes "1. 底层引擎架构级性能优化（不减少同屏怪量，满屏165+怪物与华丽技能稳定60帧）：引入 O(1) 96x96 空间哈希网格（Spatial Hash Grid）替代全表双重循环碰撞与怪群软排斥计算；移除致命耗时的 ctx.filter 实时滤镜，改用离屏 Canvas 预烘焙受击纯白剪影缓存；将180次地板瓦片绘制预烘焙为 1024x1024 离屏大块纹理（每帧仅4次Blit）；全面采用 Swap-and-Pop O(1) 数组移除、整数 UID 穿透标记、36桶 Y 轴计数排序（零对象分配、零 GC 卡顿）与 WebAudio 节流池。2. 难度曲线改为【以角色当前等级与进化阶段为核心锚点】：野生怪等级、野生怪进化阶梯、同屏怪量上限以及 Boss 强度均实时跟随主角等级（RUN.level）与进化阶段平滑攀升，既不会前期暴毙，也不会升级进化后变成无脑割草。"
           fi

@@ -58,7 +58,7 @@ public class MainActivity extends Activity {
         s.setDisplayZoomControls(false);
         s.setTextZoom(100);
         String ua = s.getUserAgentString();
-        s.setUserAgentString(ua + " PokeSurvivorsAndroid/3.5.0");
+        s.setUserAgentString(ua + " PokeSurvivorsAndroid/3.6.0");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
