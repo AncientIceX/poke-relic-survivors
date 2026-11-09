@@ -75,20 +75,20 @@ jobs:
             --ks-key-alias pokebonk \
             --ks-pass pass:pokebonk123 \
             --key-pass pass:pokebonk123 \
-            --out PokeSurvivors-v3.4.0.apk \
+            --out PokeSurvivors-v3.5.0.apk \
             build/PokeSurvivors-aligned.apk
 
-          ls -lh PokeSurvivors-v3.4.0.apk
+          ls -lh PokeSurvivors-v3.5.0.apk
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v3.4.0"
+          TAG="v3.5.0"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" PokeSurvivors-v3.4.0.apk --clobber
+            gh release upload "$TAG" PokeSurvivors-v3.5.0.apk --clobber
           else
-            gh release create "$TAG" PokeSurvivors-v3.4.0.apk \
-              --title "PokéSurvivors v3.4.0 (原生竖屏全屏可滑动·纯成就解锁无金币·局内秘药驱动局外养成·14大机制0抢操控版)" \
-              --notes "1. 全面改为原生竖屏全屏（sensorPortrait），修复 MainActivity WebView 宽视口缩放与 touch-action:none 导致的页面半屏截断与无法滑动问题，竖屏主页可丝滑上下滚动浏览全部27只御三家与5大世代地图。2. 彻底移除金币系统：全部27只御三家与5大地图均改为局内条件/里程碑成就解锁。3. 局外养成完全由局内成长驱动：局内击败精英与Boss掉落【六维增强剂秘药】，拾取既强化本局属性，又永久累加局外六维努力值；同时新增10种局内携带道具与战术遗物（吃剩的东西、凸凸头盔反伤、焦点镜、先制之爪、贝壳之铃吸血、达人带、气势披带锁血、替身皮皮玩偶聚怪自爆、磁铁脉冲、宝可梦之笛）。4. 彻底移除会抢夺玩家走位的本体位移设定：撞击/猛撞/闪焰冲锋/勇鸟猛攻等改为向前投射【宝可梦本命残影分身】猛扑冲撞并爆出震波，主控走位100%受左手摇杆控制，绝不再莫名其妙乱跳。"
+            gh release create "$TAG" PokeSurvivors-v3.5.0.apk \
+              --title "PokéSurvivors v3.5.0 (23种华丽招式视觉特效·23首正作BGM点唱机·随机词缀双神Boss·硬核生存曲线版)" \
+              --notes "1. 招式视觉表现扩充至 23 种高辨识度专属特效：包含【吸血藤链(绿光生命球抽取)】、【粒子喷射火浪】、【大字爆炎火印】、【天外斜砸陨石雨】、【大地裂变锯齿地裂&破土石笋】、【深渊聚怪水龙卷】、【超能引力黑洞】、【百裂拳影乱打】、【拔刀十文字闪光斩】、【锯齿连锁闪电弧】、【六角冰晶暴风雪】、【三层共鸣音浪】、【幻影兽潮分身奔袭】等。2. 内置曲库扩容至 23 首宝可梦历代正作高燃战斗 BGM（含心金魂银、白金、黑白2、宝石复刻、XY、日月、四天王决战等），按世代随机轮播、Boss战自动切入激燃战歌，并支持战斗内右上角【🎵切歌】一键换曲。3. 大幅提升 Boss 随机性与压迫感：支持全世代神兽跨时空乱入、6大随机头目词缀（狂暴头目/霸主气场/时空悖谬/宝主巨躯/暗影侵蚀/传说觉醒）、3大随机头目大招（全方位环形弹幕/高速预警冲锋+三连扇形炮/暗影瞬移或召唤精英护卫群），且2分钟后有概率触发【双神同屏降临】！4. 重构硬核生存难度曲线：提升怪潮等级成长斜率与移速，新增带金色光圈的远程射击精英宝可梦与每32秒一次的360度怪潮合围突袭。"
           fi
