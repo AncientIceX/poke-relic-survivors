@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>PokéSurvivors v3.3.0 · 宝可梦幸存者 (正作六维数值 & 4招式+同伴独立系统)</title>
+<title>PokéSurvivors v3.4.0 · 竖屏全屏宝可梦幸存者</title>
 <style>
 * {
   box-sizing: border-box;
@@ -12,125 +12,130 @@
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  touch-action: none;
 }
 html, body {
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100dvh;
   overflow: hidden;
   background: #120d1d;
   color: #f4eed8;
-  font-family: "Courier New", "PingFang SC", "Microsoft YaHei", monospace, sans-serif;
+  font-family: "PingFang SC", "Microsoft YaHei", "Courier New", monospace, sans-serif;
 }
 canvas#game {
   position: fixed;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100dvh;
   display: block;
   image-rendering: pixelated;
   z-index: 1;
+  touch-action: none;
 }
 .vs-panel {
   background: linear-gradient(180deg, #2b1d38 0%, #191024 100%);
-  border: 3px solid #d4af37;
-  box-shadow: 0 0 0 2px #000, inset 0 0 0 2px #52391a, 0 10px 30px rgba(0,0,0,0.85);
-  border-radius: 6px;
+  border: 2px solid #d4af37;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.75);
+  border-radius: 8px;
   color: #fff6d6;
 }
 .vs-btn {
   background: linear-gradient(180deg, #9e1b24 0%, #630d14 100%);
   border: 2px solid #f2c94c;
-  box-shadow: 0 3px 0 #2a0408, 0 0 10px rgba(242,201,76,0.25);
+  box-shadow: 0 2px 0 #2a0408;
   color: #fff8e7;
   font-weight: 900;
-  padding: 9px 16px;
-  border-radius: 5px;
+  padding: 8px 12px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 15px;
-  text-shadow: 1px 2px 0 #000;
-  transition: transform 0.08s;
+  font-size: 13px;
+  text-shadow: 1px 1px 0 #000;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
 }
-.vs-btn:active { transform: translateY(2px); }
+.vs-btn:active { transform: translateY(1px); }
 .vs-btn.gold { background: linear-gradient(180deg, #d99b16 0%, #8c5d05 100%); border-color: #fff1a8; }
 .vs-btn.blue { background: linear-gradient(180deg, #24589e 0%, #113061 100%); border-color: #8cc4ff; }
 .vs-btn.green { background: linear-gradient(180deg, #1f8a4c 0%, #0e4f29 100%); border-color: #7ef2a9; }
 
+/* Portrait Scrollable Full-Screen Menu! */
 .screen {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle at center, rgba(35,20,54,0.86) 0%, rgba(10,6,18,0.96) 100%);
-  padding: 10px 18px;
+  background: radial-gradient(circle at top, rgba(44,24,68,0.92) 0%, rgba(12,7,22,0.98) 100%);
+  padding: max(12px, env(safe-area-inset-top)) 12px max(90px, env(safe-area-inset-bottom)) 12px;
   z-index: 20;
-  pointer-events: auto;
+  gap: 10px;
 }
 .topbar {
   width: 100%;
-  max-width: 1140px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
+  flex-direction: column;
   gap: 8px;
 }
+.logo-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 .logo-title {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 900;
-  letter-spacing: 1px;
   color: #ffe066;
-  text-shadow: 0 3px 0 #7a1c1c, 0 5px 12px #000;
+  text-shadow: 0 2px 0 #7a1c1c, 0 4px 10px #000;
 }
 .logo-title span { color: #ff4d4d; }
-.gold-box {
-  background: #140c1c;
-  border: 2px solid #f2c94c;
-  padding: 5px 12px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
+.nav-btns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  font-size: 16px;
-  font-weight: 900;
-  color: #ffd954;
 }
-.gold-box img { width: 22px; height: 22px; image-rendering: pixelated; }
-.grid-scroll { overflow-y: auto; max-height: calc(100vh - 135px); padding: 4px; }
+
 .char-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 7px;
   width: 100%;
 }
 .char-card {
   background: #1e1429;
   border: 2px solid #6b5328;
-  border-radius: 6px;
-  padding: 7px 6px;
+  border-radius: 7px;
+  padding: 6px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
   cursor: pointer;
   position: relative;
+  text-align: center;
 }
 .char-card.active {
   background: #36224a;
   border-color: #ffe066;
-  box-shadow: 0 0 12px rgba(255,224,102,0.45);
+  box-shadow: 0 0 10px rgba(255,224,102,0.45);
 }
-.char-card.locked { opacity: 0.65; filter: grayscale(0.75); }
-.char-card img.av { width: 50px; height: 50px; image-rendering: pixelated; object-fit: contain; }
-.char-card .cname { font-size: 13px; font-weight: 900; margin-top: 3px; color: #fff; }
-.char-card .cwep { font-size: 10px; color: #d4b872; margin-top: 2px; text-align: center; }
+.char-card.locked { opacity: 0.62; filter: grayscale(0.75); }
+.char-card img.av { width: 44px; height: 44px; image-rendering: pixelated; object-fit: contain; }
+.char-card .cname { font-size: 12px; font-weight: 900; margin-top: 2px; color: #fff; }
+.char-card .cwep { font-size: 9px; color: #d4b872; margin-top: 1px; line-height: 1.2; }
 
-/* HUD */
+.sticky-start-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  padding: 8px 12px max(10px, env(safe-area-inset-bottom)) 12px;
+  background: linear-gradient(180deg, rgba(18,13,29,0.0) 0%, rgba(18,13,29,0.96) 28%);
+  z-index: 25;
+}
+
+/* Portrait HUD */
 #hud {
   position: fixed;
   inset: 0;
@@ -141,7 +146,7 @@ canvas#game {
 .xp-bar-wrap {
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 20px;
+  height: 18px;
   background: #0d0914;
   border-bottom: 2px solid #d4af37;
 }
@@ -153,168 +158,158 @@ canvas#game {
 }
 .xp-bar-lv {
   position: absolute;
-  right: 12px; top: 0;
-  line-height: 18px;
+  right: 8px; top: 0;
+  line-height: 16px;
   font-weight: 900;
-  font-size: 12px;
+  font-size: 11px;
   color: #fff;
   text-shadow: 1px 1px 2px #000;
 }
 .hud-top {
   position: absolute;
-  top: 23px; left: 10px; right: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 8px;
-}
-.slots-panel {
+  top: 20px; left: 6px; right: 6px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
-.slot-row {
+.hud-header-row {
   display: flex;
-  gap: 5px;
+  justify-content: space-between;
   align-items: center;
 }
-.row-label {
-  font-size: 10px;
-  font-weight: 900;
-  color: #ffe066;
-  background: rgba(15,9,24,0.88);
-  border: 1px solid #8a6d2b;
-  padding: 2px 5px;
-  border-radius: 4px;
-  writing-mode: horizontal-tb;
-  white-space: nowrap;
-}
-.move-slot {
-  min-width: 96px;
-  height: 40px;
-  background: rgba(18, 12, 28, 0.9);
-  border: 2px solid #b58d3d;
-  border-radius: 5px;
-  padding: 3px 6px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  position: relative;
-}
-.move-slot.empty {
-  min-width: 72px;
-  opacity: 0.45;
-  justify-content: center;
-  font-size: 10px;
-  color: #998;
-}
-.move-slot img { width: 24px; height: 24px; image-rendering: pixelated; flex-shrink: 0; }
-.comp-slot {
-  min-width: 96px;
-  height: 42px;
-  background: rgba(16, 26, 38, 0.9);
-  border: 2px solid #4fc3f7;
-  border-radius: 5px;
-  padding: 3px 6px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  position: relative;
-}
-.comp-slot.empty {
-  min-width: 68px;
-  border-color: #375a6e;
-  opacity: 0.45;
-  justify-content: center;
-  font-size: 10px;
-  color: #8ab;
-}
-.comp-slot img { width: 28px; height: 28px; image-rendering: pixelated; flex-shrink: 0; }
 .timer-box {
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 900;
   color: #fff;
-  text-shadow: 0 2px 0 #000, 0 0 8px rgba(0,0,0,0.8);
-  text-align: center;
+  text-shadow: 0 2px 0 #000;
 }
-.wave-sub { font-size: 11px; color: #ffd166; text-shadow: 1px 1px 0 #000; text-align: center; }
+.wave-sub { font-size: 10px; color: #ffd166; text-shadow: 1px 1px 0 #000; }
 .stats-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   background: rgba(18, 12, 28, 0.86);
-  border: 2px solid #96783c;
-  padding: 5px 10px;
-  border-radius: 6px;
+  border: 1.5px solid #96783c;
+  padding: 3px 8px;
+  border-radius: 5px;
   font-weight: 900;
-  font-size: 13px;
+  font-size: 11px;
 }
 .pause-btn {
   pointer-events: auto;
   background: #36224a;
   border: 2px solid #d4af37;
   color: #fff;
-  width: 34px;
-  height: 34px;
-  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 5px;
   font-weight: 900;
   cursor: pointer;
 }
+.slot-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+}
+.slot-grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+}
+.move-slot {
+  height: 34px;
+  background: rgba(18, 12, 28, 0.88);
+  border: 1.5px solid #b58d3d;
+  border-radius: 4px;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  overflow: hidden;
+}
+.move-slot.empty {
+  opacity: 0.45;
+  justify-content: center;
+  font-size: 9px;
+  color: #998;
+}
+.move-slot img { width: 18px; height: 18px; image-rendering: pixelated; flex-shrink: 0; }
+.comp-slot {
+  height: 34px;
+  background: rgba(16, 26, 38, 0.88);
+  border: 1.5px solid #4fc3f7;
+  border-radius: 4px;
+  padding: 2px 3px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  overflow: hidden;
+}
+.comp-slot.empty {
+  border-color: #375a6e;
+  opacity: 0.45;
+  justify-content: center;
+  font-size: 9px;
+  color: #8ab;
+}
+.comp-slot img { width: 22px; height: 22px; image-rendering: pixelated; flex-shrink: 0; }
+
 .boss-bar-wrap {
   position: absolute;
-  top: 115px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(460px, 76vw);
+  top: 132px;
+  left: 8px; right: 8px;
   background: rgba(15, 8, 22, 0.92);
   border: 2px solid #ff4d4d;
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 3px 6px;
   display: none;
   text-align: center;
 }
-.boss-bar-name { font-size: 12px; font-weight: 900; color: #ff9999; margin-bottom: 3px; }
-.boss-bar-track { height: 9px; background: #2b090c; border-radius: 3px; overflow: hidden; }
+.boss-bar-name { font-size: 11px; font-weight: 900; color: #ff9999; margin-bottom: 2px; }
+.boss-bar-track { height: 8px; background: #2b090c; border-radius: 3px; overflow: hidden; }
 .boss-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff2a2a, #ff9900); }
 
 .modal-ov {
   position: fixed;
   inset: 0;
-  background: rgba(8, 4, 15, 0.84);
+  background: rgba(8, 4, 15, 0.86);
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 50;
-  padding: 12px;
+  padding: 10px;
   pointer-events: auto;
 }
 .lvl-card {
-  width: min(600px, 95vw);
-  max-height: 92vh;
+  width: 100%;
+  max-width: 480px;
+  max-height: 88dvh;
   overflow-y: auto;
-  padding: 14px 16px;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 12px;
 }
 .choice-btn {
   width: 100%;
   background: linear-gradient(180deg, #322447 0%, #201530 100%);
   border: 2px solid #c9a347;
   border-radius: 6px;
-  padding: 9px 12px;
-  margin-top: 7px;
+  padding: 8px 10px;
+  margin-top: 6px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: #fff;
   text-align: left;
   cursor: pointer;
 }
-.choice-btn:active, .choice-btn:hover { border-color: #fff099; background: #422f5e; }
+.choice-btn:active { border-color: #fff099; background: #422f5e; }
 .choice-btn.evo-choice {
   background: linear-gradient(180deg, #1b3f5e 0%, #0e2238 100%);
   border-color: #4fc3f7;
 }
 .choice-ic {
-  width: 44px; height: 44px;
+  width: 38px; height: 38px;
   background: #140c1f;
   border: 2px solid #8a6d2b;
   border-radius: 6px;
@@ -323,16 +318,16 @@ canvas#game {
   justify-content: center;
   flex-shrink: 0;
 }
-.choice-ic img { width: 32px; height: 32px; image-rendering: pixelated; }
+.choice-ic img { width: 28px; height: 28px; image-rendering: pixelated; }
 .choice-tag {
   display: inline-block;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
   font-weight: 900;
   background: #d4af37;
   color: #140c1f;
-  margin-left: 6px;
+  margin-left: 4px;
 }
 </style>
 </head>
@@ -342,31 +337,25 @@ canvas#game {
 <div id="hud">
   <div class="xp-bar-wrap">
     <div id="xp-fill" class="xp-bar-fill"></div>
-    <div id="xp-lv" class="xp-bar-lv">LV 1</div>
+    <div id="xp-lv" class="xp-bar-lv">LV 5</div>
   </div>
   <div class="hud-top">
-    <div class="slots-panel">
-      <div class="slot-row">
-        <span class="row-label">主控4招式</span>
-        <div id="wep-slots" class="slot-row"></div>
+    <div class="hud-header-row">
+      <div>
+        <span id="hud-timer" class="timer-box">00:00</span>
+        <span id="hud-wave" class="wave-sub" style="margin-left:6px;">野生Lv.3</span>
       </div>
-      <div class="slot-row">
-        <span class="row-label" style="color:#81d4fa;border-color:#29b6f6;">同行同伴</span>
-        <div id="pas-slots" class="slot-row"></div>
+      <div style="display:flex;align-items:center;gap:5px;">
+        <div class="stats-right">
+          <span id="hud-stats" style="color:#82e0aa;"></span>
+          <span>💀<b id="hud-kills">0</b></span>
+          <span id="hud-held" style="color:#ffd54f;"></span>
+        </div>
+        <button id="btn-pause" class="pause-btn" title="暂停">❚❚</button>
       </div>
     </div>
-    <div>
-      <div id="hud-timer" class="timer-box">00:00</div>
-      <div id="hud-wave" class="wave-sub">第 1 波</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <div class="stats-right">
-        <span id="hud-stats" style="color:#82e0aa;font-size:11px;"></span>
-        <span title="击杀数">💀 <b id="hud-kills">0</b></span>
-        <span title="金币" style="color:#ffd954;">🪙 <b id="hud-gold">0</b></span>
-      </div>
-      <button id="btn-pause" class="pause-btn" title="暂停">❚❚</button>
-    </div>
+    <div id="wep-slots" class="slot-grid-4"></div>
+    <div id="pas-slots" class="slot-grid-5"></div>
   </div>
   <div id="boss-bar" class="boss-bar-wrap">
     <div id="boss-name" class="boss-bar-name">传说头目</div>
@@ -374,42 +363,42 @@ canvas#game {
   </div>
 </div>
 
-<!-- Main Menu Screen -->
+<!-- Portrait Scrollable Main Menu Screen -->
 <div id="scr-menu" class="screen">
   <div class="topbar">
-    <div>
-      <div class="logo-title">Poké<span>Survivors</span> <small style="font-size:14px;color:#81d4fa;">v3.3.0</small></div>
-      <div style="font-size:11px;color:#cbb98b;">正作六维数值公式 · 主角4招式 + 场地专属TM · 同伴独立升级进化</div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <div class="gold-box">
-        <img src="./assets/ui/icons/coin.png" alt="" />
-        <span id="menu-gold">5000</span>
+    <div class="logo-row">
+      <div>
+        <div class="logo-title">Poké<span>Survivors</span> <small style="font-size:12px;color:#81d4fa;">v3.4.0 竖屏</small></div>
+        <div style="font-size:10px;color:#cbb98b;">成就条件解锁 · 局内掉落驱动局外成长 · 14大机制0抢操控</div>
       </div>
-      <button id="btn-time-claim" class="vs-btn green" style="padding:6px 10px;font-size:12px;">🎁 时长领币 (+1000)</button>
-      <button id="btn-powerups" class="vs-btn gold" style="padding:6px 12px;font-size:13px;">⚡ 努力值特训 (EV)</button>
-      <button id="btn-evolutions" class="vs-btn blue" style="padding:6px 12px;font-size:13px;">📖 招式表与规则</button>
-      <button id="btn-unlock-all" class="vs-btn" style="padding:6px 10px;font-size:12px;">🔓 全解锁</button>
+    </div>
+    <div class="nav-btns">
+      <button id="btn-powerups" class="vs-btn gold">🧬 局外成长记录</button>
+      <button id="btn-evolutions" class="vs-btn blue">📖 招式&道具图鉴</button>
+      <button id="btn-unlock-all" class="vs-btn green">🔓 解锁全部成就</button>
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns: 1.55fr 1fr;gap:10px;width:100%;max-width:1140px;height:calc(100vh - 76px);">
-    <div class="vs-panel" style="padding:9px;display:flex;flex-direction:column;overflow:hidden;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-        <b style="color:#ffe066;font-size:14px;">1. 选择主控御三家（场地仅刷新该宝可梦合法可学技能机，其余御三家可作为同行同伴招募）</b>
-        <span id="char-count" style="font-size:11px;color:#cbb98b;"></span>
-      </div>
-      <div id="char-grid" class="char-grid grid-scroll" style="flex:1;"></div>
-    </div>
+  <!-- Selected Character Card -->
+  <div id="char-detail" class="vs-panel" style="padding:10px;display:flex;flex-direction:column;gap:6px;"></div>
 
-    <div style="display:flex;flex-direction:column;gap:8px;overflow:hidden;">
-      <div id="char-detail" class="vs-panel" style="padding:10px;display:flex;gap:10px;align-items:center;"></div>
-      <div class="vs-panel" style="padding:9px;flex:1;display:flex;flex-direction:column;overflow:hidden;">
-        <b style="color:#ffe066;font-size:14px;margin-bottom:5px;">2. 选择世代平面战场（全世代603只野生怪与神兽Boss）</b>
-        <div id="stage-list" class="grid-scroll" style="display:flex;flex-direction:column;gap:5px;flex:1;"></div>
-        <button id="btn-start-run" class="vs-btn" style="width:100%;margin-top:6px;font-size:18px;padding:10px;">⚔️ 开始冒险 (START)</button>
-      </div>
+  <!-- Stage Selection -->
+  <div class="vs-panel" style="padding:10px;display:flex;flex-direction:column;gap:6px;">
+    <b style="color:#ffe066;font-size:13px;">1. 选择世代平面战场（达成条件即可解锁后续世代）</b>
+    <div id="stage-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+  </div>
+
+  <!-- All 27 Starters Selection Grid (Smoothly Scrollable!) -->
+  <div class="vs-panel" style="padding:10px;display:flex;flex-direction:column;gap:6px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <b style="color:#ffe066;font-size:13px;">2. 选择出战御三家（达成局内条件解锁）</b>
+      <span id="char-count" style="font-size:11px;color:#cbb98b;"></span>
     </div>
+    <div id="char-grid" class="char-grid"></div>
+  </div>
+
+  <div class="sticky-start-bar">
+    <button id="btn-start-run" class="vs-btn" style="width:100%;font-size:17px;padding:12px;">⚔️ 开始竖屏冒险 (START)</button>
   </div>
 </div>
 

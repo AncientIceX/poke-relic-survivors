@@ -75,20 +75,20 @@ jobs:
             --ks-key-alias pokebonk \
             --ks-pass pass:pokebonk123 \
             --key-pass pass:pokebonk123 \
-            --out PokeSurvivors-v3.3.0.apk \
+            --out PokeSurvivors-v3.4.0.apk \
             build/PokeSurvivors-aligned.apk
 
-          ls -lh PokeSurvivors-v3.3.0.apk
+          ls -lh PokeSurvivors-v3.4.0.apk
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v3.3.0"
+          TAG="v3.4.0"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" PokeSurvivors-v3.3.0.apk --clobber
+            gh release upload "$TAG" PokeSurvivors-v3.4.0.apk --clobber
           else
-            gh release create "$TAG" PokeSurvivors-v3.3.0.apk \
-              --title "PokéSurvivors v3.3.0 (360°丝滑跟随摇杆·吸血鬼幸存者&土豆兄弟12大招式机制·动态同伴AI版)" \
-              --notes "1. 修复触屏摇杆无法连续转向的问题：加入 touch-action:none 防 WebView 手势劫持 + 原生 touchmove 动态底座跟随摇杆，单指不抬手即可360°任意丝滑变向。2. 深度融合《吸血鬼幸存者》与《土豆兄弟》打造12种本质不同的招式机制：【鞭击横扫】、【圣经环绕护卫】、【十字架回旋飞刃】、【圣水持续法阵】、【大蒜脉冲力场】、【符文全屏反弹】、【高抛重砸斧】、【天降神罚/大字爆炎】、【土豆兄弟式实体兵刃突刺/挥砍】、【宝可梦本体残影猛扑冲撞】、【巨颚咬合】与【贯穿激光束】。3. 同伴宝可梦全面动态化：具备自主索敌游走、近战绕怪扑击、远程风筝走位、本体残影冲锋、蹦跳步伐与喊招气泡。"
+            gh release create "$TAG" PokeSurvivors-v3.4.0.apk \
+              --title "PokéSurvivors v3.4.0 (原生竖屏全屏可滑动·纯成就解锁无金币·局内秘药驱动局外养成·14大机制0抢操控版)" \
+              --notes "1. 全面改为原生竖屏全屏（sensorPortrait），修复 MainActivity WebView 宽视口缩放与 touch-action:none 导致的页面半屏截断与无法滑动问题，竖屏主页可丝滑上下滚动浏览全部27只御三家与5大世代地图。2. 彻底移除金币系统：全部27只御三家与5大地图均改为局内条件/里程碑成就解锁。3. 局外养成完全由局内成长驱动：局内击败精英与Boss掉落【六维增强剂秘药】，拾取既强化本局属性，又永久累加局外六维努力值；同时新增10种局内携带道具与战术遗物（吃剩的东西、凸凸头盔反伤、焦点镜、先制之爪、贝壳之铃吸血、达人带、气势披带锁血、替身皮皮玩偶聚怪自爆、磁铁脉冲、宝可梦之笛）。4. 彻底移除会抢夺玩家走位的本体位移设定：撞击/猛撞/闪焰冲锋/勇鸟猛攻等改为向前投射【宝可梦本命残影分身】猛扑冲撞并爆出震波，主控走位100%受左手摇杆控制，绝不再莫名其妙乱跳。"
           fi

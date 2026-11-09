@@ -51,14 +51,14 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(true);
         s.setAllowContentAccess(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
-        s.setUseWideViewPort(true);
-        s.setLoadWithOverviewMode(true);
+        s.setUseWideViewPort(false);
+        s.setLoadWithOverviewMode(false);
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setDisplayZoomControls(false);
         s.setTextZoom(100);
         String ua = s.getUserAgentString();
-        s.setUserAgentString(ua + " PokeBonkAndroid/2.1.0");
+        s.setUserAgentString(ua + " PokeSurvivorsAndroid/3.4.0");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
