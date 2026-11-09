@@ -75,20 +75,20 @@ jobs:
             --ks-key-alias pokebonk \
             --ks-pass pass:pokebonk123 \
             --key-pass pass:pokebonk123 \
-            --out PokeSurvivors-v2.1.0.apk \
+            --out PokeSurvivors-v3.1.0.apk \
             build/PokeSurvivors-aligned.apk
 
-          ls -lh PokeSurvivors-v2.1.0.apk
+          ls -lh PokeSurvivors-v3.1.0.apk
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v2.1.0"
+          TAG="v3.1.0"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" PokeSurvivors-v2.1.0.apk --clobber
+            gh release upload "$TAG" PokeSurvivors-v3.1.0.apk --clobber
           else
-            gh release create "$TAG" PokeSurvivors-v2.1.0.apk \
-              --title "PokéSurvivors v2.1.0 (3D 完整移植纯离线全解锁版)" \
-              --notes "修复启动时 status() 校验 e.maintenance.on 导致的「无法连接服务器」弹窗，并将游戏名称与主视觉 Logo 全面更名为「PokéSurvivors」。内置全部 2,370 个原版资源文件与完整本地离线云端引擎。"
+            gh release create "$TAG" PokeSurvivors-v3.1.0.apk \
+              --title "PokéSurvivors v3.1.0 (2D 吸血鬼幸存者·全9世代御三家专属超武&神兽Boss版)" \
+              --notes "100% 2D 平面俯视角《吸血鬼幸存者》核心玩法 + 全 9 世代宝可梦大升级：可选角色涵盖第1～9世代全部 27 只御三家（均支持 Lv.16 / Lv.32 局内三段形态进化），每脉御三家均拥有独一无二的专属攻击形态与专属超武进化；怪潮涵盖第1～9世代共 603 只宝可梦，每波大 Boss 均为正统传说神兽与准神（急冻鸟、闪电鸟、火焰鸟、超梦、三圣兽、洛奇亚、凤王、盖欧卡、固拉多、烈空坐、帝牙卢卡、帕路奇亚、骑拉帝纳、阿尔宙斯、莱希拉姆、捷克罗姆、哲尔尼亚斯、伊裴尔塔尔、索尔迦雷欧、露奈雅拉、奈克洛兹玛、苍响、藏玛然特、无极汰那、故勒顿、太乐巴戈斯等）。"
           fi
