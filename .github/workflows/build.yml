@@ -1,0 +1,94 @@
+name: Build Pokemon Relic Survivors Android APK & Publish Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Compile and Sign Native Android Game APK
+        run: |
+          set -e
+          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          BUILD_TOOLS=$(ls -d "$SDK_ROOT/build-tools/"* | sort -V | tail -n 1)
+          PLATFORM=$(ls -d "$SDK_ROOT/platforms/android-"* | sort -V | tail -n 1)
+          ANDROID_JAR="$PLATFORM/android.jar"
+
+          mkdir -p build/gen build/obj build/apk
+
+          "$BUILD_TOOLS/aapt2" compile --dir res -o build/res.zip
+          "$BUILD_TOOLS/aapt2" link \
+            -I "$ANDROID_JAR" \
+            --manifest AndroidManifest.xml \
+            -A assets \
+            --java build/gen \
+            -o build/apk/unsigned.apk \
+            build/res.zip
+
+          javac -source 11 -target 11 \
+            -classpath "$ANDROID_JAR" \
+            -d build/obj \
+            build/gen/de/newaii/pokerelic/R.java \
+            src/de/newaii/pokerelic/SoundEngine.java \
+            src/de/newaii/pokerelic/GameView.java \
+            src/de/newaii/pokerelic/MainActivity.java
+
+          "$BUILD_TOOLS/d8" \
+            --lib "$ANDROID_JAR" \
+            --min-api 24 \
+            --output build/apk/ \
+            build/obj/de/newaii/pokerelic/*.class
+
+          zip -j build/apk/unsigned.apk build/apk/classes.dex
+
+          "$BUILD_TOOLS/zipalign" -f -p 4 build/apk/unsigned.apk build/apk/aligned.apk
+
+          keytool -genkeypair \
+            -keystore build/release.keystore \
+            -alias pokekey \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass pokerelic123 \
+            -keypass pokerelic123 \
+            -dname "CN=PokeRelic, OU=Game, O=Newaii, L=Tokyo, S=Tokyo, C=JP"
+
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks build/release.keystore \
+            --ks-key-alias pokekey \
+            --ks-pass pass:pokerelic123 \
+            --key-pass pass:pokerelic123 \
+            --out PokeRelicSurvivors-v1.0.apk \
+            build/apk/aligned.apk
+
+          ls -lh PokeRelicSurvivors-v1.0.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PokeRelicSurvivors-APK
+          path: PokeRelicSurvivors-v1.0.apk
+
+      - name: Publish to GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete v1.0.0 -y || true
+          git push --delete origin v1.0.0 || true
+          gh release create v1.0.0 PokeRelicSurvivors-v1.0.apk \
+            --title "宝可梦：遗迹幸存者 v1.0.0 (Android 离线单机像素版)" \
+            --notes "100% 纯离线单机 Android 原生像素肉鸽割草游戏：内置 38 只宝可梦 Gen5 动态像素序列帧、8 大初始家族（三段进化 + Mega 喷火龙 X 觉醒演出）、属性场地联动（感电海域 / 烈风火海 / 祸不单行引爆）、野生闪光捕获、超梦 & 裂空座 Boss 战、大木博士研究所永久特训与复古 8-bit 芯片合成配乐。"
