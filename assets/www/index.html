@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>PokéSurvivors · 宝可梦幸存者 (2D 原汁原味吸血鬼幸存者版)</title>
+<title>PokéSurvivors v3.2.0 · 宝可梦幸存者 (正作六维数值 & 4招式+同伴独立系统)</title>
 <style>
 * {
   box-sizing: border-box;
@@ -30,16 +30,6 @@ canvas#game {
   image-rendering: pixelated;
   z-index: 1;
 }
-#ui {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  pointer-events: none;
-}
-.ptr {
-  pointer-events: auto;
-}
-/* Vampire Survivors Classic Gold/Red/Dark Gothic Pixel Frames */
 .vs-panel {
   background: linear-gradient(180deg, #2b1d38 0%, #191024 100%);
   border: 3px solid #d4af37;
@@ -53,34 +43,22 @@ canvas#game {
   box-shadow: 0 3px 0 #2a0408, 0 0 10px rgba(242,201,76,0.25);
   color: #fff8e7;
   font-weight: 900;
-  padding: 10px 20px;
+  padding: 9px 16px;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
   text-shadow: 1px 2px 0 #000;
   transition: transform 0.08s;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
-.vs-btn:active {
-  transform: translateY(2px);
-}
-.vs-btn.gold {
-  background: linear-gradient(180deg, #d99b16 0%, #8c5d05 100%);
-  border-color: #fff1a8;
-}
-.vs-btn.blue {
-  background: linear-gradient(180deg, #24589e 0%, #113061 100%);
-  border-color: #8cc4ff;
-}
-.vs-btn.green {
-  background: linear-gradient(180deg, #1f8a4c 0%, #0e4f29 100%);
-  border-color: #7ef2a9;
-}
+.vs-btn:active { transform: translateY(2px); }
+.vs-btn.gold { background: linear-gradient(180deg, #d99b16 0%, #8c5d05 100%); border-color: #fff1a8; }
+.vs-btn.blue { background: linear-gradient(180deg, #24589e 0%, #113061 100%); border-color: #8cc4ff; }
+.vs-btn.green { background: linear-gradient(180deg, #1f8a4c 0%, #0e4f29 100%); border-color: #7ef2a9; }
 
-/* Screens */
 .screen {
   position: fixed;
   inset: 0;
@@ -88,99 +66,68 @@ canvas#game {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at center, rgba(35,20,54,0.84) 0%, rgba(10,6,18,0.96) 100%);
-  padding: 12px 20px;
+  background: radial-gradient(circle at center, rgba(35,20,54,0.86) 0%, rgba(10,6,18,0.96) 100%);
+  padding: 10px 18px;
+  z-index: 20;
   pointer-events: auto;
 }
 .topbar {
   width: 100%;
-  max-width: 1120px;
+  max-width: 1140px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
-  gap: 10px;
+  margin-bottom: 6px;
+  gap: 8px;
 }
 .logo-title {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 900;
   letter-spacing: 1px;
   color: #ffe066;
   text-shadow: 0 3px 0 #7a1c1c, 0 5px 12px #000;
 }
-.logo-title span {
-  color: #ff4d4d;
-}
+.logo-title span { color: #ff4d4d; }
 .gold-box {
   background: #140c1c;
   border: 2px solid #f2c94c;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 6px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 18px;
+  gap: 6px;
+  font-size: 16px;
   font-weight: 900;
   color: #ffd954;
-  text-shadow: 1px 1px 0 #000;
 }
-.gold-box img, .pix-ic {
-  width: 24px;
-  height: 24px;
-  image-rendering: pixelated;
-}
-.grid-scroll {
-  overflow-y: auto;
-  max-height: calc(100vh - 140px);
-  padding: 6px;
-}
+.gold-box img { width: 22px; height: 22px; image-rendering: pixelated; }
+.grid-scroll { overflow-y: auto; max-height: calc(100vh - 135px); padding: 4px; }
 .char-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 7px;
   width: 100%;
 }
 .char-card {
   background: #1e1429;
   border: 2px solid #6b5328;
   border-radius: 6px;
-  padding: 8px;
+  padding: 7px 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
   cursor: pointer;
   position: relative;
-  transition: border-color 0.1s, background 0.1s;
 }
 .char-card.active {
   background: #36224a;
   border-color: #ffe066;
   box-shadow: 0 0 12px rgba(255,224,102,0.45);
 }
-.char-card.locked {
-  opacity: 0.65;
-  filter: grayscale(0.75);
-}
-.char-card img.av {
-  width: 54px;
-  height: 54px;
-  image-rendering: pixelated;
-  object-fit: contain;
-}
-.char-card .cname {
-  font-size: 14px;
-  font-weight: 800;
-  margin-top: 4px;
-  color: #fff;
-}
-.char-card .cwep {
-  font-size: 11px;
-  color: #d4b872;
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+.char-card.locked { opacity: 0.65; filter: grayscale(0.75); }
+.char-card img.av { width: 50px; height: 50px; image-rendering: pixelated; object-fit: contain; }
+.char-card .cname { font-size: 13px; font-weight: 900; margin-top: 3px; color: #fff; }
+.char-card .cwep { font-size: 10px; color: #d4b872; margin-top: 2px; text-align: center; }
 
 /* HUD */
 #hud {
@@ -188,12 +135,11 @@ canvas#game {
   inset: 0;
   pointer-events: none;
   display: none;
+  z-index: 10;
 }
 .xp-bar-wrap {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   height: 20px;
   background: #0d0914;
   border-bottom: 2px solid #d4af37;
@@ -206,171 +152,168 @@ canvas#game {
 }
 .xp-bar-lv {
   position: absolute;
-  right: 12px;
-  top: 0;
+  right: 12px; top: 0;
   line-height: 18px;
   font-weight: 900;
-  font-size: 13px;
+  font-size: 12px;
   color: #fff;
   text-shadow: 1px 1px 2px #000;
 }
 .hud-top {
   position: absolute;
-  top: 24px;
-  left: 12px;
-  right: 12px;
+  top: 23px; left: 10px; right: 10px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 8px;
 }
 .slots-panel {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 .slot-row {
   display: flex;
-  gap: 4px;
-}
-.slot-box {
-  width: 38px;
-  height: 38px;
-  background: rgba(18, 12, 28, 0.85);
-  border: 2px solid #96783c;
-  border-radius: 4px;
-  position: relative;
-  display: flex;
+  gap: 5px;
   align-items: center;
-  justify-content: center;
 }
-.slot-box.evo {
-  border-color: #ff55ff;
-  box-shadow: 0 0 8px rgba(255,85,255,0.6);
-}
-.slot-box img {
-  width: 28px;
-  height: 28px;
-  image-rendering: pixelated;
-}
-.slot-box .slv {
-  position: absolute;
-  bottom: 0px;
-  right: 2px;
+.row-label {
   font-size: 10px;
   font-weight: 900;
   color: #ffe066;
-  text-shadow: 1px 1px 0 #000;
+  background: rgba(15,9,24,0.88);
+  border: 1px solid #8a6d2b;
+  padding: 2px 5px;
+  border-radius: 4px;
+  writing-mode: horizontal-tb;
+  white-space: nowrap;
 }
+.move-slot {
+  min-width: 96px;
+  height: 40px;
+  background: rgba(18, 12, 28, 0.9);
+  border: 2px solid #b58d3d;
+  border-radius: 5px;
+  padding: 3px 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+}
+.move-slot.empty {
+  min-width: 72px;
+  opacity: 0.45;
+  justify-content: center;
+  font-size: 10px;
+  color: #998;
+}
+.move-slot img { width: 24px; height: 24px; image-rendering: pixelated; flex-shrink: 0; }
+.comp-slot {
+  min-width: 96px;
+  height: 42px;
+  background: rgba(16, 26, 38, 0.9);
+  border: 2px solid #4fc3f7;
+  border-radius: 5px;
+  padding: 3px 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+}
+.comp-slot.empty {
+  min-width: 68px;
+  border-color: #375a6e;
+  opacity: 0.45;
+  justify-content: center;
+  font-size: 10px;
+  color: #8ab;
+}
+.comp-slot img { width: 28px; height: 28px; image-rendering: pixelated; flex-shrink: 0; }
 .timer-box {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 900;
   color: #fff;
   text-shadow: 0 2px 0 #000, 0 0 8px rgba(0,0,0,0.8);
-  letter-spacing: 1px;
   text-align: center;
 }
-.wave-sub {
-  font-size: 12px;
-  color: #ffd166;
-  text-shadow: 1px 1px 0 #000;
-}
+.wave-sub { font-size: 11px; color: #ffd166; text-shadow: 1px 1px 0 #000; text-align: center; }
 .stats-right {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: rgba(18, 12, 28, 0.82);
+  gap: 10px;
+  background: rgba(18, 12, 28, 0.86);
   border: 2px solid #96783c;
-  padding: 5px 12px;
+  padding: 5px 10px;
   border-radius: 6px;
   font-weight: 900;
-  font-size: 15px;
+  font-size: 13px;
 }
 .pause-btn {
   pointer-events: auto;
   background: #36224a;
   border: 2px solid #d4af37;
   color: #fff;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 6px;
   font-weight: 900;
   cursor: pointer;
 }
 .boss-bar-wrap {
   position: absolute;
-  top: 74px;
+  top: 115px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(460px, 75vw);
-  background: rgba(15, 8, 22, 0.9);
+  width: min(460px, 76vw);
+  background: rgba(15, 8, 22, 0.92);
   border: 2px solid #ff4d4d;
   border-radius: 6px;
   padding: 4px 8px;
   display: none;
   text-align: center;
 }
-.boss-bar-name {
-  font-size: 13px;
-  font-weight: 900;
-  color: #ff9999;
-  margin-bottom: 3px;
-}
-.boss-bar-track {
-  height: 10px;
-  background: #2b090c;
-  border-radius: 3px;
-  overflow: hidden;
-}
-.boss-bar-fill {
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(90deg, #ff2a2a, #ff9900);
-}
+.boss-bar-name { font-size: 12px; font-weight: 900; color: #ff9999; margin-bottom: 3px; }
+.boss-bar-track { height: 9px; background: #2b090c; border-radius: 3px; overflow: hidden; }
+.boss-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff2a2a, #ff9900); }
 
-/* Modal for Level Up & Chest & Pause & Game Over */
 .modal-ov {
   position: fixed;
   inset: 0;
-  background: rgba(8, 4, 15, 0.82);
+  background: rgba(8, 4, 15, 0.84);
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 50;
-  padding: 14px;
+  padding: 12px;
   pointer-events: auto;
 }
 .lvl-card {
-  width: min(560px, 94vw);
+  width: min(600px, 95vw);
   max-height: 92vh;
   overflow-y: auto;
-  padding: 14px 18px;
+  padding: 14px 16px;
 }
 .choice-btn {
   width: 100%;
   background: linear-gradient(180deg, #322447 0%, #201530 100%);
   border: 2px solid #c9a347;
   border-radius: 6px;
-  padding: 10px 12px;
-  margin-top: 8px;
+  padding: 9px 12px;
+  margin-top: 7px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   color: #fff;
   text-align: left;
   cursor: pointer;
 }
-.choice-btn:active, .choice-btn:hover {
-  border-color: #fff099;
-  background: #422f5e;
-}
+.choice-btn:active, .choice-btn:hover { border-color: #fff099; background: #422f5e; }
 .choice-btn.evo-choice {
-  background: linear-gradient(180deg, #591c5e 0%, #310d38 100%);
-  border-color: #ff77ff;
-  box-shadow: 0 0 15px rgba(255,100,255,0.45);
+  background: linear-gradient(180deg, #1b3f5e 0%, #0e2238 100%);
+  border-color: #4fc3f7;
 }
 .choice-ic {
-  width: 46px;
-  height: 46px;
+  width: 44px; height: 44px;
   background: #140c1f;
   border: 2px solid #8a6d2b;
   border-radius: 6px;
@@ -379,11 +322,7 @@ canvas#game {
   justify-content: center;
   flex-shrink: 0;
 }
-.choice-ic img {
-  width: 34px;
-  height: 34px;
-  image-rendering: pixelated;
-}
+.choice-ic img { width: 32px; height: 32px; image-rendering: pixelated; }
 .choice-tag {
   display: inline-block;
   padding: 1px 6px;
@@ -393,10 +332,6 @@ canvas#game {
   background: #d4af37;
   color: #140c1f;
   margin-left: 6px;
-}
-.choice-tag.evo {
-  background: #ff55ff;
-  color: #fff;
 }
 </style>
 </head>
@@ -410,15 +345,22 @@ canvas#game {
   </div>
   <div class="hud-top">
     <div class="slots-panel">
-      <div id="wep-slots" class="slot-row"></div>
-      <div id="pas-slots" class="slot-row"></div>
+      <div class="slot-row">
+        <span class="row-label">主控4招式</span>
+        <div id="wep-slots" class="slot-row"></div>
+      </div>
+      <div class="slot-row">
+        <span class="row-label" style="color:#81d4fa;border-color:#29b6f6;">同行同伴</span>
+        <div id="pas-slots" class="slot-row"></div>
+      </div>
     </div>
     <div>
       <div id="hud-timer" class="timer-box">00:00</div>
-      <div id="hud-wave" class="wave-sub">第 1 波 · 野生宝可梦袭来</div>
+      <div id="hud-wave" class="wave-sub">第 1 波</div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="stats-right">
+        <span id="hud-stats" style="color:#82e0aa;font-size:11px;"></span>
         <span title="击杀数">💀 <b id="hud-kills">0</b></span>
         <span title="金币" style="color:#ffd954;">🪙 <b id="hud-gold">0</b></span>
       </div>
@@ -426,7 +368,7 @@ canvas#game {
     </div>
   </div>
   <div id="boss-bar" class="boss-bar-wrap">
-    <div id="boss-name" class="boss-bar-name">头目宝可梦</div>
+    <div id="boss-name" class="boss-bar-name">传说头目</div>
     <div class="boss-bar-track"><div id="boss-fill" class="boss-bar-fill"></div></div>
   </div>
 </div>
@@ -435,44 +377,41 @@ canvas#game {
 <div id="scr-menu" class="screen">
   <div class="topbar">
     <div>
-      <div class="logo-title">Poké<span>Survivors</span></div>
-      <div style="font-size:12px;color:#cbb98b;">吸血鬼幸存者 2D 经典俯视角 · 宝可梦全世代割草生存</div>
+      <div class="logo-title">Poké<span>Survivors</span> <small style="font-size:14px;color:#81d4fa;">v3.2.0</small></div>
+      <div style="font-size:11px;color:#cbb98b;">正作六维数值公式 · 主角4招式 + 场地专属TM · 同伴独立升级进化</div>
     </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-      <div class="gold-box" title="局外金币（自动随本地时间与对局累计）">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <div class="gold-box">
         <img src="./assets/ui/icons/coin.png" alt="" />
         <span id="menu-gold">5000</span>
       </div>
-      <button id="btn-time-claim" class="vs-btn green" style="padding:7px 12px;font-size:13px;">🎁 本地时长领金币 (+1000)</button>
-      <button id="btn-powerups" class="vs-btn gold" style="padding:7px 14px;font-size:14px;">⚡ 属性强化 (PowerUps)</button>
-      <button id="btn-evolutions" class="vs-btn blue" style="padding:7px 14px;font-size:14px;">📖 合成进化表</button>
-      <button id="btn-unlock-all" class="vs-btn" style="padding:7px 12px;font-size:13px;">🔓 一键全解锁</button>
+      <button id="btn-time-claim" class="vs-btn green" style="padding:6px 10px;font-size:12px;">🎁 时长领币 (+1000)</button>
+      <button id="btn-powerups" class="vs-btn gold" style="padding:6px 12px;font-size:13px;">⚡ 努力值特训 (EV)</button>
+      <button id="btn-evolutions" class="vs-btn blue" style="padding:6px 12px;font-size:13px;">📖 招式表与规则</button>
+      <button id="btn-unlock-all" class="vs-btn" style="padding:6px 10px;font-size:12px;">🔓 全解锁</button>
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns: 1.55fr 1fr;gap:12px;width:100%;max-width:1120px;height:calc(100vh - 82px);">
-    <!-- Left: Character Selection -->
-    <div class="vs-panel" style="padding:10px;display:flex;flex-direction:column;overflow:hidden;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <b style="color:#ffe066;font-size:15px;">1. 选择出战宝可梦（达到 16/32 级战斗内自动形态进化）</b>
-        <span id="char-count" style="font-size:12px;color:#cbb98b;"></span>
+  <div style="display:grid;grid-template-columns: 1.55fr 1fr;gap:10px;width:100%;max-width:1140px;height:calc(100vh - 76px);">
+    <div class="vs-panel" style="padding:9px;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <b style="color:#ffe066;font-size:14px;">1. 选择主控御三家（场地仅刷新该宝可梦合法可学技能机，其余御三家可作为同行同伴招募）</b>
+        <span id="char-count" style="font-size:11px;color:#cbb98b;"></span>
       </div>
       <div id="char-grid" class="char-grid grid-scroll" style="flex:1;"></div>
     </div>
 
-    <!-- Right: Selected Character Detail & Stage Selection -->
-    <div style="display:flex;flex-direction:column;gap:10px;overflow:hidden;">
-      <div id="char-detail" class="vs-panel" style="padding:12px;display:flex;gap:12px;align-items:center;"></div>
-      <div class="vs-panel" style="padding:10px;flex:1;display:flex;flex-direction:column;overflow:hidden;">
-        <b style="color:#ffe066;font-size:15px;margin-bottom:6px;">2. 选择 2D 无限平面地图</b>
-        <div id="stage-list" class="grid-scroll" style="display:flex;flex-direction:column;gap:6px;flex:1;"></div>
-        <button id="btn-start-run" class="vs-btn" style="width:100%;margin-top:8px;font-size:19px;padding:12px;">⚔️ 开始生存 (START)</button>
+    <div style="display:flex;flex-direction:column;gap:8px;overflow:hidden;">
+      <div id="char-detail" class="vs-panel" style="padding:10px;display:flex;gap:10px;align-items:center;"></div>
+      <div class="vs-panel" style="padding:9px;flex:1;display:flex;flex-direction:column;overflow:hidden;">
+        <b style="color:#ffe066;font-size:14px;margin-bottom:5px;">2. 选择世代平面战场（全世代603只野生怪与神兽Boss）</b>
+        <div id="stage-list" class="grid-scroll" style="display:flex;flex-direction:column;gap:5px;flex:1;"></div>
+        <button id="btn-start-run" class="vs-btn" style="width:100%;margin-top:6px;font-size:18px;padding:10px;">⚔️ 开始冒险 (START)</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal Overlay -->
 <div id="modal-ov" class="modal-ov">
   <div id="modal-box" class="vs-panel lvl-card"></div>
 </div>
