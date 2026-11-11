@@ -20,7 +20,7 @@ const TYPE_ZH = {"normal":"一般","fighting":"格斗","flying":"飞行","poison
 // 4. Pooled WebAudio SFX Bus (Single persistent GainNode, 65ms throttle)
 // 5. Player-Level-Driven Dynamic Difficulty Curve (Scales smoothly with `RUN.level`!)
 // ============================================================================
-const SAVE_KEY = "pokesurvivors.vs2d.v410";
+const SAVE_KEY = "pokesurvivors.vs2d.v420";
 
 
 // ============================================================================
@@ -387,14 +387,138 @@ function getTypeEffectiveness(moveType, defTypes) {
 }
 
 // ============================================================================
-// PokéSurvivors v4.0.0 Core Systems:
-// 1. Evolution-Bound Signature Moves & 3-Socket Move Hex Super-Weapons
-// 2. LoL Arena (Hextech Mayhem) Silver / Gold / Prismatic Augment Draft + Per-Card Rerolls
-// 3. Rare Field Key-Stone Drop -> Chargeable & Timed Ultimate Mega/Gmax/Z/Tera Awakening
-// 4. High-Intensity Escalating Horde Curve (5~15 min Hardcore Climax Waves!)
+// PokéSurvivors v4.2.0 — Authentic Vampire Survivors Math & 27 Starter Archetypes
+// 1. 27 Unique Starter Innate Traits & Archetype Passives (`STARTER_TRAITS`)
+// 2. 64 Balanced Hextech Augments with Strict Rarity Distribution:
+//    ~88% Silver (🥈) / ~10% Gold (🥇) / ~2% Prismatic (💎)
+//    No more "+20% move speed per silver card" or instant-godmode 1-card spikes!
+// 3. Vampire Survivors Steep Marginal XP Curve & Fixed Low XP Gems (1 / 3 / 10 XP)
+// 4. Scarce & Meaningful Field Pickups (TMs 55s, Balls 70s, Items 45s, Relics 95s)
+// 5. Crisp, Clean, Compact Skill Visuals (50% smaller particles & clean geometry)
 // ============================================================================
 
-// Every starter's Slot-0 Signature Move automatically evolves when the Pokémon evolves!
+const STARTER_TRAITS = {
+  1:   { arch: "grasstank",  name: "【寄生花苞·荆棘共生】", desc: "本命流派：草毒寄生流 — 寄生/藤鞭回血量+30%，每次吸血治疗向周围迸发3枚翠叶毒刺！" },
+  4:   { arch: "firecrit",   name: "【猛火龙裔·燃血暴击】", desc: "本命流派：烈焰暴击流 — 火系与龙系暴击率+10%，对灼烧状态敌人造成的暴击伤害提升+25%！" },
+  7:   { arch: "watertank",  name: "【重装铁壳·高压反击】", desc: "本命流派：重甲水炮流 — 物防与特防+18%，受到伤害减免15%并立即向四周喷射高压水环！" },
+  152: { arch: "grassheal",  name: "【芳草光环·生命溢流】", desc: "本命流派：光环牧师流 — 每秒自动恢复1.2%生命，自身与同行同伴攻击范围扩大+18%！" },
+  155: { arch: "firespeed",  name: "【背后火山·疾行喷发】", desc: "本命流派：移动火海流 — 每移动120码自动在身后留下一枚喷烟火种，生命高于70%时特攻+18%！" },
+  158: { arch: "waterbite",  name: "【狂鲨巨颚·撕裂流血】", desc: "本命流派：近战狂鲨流 — 咬合与挥砍类招式伤害+22%，命中敌人附加5秒撕裂流血！" },
+  252: { arch: "grassblade", name: "【森林剑圣·轻装连斩】", desc: "本命流派：极速剑气流 — 速度+15%，叶刃与斩击类招式冷却缩减-15%且附带穿透风刃！" },
+  255: { arch: "firecombo",  name: "【加速斗魂·连击叠浪】", desc: "本命流派：加速格斗流 — 每次释放招式叠加1%攻速与移速（上限+18%），近战拳脚暴击率+12%！" },
+  258: { arch: "waterquake", name: "【泥沼霸主·震地重锤】", desc: "本命流派：水地重装流 — 免疫减速，地面与水系招式附带25%泥沼减速且对减速目标伤害+20%！" },
+  387: { arch: "grasstank",  name: "【大陆硬壳·不动如山】", desc: "本命流派：反伤岩森流 — 最大生命值+20%，站立或低速移动时受到伤害降低25%并提升20%范围！" },
+  390: { arch: "firecombo",  name: "【铁拳大圣·连环破甲】", desc: "本命流派：破甲连打流 — 多段与拳击类招式每段额外附加等级×1.5固伤，并削减目标15%护甲！" },
+  393: { arch: "waterbeam",  name: "【皇室钢翼·不屈威严】", desc: "本命流派：远程钢炮流 — 远程光束与水炮射程+25%、穿透+2，场上每有1只精英/头目特攻+6%！" },
+  495: { arch: "grassblade", name: "【唱反调·皇族傲气】",   desc: "本命流派：高频风暴流 — 技能每命中10次使下一次风暴/藤鞭伤害提升+35%，闪避率+12%！" },
+  498: { arch: "firetank",   name: "【舍身霸王·怒火反噬】", desc: "本命流派：狂战重锤流 — 每损失10%生命值获得+6%全伤害与+5%吸血，冲撞类招式体积+25%！" },
+  501: { arch: "waterblade", name: "【秘剑千重·拔刀居合】", desc: "本命流派：拔刀暴击流 — 斩击与水刃招式必定穿透并在路径留下水痕刀波，暴击伤害+25%！" },
+  650: { arch: "grasstank",  name: "【防弹圣盾·尖刺壁垒】", desc: "本命流派：荆棘护盾流 — 免疫远程敌方弹幕35%伤害，每6秒生成一层吸收15%最大HP的荆棘护盾！" },
+  653: { arch: "firemage",   name: "【魔术狐火·双法同调】", desc: "本命流派：秘术法阵流 — 场地与漩涡类招式持续时间+25%，每释放4次技能自动召唤追踪狐火！" },
+  656: { arch: "watershuri", name: "【变幻自在·忍法影袭】", desc: "本命流派：手里剑忍流 — 所有招式皆享受1.5×本系加成(STAB)，飞镖与多段投射物数量+1！" },
+  722: { arch: "grasssnipe", name: "【远隔羽箭·缝影猎手】", desc: "本命流派：远程狙击流 — 对距离140码外的敌人伤害提升+25%，投射物命中附带1.2秒定身缝影！" },
+  725: { arch: "firebite",   name: "【威吓霸主·暗黑摔角】", desc: "本命流派：威吓近战流 — 周围140码内所有怪物攻击力降低18%，暗黑与火系近战伤害+22%！" },
+  728: { arch: "watersong",  name: "【湿润之声·海神共鸣】", desc: "本命流派：音浪统帅流 — 声波与气泡类招式范围+28%，每次释放本命技为全体同伴恢复并增伤15%！" },
+  810: { arch: "grassquake", name: "【青草制造者·狂雷鼓】", desc: "本命流派：震地音波流 — 脚下生成青草领域（每秒回血并使草系招式+18%威力），击退距离+35%！" },
+  813: { arch: "firespeed",  name: "【自由者·烈焰射手】",   desc: "本命流派：弹射火球流 — 所有招式享受1.5×本系加成，弹射球类招式弹跳次数+2、飞行速度+25%！" },
+  816: { arch: "watersnipe", name: "【狙击手·致命弱点】",   desc: "本命流派：致命贯通流 — 激光与狙击招式暴击率+15%，触发暴击时伤害倍率额外提升+40%！" },
+  906: { arch: "grasscrit",  name: "【千变魔术·必中花炸】", desc: "本命流派：诡术爆破流 — 炸弹与投射物暴击率+14%，暴击时在目标脚下额外引爆一朵魔术花！" },
+  909: { arch: "firesong",   name: "【纯朴高歌·冥火叠音】", desc: "本命流派：叠音灼烧流 — 每次释放声波或火系招式永久叠加0.5%特攻（上限+35%），灼烧伤害翻倍！" },
+  912: { arch: "waterblade", name: "【自信过剩·孔雀舞步】", desc: "本命流派：旋舞连斩流 — 每击败12只怪物获得4秒舞步加速（冷却-18%、移速+12%），环绕物+1！" }
+};
+
+// ============================================================================
+// 18 Balanced Move-Socket Hex Modifiers (Silver ~88%, Gold ~10%, Prismatic ~2%)
+// ============================================================================
+const MOVE_HEX_MODS = [
+  // Silver Tier (Common, steady incremental building blocks — 10 types)
+  { id: "s_power",    tier: "silver", tag: "强击", icon: "⚔️", name: "白银·招式增幅",   desc: "该招式的基础伤害提升 +14%，击退力 +10%。" },
+  { id: "s_cd",       tier: "silver", tag: "速射", icon: "⏱️", name: "白银·冷却微调",   desc: "该招式的冷却时间缩减 -10%，出招前摇缩短。" },
+  { id: "s_area",     tier: "silver", tag: "扩域", icon: "📐", name: "白银·范围扩展",   desc: "该招式的判定半径与体积扩大 +16%。" },
+  { id: "s_pierce",   tier: "silver", tag: "穿透", icon: "🏹", name: "白银·锋锐贯通",   desc: "该招式的投射物穿透数量 +1，对沿途敌人伤害不衰减。" },
+  { id: "s_crit",     tier: "silver", tag: "精准", icon: "🎯", name: "白银·要害瞄准",   desc: "该招式的暴击率提升 +9%，暴击伤害 +15%。" },
+  { id: "s_speed",    tier: "silver", tag: "疾弹", icon: "💨", name: "白银·高速弹道",   desc: "该招式的弹道飞行速度与旋转速度提升 +20%，有效射程 +12%。" },
+  { id: "s_status",   tier: "silver", tag: "附魔", icon: "🧪", name: "白银·元素浸透",   desc: "该招式触发灼烧/冰缓/寄生/定身的概率提升 +25%，持续时间延长 1.5 秒。" },
+  { id: "s_exec",     tier: "silver", tag: "斩杀", icon: "🩸", name: "白银·残血收割",   desc: "该招式对生命值低于 40% 的敌人额外造成 +22% 伤害。" },
+  { id: "s_boss",     tier: "silver", tag: "破阵", icon: "🛡️", name: "白银·精英克星",   desc: "该招式对★精英怪与👑传说头目造成的伤害提升 +20%。" },
+  { id: "s_leech",    tier: "silver", tag: "汲取", icon: "💚", name: "白银·招式汲取",   desc: "该招式命中敌人时有 25% 概率恢复 2 点生命值。" },
+
+  // Gold Tier (Uncommon ~10% — tactical mechanics, 5 types)
+  { id: "multishot",  tier: "gold",   tag: "分裂", icon: "💠", name: "黄金·分裂弹道",   desc: "该招式的投射物/挥砍/光束数量额外 +1，覆盖角度扩大。" },
+  { id: "bounce",     tier: "gold",   tag: "弹跳", icon: "🐝", name: "黄金·弹跳连锁",   desc: "该招式命中首个目标后，向附近 110 码内另一名敌人弹射 35% 伤害。" },
+  { id: "aftershock", tier: "gold",   tag: "余震", icon: "💥", name: "黄金·回响余震",   desc: "该招式施放 0.5 秒后，在原目标点引发一次 50% 威力的范围余震。" },
+  { id: "singularity",tier: "gold",   tag: "引力", icon: "🌀", name: "黄金·微缩引力",   desc: "该招式命中时将周围 110 码内的普通怪物向中心聚拢并减速 30%。" },
+  { id: "colossal",   tier: "gold",   tag: "巨化", icon: "🔮", name: "黄金·重炮巨化",   desc: "该招式判定体积扩大 +28%，伤害提升 +18%，但冷却增加 6%。" },
+
+  // Prismatic Tier (Ultra-Rare ~2% — capstone modifiers, 3 types)
+  { id: "gatling",    tier: "prismatic", tag: "连发", icon: "🔥", name: "棱彩·高速连发核心", desc: "【2%稀有棱彩】该招式冷却缩减 -28%，每次释放额外追加 1 发副弹道！" },
+  { id: "supernova",  tier: "prismatic", tag: "星爆", icon: "🌟", name: "棱彩·星界伴生弹",   desc: "【2%稀有棱彩】该招式释放时向四周额外发射 3 枚追踪星界飞弹（50%威力）！" },
+  { id: "reaper",     tier: "prismatic", tag: "收割", icon: "⚔️", name: "棱彩·收割充能核心", desc: "【2%稀有棱彩】该招式伤害提升 +25%，每次击败敌人缩减该招式 20% 剩余冷却！" }
+];
+
+// ============================================================================
+// 46 Global & Archetype-Specific Hextech Augments
+// Filtered dynamically by your starter's Element & Archetype so different
+// Pokémon get distinct build paths!
+// Strict Rarity: 88% Silver / 10% Gold / 2% Prismatic
+// ============================================================================
+const GLOBAL_HEX_POOL = [
+  // --- A. Universal Silver Augments (Modest, balanced Vampire-Survivors style stats, max +5~8% per stack) ---
+  { id: "sv_might",      tier: "silver", req: "all",   icon: "🗡️", name: "白银·武道打磨 (菠菜)",   desc: "物攻与特攻提升 +8%（每局限叠5层）。" },
+  { id: "sv_armor",      tier: "silver", req: "all",   icon: "🛡️", name: "白银·硬化鳞片 (护甲)",   desc: "物防与特防提升 +10%，受到接触伤害固定减少 2 点。" },
+  { id: "sv_vitality",   tier: "silver", req: "all",   icon: "❤️", name: "白银·生命之源 (空心胸)", desc: "最大生命值提升 +12%，并立即恢复 20% 生命值。" },
+  { id: "sv_regen",      tier: "silver", req: "all",   icon: "🌿", name: "白银·自然愈合 (番茄)",   desc: "每秒生命恢复速度 +1.5 点，树果治疗效果 +20%。" },
+  { id: "sv_haste",      tier: "silver", req: "all",   icon: "📖", name: "白银·古籍咏唱 (空白书)", desc: "所有招式冷却速度加快 +6%（每局限叠4层）。" },
+  { id: "sv_area",       tier: "silver", req: "all",   icon: "🕯️", name: "白银·扩音共振 (烛台)",   desc: "所有招式攻击范围与体积扩大 +8%（每局限叠4层）。" },
+  { id: "sv_proj_spd",   tier: "silver", req: "all",   icon: "🧤", name: "白银·强力护腕 (护腕)",   desc: "所有投射物飞行速度提升 +12%，持续时间延长 +10%。" },
+  { id: "sv_move_spd",   tier: "silver", req: "all",   icon: "🪽", name: "白银·轻巧步伐 (翅膀)",   desc: "移动速度小幅提升 +6%（严控上限，告别满屏乱飞）。" },
+  { id: "sv_magnet",     tier: "silver", req: "all",   icon: "🧲", name: "白银·磁力徽章 (吸铁石)", desc: "经验糖果与树果的拾取吸附半径扩大 +22%。" },
+  { id: "sv_crit_rate",  tier: "silver", req: "all",   icon: "🎯", name: "白银·锐利目光",         desc: "所有招式的击中要害(暴击)率提升 +6%。" },
+  { id: "sv_crit_dmg",   tier: "silver", req: "all",   icon: "💥", name: "白银·狙击镜片",         desc: "暴击伤害倍率额外提升 +18%。" },
+  { id: "sv_comp_train", tier: "silver", req: "all",   icon: "🤝", name: "白银·同伴特训口粮",     desc: "所有同行同伴宝可梦全属性 +10%，攻击速度 +8%。" },
+  { id: "sv_ult_charge", tier: "silver", req: "all",   icon: "🔋", name: "白银·钥石充能器",       desc: "超进化大招的充能获取效率提升 +18%。" },
+  { id: "sv_dice_bag",   tier: "silver", req: "all",   icon: "🎲", name: "白银·战术重随骰",       desc: "立即获得 +2 颗海克斯刷新骰子，且全防御 +5%。" },
+  { id: "sv_thorns",     tier: "silver", req: "all",   icon: "🌵", name: "白银·尖刺护甲",         desc: "受到怪物碰撞时，向周围反弹相当于自身等级×8的物理伤害。" },
+  { id: "sv_boss_hunt",  tier: "silver", req: "all",   icon: "👑", name: "白银·狩猎悬赏令",       desc: "对精英怪与传说头目造成的伤害提升 +14%。" },
+
+  // --- B. Element & Archetype Exclusive Silver Augments (Only appear for matching Pokémon!) ---
+  { id: "sv_grass_seed", tier: "silver", req: "grass", icon: "🌱", name: "草系专属·剧毒孢子",     desc: "【草系流派】草系招式命中使敌人中毒/寄生伤害提升 +25%，并减速 15%。" },
+  { id: "sv_grass_vino", tier: "silver", req: "grass", icon: "🍃", name: "草系专属·光合护盾",     desc: "【草系流派】每当草系招式造成吸血或回血时，4秒内双防提升 +15%。" },
+  { id: "sv_grass_root", tier: "silver", req: "grass", icon: "🌳", name: "草系专属·深根盘踞",     desc: "【草系流派】藤鞭、叶刃与木槌的击退力度提升 +35%，范围扩大 +12%。" },
+
+  { id: "sv_fire_ember", tier: "silver", req: "fire",  icon: "🔥", name: "火系专属·余烬引燃",     desc: "【火系流派】灼烧状态每秒伤害提升 +35%，且灼烧敌人死亡时小范围爆燃。" },
+  { id: "sv_fire_zeal",  tier: "silver", req: "fire",  icon: "⚡", name: "火系专属·狂热斗志",     desc: "【火系流派】生命值低于 75% 时，火系与格斗招式威力提升 +16%。" },
+  { id: "sv_fire_core",  tier: "silver", req: "fire",  icon: "🌋", name: "火系专属·熔岩加温",     desc: "【火系流派】连续释放火系招式使特攻与物攻叠加提升，最高 +14%。" },
+
+  { id: "sv_water_tide", tier: "silver", req: "water", icon: "🌊", name: "水系专属·激流推进",     desc: "【水系流派】水系与冰系招式附带潮湿减速，对减速目标伤害提升 +16%。" },
+  { id: "sv_water_mist", tier: "silver", req: "water", icon: "❄️", name: "水系专属·白雾折光",     desc: "【水系流派】闪避远程弹幕概率 +15%，水炮与手里剑穿透数量 +1。" },
+  { id: "sv_water_shell",tier: "silver", req: "water", icon: "🐚", name: "水系专属·深海硬壳",     desc: "【水系流派】每30点物防/特防转化为 +4% 技能伤害，攻防一体。" },
+
+  // --- C. Gold Tier Augments (~10% Roll Chance — Build-Defining Synergies) ---
+  { id: "gd_grass_bloom",tier: "gold",   req: "grass", icon: "🌺", name: "黄金·森林共生花妖 (草系流派核心)", desc: "【草系专属】每击败 12 只怪在原地生长一株荆棘毒花，持续发射飞叶并为你回血！" },
+  { id: "gd_fire_calib", tier: "gold",   req: "fire",  icon: "☄️", name: "黄金·红莲爆炎引信 (火系流派核心)", desc: "【火系专属】火系招式命中灼烧状态的敌人时，触发二次红莲爆破（造成 65% 范围伤害）！" },
+  { id: "gd_water_clone",tier: "gold",   req: "water", icon: "💧", name: "黄金·激流水影分身 (水系流派核心)", desc: "【水系专属】每释放 3 次本命招式，召唤一道水影分身向反方向同步复读一次该招式！" },
+
+  { id: "elem_overload", tier: "gold",   req: "all",   icon: "⚛️", name: "黄金·元素交响反应 (蒸发/超导/烈绽放)", desc: "不同属性招式在 2.5 秒内交替命中同一敌人时，触发 1.5 倍元素反应爆炸并破甲 20%！" },
+  { id: "vampiric_siphon",tier:"gold",   req: "all",   icon: "🩸", name: "黄金·鲜血汲取契约",               desc: "所有招式获得 6% 生命偷取；满血时溢出的治疗量转化为每3秒一次的血色冲击波！" },
+  { id: "berserker_drive",tier:"gold",   req: "all",   icon: "💢", name: "黄金·逆境狂战引擎",               desc: "全体招式冷却缩减 -10%，且每损失 10% 生命值使造成的伤害提升 +6%！" },
+  { id: "keystone_radar",tier: "gold",   req: "all",   icon: "🌈", name: "黄金·超进化共鸣雷达",             desc: "超进化充能速度 +30%、持续时间 +4 秒，并在附近召唤 1 个当前宝可梦可用的超进化信物！" },
+  { id: "gd_companion",  tier: "gold",   req: "all",   icon: "🔴", name: "黄金·王牌训练家号令",             desc: "立即在身边召唤 1 颗同伴精灵球，且全体同行同伴等级 +2、伤害提升 +25%！" },
+  { id: "gd_heavy_ord",  tier: "gold",   req: "all",   icon: "💣", name: "黄金·重装火炮专家",               desc: "所有招式伤害提升 +22%、范围扩大 +18%，但招式冷却时间增加 5%。" },
+  { id: "gd_swift_exec", tier: "gold",   req: "all",   icon: "⚡", name: "黄金·疾风连携流",                 desc: "第 2、3、4 槽位副招式的冷却时间缩减 -16%，移速提升 +8%。" },
+
+  // --- D. Prismatic Tier Augments (~2% Ultra-Rare Roll Chance —Balanced Capstone Rules!) ---
+  { id: "double_cast",   tier: "prismatic", req: "all", icon: "♊", name: "棱彩·双重回响 (Double Cast)",     desc: "【2%稀有棱彩】释放招式时有 35% 概率在 0.25 秒后原地追加释放一次（65%伤害）！" },
+  { id: "three_hit",     tier: "prismatic", req: "all", icon: "⚡", name: "棱彩·三环圣雷 (Three-Hit Proc)",  desc: "【2%稀有棱彩】对同一目标每第 3 次命中降下圣雷，造成 6% 目标最大生命值真实伤害（有上限）！" },
+  { id: "goliath",       tier: "prismatic", req: "all", icon: "🦖", name: "棱彩·心之钢泰坦 (Goliath)",       desc: "【2%稀有棱彩】最大HP+18%；每击败 30 只怪永久HP+8、体型与技能范围+1.2%（上限20层）！" },
+  { id: "jeweled_gauntlet",tier:"prismatic",req: "all", icon: "💎", name: "棱彩·珠光护手 (Jeweled)",         desc: "【2%稀有棱彩】所有招式暴击率提升 +20%，暴击伤害提升 +35%！" },
+  { id: "combo_symphony",tier: "prismatic", req: "all", icon: "🎵", name: "棱彩·本命共鸣曲",                 desc: "【2%稀有棱彩】每释放 2 次第 1 槽位【本命招式】，自动无视冷却触发一次第 2 槽位招式！" },
+  { id: "trainer_resonance",tier:"prismatic",req:"all", icon: "🌟", name: "棱彩·全队羁绊齐射",               desc: "【2%稀有棱彩】每释放 2 次本命招式，场上所有同行同伴立即朝目标同步齐射一次招式！" },
+  { id: "pandora_tm",    tier: "prismatic", req: "all", icon: "🎲", name: "棱彩·潘多拉的神兽秘传",           desc: "【2%稀有棱彩】将第 2~4 槽位招式重随为传说招式，并获得 +2 颗刷新骰子！" }
+];
+// ============================================================================
+// Vampire Survivors Authentic Difficulty & Marginal XP Curve + Starter Passives
+// ============================================================================
 const SIGNATURE_EVO_MOVES = {
   1:   [75,  438, 338], // 妙蛙种子: 飞叶快刀 -> 强力鞭打 -> 疯狂植物
   4:   [52,  53,  307], // 小火龙: 火花 -> 喷射火焰 -> 爆炸烈焰
@@ -425,153 +549,26 @@ const SIGNATURE_EVO_MOVES = {
   912: [55,  895, 872]  // 润水鸭: 水枪 -> 水波刀 -> 流水旋舞
 };
 
-// Legendary Moves for Prismatic "Pandora's TM" Augment
 const LEGENDARY_MOVES_POOL = [307, 308, 338, 284, 437, 838, 833, 834, 594, 780, 745, 870, 871, 872, 126, 59, 89, 416];
 
-// Move-Specific Hex Modifiers (Can be socketed into any of the 4 moves, up to 3 sockets per move!)
-const MOVE_HEX_MODS = [
-  {
-    id: "multishot", tier: "silver", tag: "分裂", icon: "💠",
-    name: "海克斯分裂弹道",
-    desc: "该招式的投射物/挥砍/陨石/光束数量额外 +2，覆盖面大幅扩张！"
-  },
-  {
-    id: "colossal", tier: "silver", tag: "巨化", icon: "🔮",
-    name: "海克斯巨型化",
-    desc: "该招式的判定体积与爆炸半径扩大 +48%，伤害提升 +18%！"
-  },
-  {
-    id: "overclock", tier: "silver", tag: "疾速", icon: "⚡",
-    name: "海克斯极速充能",
-    desc: "该招式的冷却时间缩减 -26%，弹道与挥砍速度提升 +35%！"
-  },
-  {
-    id: "bounce", tier: "gold", tag: "弹跳", icon: "🐝",
-    name: "弹跳蜜蜂连携",
-    desc: "该招式命中敌人后自动向附近另一名敌人弹射/连锁，并附加 +25% 穿透伤害！"
-  },
-  {
-    id: "aftershock", tier: "gold", tag: "余震", icon: "💥",
-    name: "海克斯回响余震",
-    desc: "该招式施放 0.45 秒后，在目标位置引发二次海克斯能量爆破（造成 75% 范围伤害）！"
-  },
-  {
-    id: "singularity", tier: "gold", tag: "引力", icon: "🌀",
-    name: "星界黑洞引力",
-    desc: "该招式命中时产生强力引力场，将周围怪群拖拽聚拢至中心并减速 50%！"
-  },
-  {
-    id: "gatling", tier: "prismatic", tag: "加特林", icon: "🔥",
-    name: "棱彩·加特林机枪化",
-    desc: "【棱彩魔改】该招式冷却时间暴降 -52%，且每次施放额外连射一波，化为金属风暴！"
-  },
-  {
-    id: "supernova", tier: "prismatic", tag: "星爆", icon: "🌟",
-    name: "棱彩·超新星裂变",
-    desc: "【棱彩魔改】该招式每次释放向四周 360° 额外迸射 6 枚追踪星界飞弹，全屏开花！"
-  },
-  {
-    id: "reaper", tier: "prismatic", tag: "收割", icon: "⚔️",
-    name: "棱彩·致命收割刷新",
-    desc: "【棱彩魔改】该招式伤害提升 +35%，且每次击败敌人立即缩减所有招式冷却并加速超进化充能！"
-  }
-];
+function getStarterPrimaryElement(baseId) {
+  const s3 = POKE_DB[STARTER_LEARNSETS[baseId]?.chain[2] || baseId];
+  if (!s3 || !s3.t) return "normal";
+  if (s3.t.includes("grass")) return "grass";
+  if (s3.t.includes("fire")) return "fire";
+  if (s3.t.includes("water")) return "water";
+  return s3.t[0];
+}
 
-// Global Hextech Mayhem Augments (Silver / Gold / Prismatic)
-const GLOBAL_HEX_POOL = [
-  {
-    id: "double_cast", tier: "prismatic", icon: "♊",
-    name: "棱彩·双重施法 (Double Cast)",
-    desc: "你释放任何招式时，有 65% 概率（叠满 100%）在 0.22 秒后原地免费再释放一次！"
-  },
-  {
-    id: "three_hit", tier: "prismatic", icon: "⚡",
-    name: "棱彩·伤不过三 (True Damage)",
-    desc: "对同一敌人每第 3 次命中触发海克斯圣雷，额外造成 10% 目标最大生命值的真实伤害！"
-  },
-  {
-    id: "goliath", tier: "prismatic", icon: "🦖",
-    name: "棱彩·泰坦心之钢 (Goliath)",
-    desc: "立即提升 +25% 生命上限；每击败 18 只怪永久体型变大 +2%、生命上限 +12，且所有技能范围随体型等比放大！"
-  },
-  {
-    id: "jeweled_gauntlet", tier: "prismatic", icon: "💎",
-    name: "棱彩·珠光护手 (Jeweled)",
-    desc: "你的所有招式暴击率提升 +30%，暴击伤害从 150% 暴涨至 215%！"
-  },
-  {
-    id: "combo_symphony", tier: "prismatic", icon: "🎵",
-    name: "棱彩·连锁交响曲 (Combo Link)",
-    desc: "每当你释放第 1 槽位【本命招式】时，立即无视冷却自动触发一次第 2 槽位招式！"
-  },
-  {
-    id: "trainer_resonance", tier: "prismatic", icon: "🤝",
-    name: "棱彩·训练家羁绊共振",
-    desc: "每当你释放本命招式时，场上所有同行同伴宝可梦立即同步齐射一次招式，且同伴伤害 +40%！"
-  },
-  {
-    id: "pandora_tm", tier: "prismatic", icon: "🎲",
-    name: "棱彩·潘多拉的技能机",
-    desc: "将你第 2~4 槽位的招式全部重随为【传说神兽禁术】，且全部招式立即赠送 1 个随机海克斯词条！"
-  },
-  {
-    id: "elem_overload", tier: "gold", icon: "⚛️",
-    name: "黄金·元素反应炉 (蒸发/超导/烈绽放)",
-    desc: "不同属性招式交替命中敌人时触发【元素剧爆】，造成 1.8 倍范围爆炸并削减敌人 25% 双防！"
-  },
-  {
-    id: "apex_collector", tier: "gold", icon: "🧲",
-    name: "黄金·海克斯磁暴线圈",
-    desc: "拾取范围扩大 +120%，经验获取提升 +28%，且每拾取 15 颗经验糖果向周围发射一道连锁闪电！"
-  },
-  {
-    id: "vampiric_siphon", tier: "gold", icon: "🩸",
-    name: "黄金·全能吸血契约",
-    desc: "所有招式获得 12% 生命偷取；满血时溢出的治疗量转化为护体雷环轰击近身敌人！"
-  },
-  {
-    id: "berserker_drive", tier: "gold", icon: "🔥",
-    name: "黄金·狂战过载引擎",
-    desc: "移动速度提升 +25%，全体招式冷却缩减 -18%，且每损失 10% 生命值伤害提升 +8%！"
-  },
-  {
-    id: "keystone_radar", tier: "gold", icon: "🌈",
-    name: "黄金·超进化共鸣雷达",
-    desc: "超进化充能速度提升 +45%，超进化持续时间延长 +5 秒，且立即在身边召唤 1 颗【🌈超进化钥石】！"
-  },
-  {
-    id: "transmute_prismatic", tier: "gold", icon: "✨",
-    name: "黄金·质变：棱彩阶！",
-    desc: "赌狗狂喜！立即将此卡质变为 1 个随机【💎棱彩阶】顶级海克斯强化，并赠送 +2 颗刷新骰子！"
-  },
-  {
-    id: "silver_haste", tier: "silver", icon: "🪽",
-    name: "白银·顺风羽翼",
-    desc: "移动速度提升 +18%，所有招式冷却速度加快 +14%！"
-  },
-  {
-    id: "silver_might", tier: "silver", icon: "⚔️",
-    name: "白银·双刀流武道",
-    desc: "物攻与特攻双双提升 +18%，击退距离提升 +25%！"
-  },
-  {
-    id: "silver_dice", tier: "silver", icon: "🎲",
-    name: "白银·幸运骰子福袋",
-    desc: "立即获得 +4 颗海克斯刷新骰子，且全属性提升 +8%！"
-  }
-];
-
-// ============================================================================
-// Escalating Hardcore Difficulty & Wave Climax Curve (No More 5-Min Easy Mode!)
-// ============================================================================
+// Vampire Survivors Style Time-Driven Enemy Level & Exponential Wave Pressure
 function getTargetEnemyLevel(isBoss = false, isElite = false) {
   if (!RUN) return 4;
   const pLv = RUN.level || 5;
   const timeMin = RUN.time / 60;
-  // After 3 minutes, time pressure accelerates sharply so monsters out-scale passive play!
-  const lateSurge = Math.max(0, timeMin - 3.0) * 2.2 + Math.pow(Math.max(0, timeMin - 5.0), 1.45) * 2.6;
-  const baseLv = Math.round(pLv * 1.02 + timeMin * 1.65 + lateSurge + RUN.stage.lvOffset);
-  const offset = isBoss ? 5 : (isElite ? 2 : 0);
+  // In Vampire Survivors, enemy strength scales relentlessly with time phases (3m, 5m, 8m, 11m walls!)
+  const timeLv = timeMin * 3.4 + Math.pow(Math.max(0, timeMin - 2.0), 1.55) * 2.4;
+  const baseLv = Math.round(Math.max(pLv * 0.95, 4 + timeLv) + RUN.stage.lvOffset);
+  const offset = isBoss ? 6 : (isElite ? 3 : 0);
   return Math.max(4, baseLv + offset);
 }
 
@@ -584,43 +581,55 @@ function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false,
   const pEvo = RUN ? RUN.evoStage : 0;
   const timeMin = RUN ? (RUN.time / 60) : 0;
 
-  // Exponential post-4-minute monster fortitude so 5~12 min requires real Hex Super-Weapons & Mega Bursts!
-  const timeFortitude = 1 + Math.max(0, timeMin - 2.0) * 0.28 + Math.pow(Math.max(0, timeMin - 4.5), 1.65) * 0.42;
-  const evoScale = (1 + pEvo * 0.34 + Math.max(0, pLv - 10) * 0.035) * timeFortitude;
+  // Relentless post-2.5-minute Vampire Survivors wave HP & armor scaling!
+  // At 3 min: ~2.6x HP; at 5 min: ~5.2x HP; at 8 min: ~11.5x HP; at 12 min: ~24x HP!
+  const vsWaveFortitude = 1 + Math.max(0, timeMin - 1.0) * 0.45 + Math.pow(Math.max(0, timeMin - 2.5), 1.78) * 0.72;
+  const evoScale = (1 + pEvo * 0.32 + Math.max(0, pLv - 8) * 0.04) * vsWaveFortitude;
 
   let maxHp = coreHp;
   if (isPlayer) {
     const evPct = getEvBonusPct("hp") * 0.01;
+    const vitStacks = (RUN && RUN.hexes && RUN.hexes.sv_vitality) || 0;
     const goliathBonus = RUN ? (RUN.goliathHpBonus || 0) : 0;
-    const goliathMul = (RUN && RUN.hexes && RUN.hexes.goliath) ? 1.25 : 1.0;
-    maxHp = Math.floor(((coreHp * 2.35 + 48) * (1 + evPct) * goliathMul) + goliathBonus);
+    const goliathMul = (RUN && RUN.hexes && RUN.hexes.goliath) ? 1.18 : 1.0;
+    const turtwigBonus = (RUN && RUN.baseId === 387) ? 1.20 : 1.0;
+    maxHp = Math.floor(((coreHp * 2.25 + 44) * (1 + evPct + vitStacks * 0.12) * goliathMul * turtwigBonus) + goliathBonus);
   } else if (isBoss) {
-    maxHp = Math.floor((coreHp * 18.5 + 320) * evoScale);
+    maxHp = Math.floor((coreHp * 22.0 + 420) * evoScale);
   } else {
-    maxHp = Math.floor((coreHp * 1.65 + 16) * evoScale);
+    maxHp = Math.floor((coreHp * 1.95 + 22) * evoScale);
   }
 
   const statFn = (base, key) => {
     const raw = Math.floor(((2 * base + 31) * level) / 100) + 8;
     if (!isPlayer) {
-      const enemyTimeMul = 1 + pEvo * 0.16 + Math.max(0, timeMin - 3.0) * 0.14;
+      const enemyTimeMul = 1 + pEvo * 0.18 + Math.max(0, timeMin - 2.0) * 0.22 + Math.pow(Math.max(0, timeMin - 4.0), 1.35) * 0.18;
       return Math.floor(raw * enemyTimeMul);
     }
-    const hexMight = (RUN && RUN.hexes && RUN.hexes.silver_might && (key === "atk" || key === "spa")) ? 0.18 * RUN.hexes.silver_might : 0;
-    const diceBonus = (RUN && RUN.hexes && RUN.hexes.silver_dice) ? 0.08 * RUN.hexes.silver_dice : 0;
-    const evMul = 1 + getEvBonusPct(key) * 0.01 + ((runBuffs && runBuffs[key]) || 0) * 0.05 + hexMight + diceBonus;
-    return Math.floor(raw * evMul);
+    let bonusPct = getEvBonusPct(key) * 0.01 + ((runBuffs && runBuffs[key]) || 0) * 0.04;
+    if (RUN && RUN.hexes) {
+      if ((key === "atk" || key === "spa") && RUN.hexes.sv_might) bonusPct += Math.min(5, RUN.hexes.sv_might) * 0.08;
+      if ((key === "def" || key === "spd") && RUN.hexes.sv_armor) bonusPct += Math.min(5, RUN.hexes.sv_armor) * 0.10;
+      if (RUN.hexes.sv_dice_bag && (key === "def" || key === "spd")) bonusPct += RUN.hexes.sv_dice_bag * 0.05;
+    }
+    // Starter Innate Stat Passives
+    if (RUN) {
+      if (RUN.baseId === 7 && (key === "def" || key === "spd")) bonusPct += 0.18; // Squirtle line +18% Def/SpD
+      if (RUN.baseId === 252 && key === "spe") bonusPct += 0.15; // Treecko line +15% Spe
+      if (RUN.baseId === 155 && key === "spa" && RUN.hp >= RUN.maxHp * 0.7) bonusPct += 0.18; // Cyndaquil high-HP SpA
+      if (RUN.baseId === 909 && key === "spa") bonusPct += Math.min(0.35, (RUN.fuecocoStacks || 0) * 0.005); // Fuecoco Torch Song stacks
+    }
+    return Math.floor(raw * (1 + bonusPct));
   };
 
   let add = [0, 0, 0, 0, 0, 0];
-  // Stat bonus ONLY applies while Ultimate Awakening Burst is actively running!
   if (isPlayer && RUN && RUN.ultActive && RUN.awakening && RUN.awakening.statAdd) {
     add = RUN.awakening.statAdd;
   }
   return {
     types: entry.t,
-    bst: entry.bst + (isPlayer && RUN && RUN.ultActive && RUN.awakening ? 110 : 0),
-    maxHp: maxHp + Math.floor(add[0] * 3.5),
+    bst: entry.bst + (isPlayer && RUN && RUN.ultActive && RUN.awakening ? 100 : 0),
+    maxHp: maxHp + Math.floor(add[0] * 3.2),
     atk: statFn(bAtk + add[1], "atk"),
     def: statFn(bDef + add[2], "def"),
     spa: statFn(bSpa + add[3], "spa"),
@@ -652,34 +661,45 @@ function isMoveSuperWeapon(mSlot) {
 
 function computeMoveCooldown(moveId, attackerStats, heldItems = null, mSlot = null) {
   const m = MOVES_DB[moveId];
-  if (!m) return 1.1;
+  if (!m) return 1.15;
   const effPower = m.p * (m.h > 1 ? (m.h > 2 ? 2.2 : 1.6) : 1.0);
-  let baseCd = 0.68 + Math.pow(effPower / 42, 0.68) * 0.42;
-  if (m.pat === "bible_orbit") baseCd = 2.4;
-  else if (m.pat === "santa_hazard" || m.pat === "gravity_well") baseCd = 2.0;
-  else if (m.pat === "sonic_boom") baseCd = 0.98;
-  else if (m.pat === "fist_flurry" || m.pat === "spear_thrust") baseCd *= 0.84;
+  let baseCd = 0.72 + Math.pow(effPower / 42, 0.68) * 0.44;
+  if (m.pat === "bible_orbit") baseCd = 2.5;
+  else if (m.pat === "santa_hazard" || m.pat === "gravity_well") baseCd = 2.1;
+  else if (m.pat === "sonic_boom") baseCd = 1.02;
+  else if (m.pat === "fist_flurry" || m.pat === "spear_thrust") baseCd *= 0.86;
 
-  const speFactor = Math.max(0.60, Math.min(1.12, 110 / (85 + attackerStats.spe * 0.45)));
-  const clawBonus = heldItems && heldItems.quick_claw ? Math.pow(0.90, heldItems.quick_claw) : 1.0;
+  const speFactor = Math.max(0.66, Math.min(1.12, 110 / (85 + attackerStats.spe * 0.42)));
+  const clawBonus = heldItems && heldItems.quick_claw ? Math.pow(0.92, Math.min(3, heldItems.quick_claw)) : 1.0;
 
   let hexCdMul = 1.0;
   if (mSlot) {
-    const oc = hasMoveMod(mSlot, "overclock");
-    if (oc > 0) hexCdMul *= Math.pow(0.74, oc);
+    const scd = hasMoveMod(mSlot, "s_cd");
+    if (scd > 0) hexCdMul *= Math.pow(0.90, scd);
+    const col = hasMoveMod(mSlot, "colossal");
+    if (col > 0) hexCdMul *= Math.pow(1.06, col);
     const gat = hasMoveMod(mSlot, "gatling");
-    if (gat > 0) hexCdMul *= Math.pow(0.48, gat);
-    if (isMoveSuperWeapon(mSlot)) hexCdMul *= 0.82;
+    if (gat > 0) hexCdMul *= Math.pow(0.72, gat);
+    if (isMoveSuperWeapon(mSlot)) hexCdMul *= 0.88;
   }
   if (RUN && attackerStats === RUN.stats) {
-    if (RUN.hexes && RUN.hexes.berserker_drive) hexCdMul *= Math.pow(0.82, RUN.hexes.berserker_drive);
-    if (RUN.hexes && RUN.hexes.silver_haste) hexCdMul *= Math.pow(0.86, RUN.hexes.silver_haste);
-    if (RUN.ultActive) hexCdMul *= 0.65; // Ultimate Awakening Burst gives +35% faster skill fire rate!
+    if (RUN.hexes) {
+      if (RUN.hexes.sv_haste) hexCdMul *= Math.pow(0.94, Math.min(4, RUN.hexes.sv_haste));
+      if (RUN.hexes.berserker_drive) hexCdMul *= Math.pow(0.90, RUN.hexes.berserker_drive);
+      if (RUN.hexes.gd_heavy_ord) hexCdMul *= 1.05;
+      if (RUN.hexes.gd_swift_exec && mSlot && mSlot !== RUN.moves[0]) hexCdMul *= 0.84;
+    }
+    // Starter Innate Cooldown Traits
+    if (RUN.baseId === 252 && (m.pat === "iaijutsu_slash" || m.t === "grass")) hexCdMul *= 0.85;
+    if (RUN.baseId === 255) hexCdMul *= (1 - Math.min(0.18, (RUN.torchicCombo || 0) * 0.01));
+    if (RUN.baseId === 912 && (RUN.quaxlyDanceT || 0) > 0) hexCdMul *= 0.82;
+    if (RUN.ultActive) hexCdMul *= 0.74;
   }
-  return Math.max(0.24, baseCd * speFactor * clawBonus * hexCdMul);
+  // Strict minimum cooldown floor (0.38s) so no move ever turns into an infinite laggy laser hose!
+  return Math.max(0.38, baseCd * speFactor * clawBonus * hexCdMul);
 }
 
-function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, defenderStats, aoeScale = 1.0, heldItems = null, mSlot = null) {
+function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, defenderStats, aoeScale = 1.0, heldItems = null, mSlot = null, targetEnemy = null) {
   const m = MOVES_DB[moveId];
   if (!m) return { dmg: 5, eff: 1.0, isCrit: false, stab: 1.0 };
 
@@ -689,41 +709,106 @@ function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, d
 
   const isPlayerAtk = (RUN && attackerStats === RUN.stats);
   const isTera = isPlayerAtk && RUN.ultActive && RUN.awakening && RUN.awakening.kind === "tera";
-  const stab = attackerStats.types.includes(m.t) ? (isTera ? 2.1 : 1.5) : 1.0;
-  const awkMul = (isPlayerAtk && RUN.ultActive) ? 1.45 : 1.0;
+  // Froakie (656 Protean) & Scorbunny (813 Libero) innate: ALL moves get STAB 1.5x!
+  const hasProtean = isPlayerAtk && (RUN.baseId === 656 || RUN.baseId === 813);
+  const stab = (hasProtean || attackerStats.types.includes(m.t)) ? (isTera ? 2.0 : 1.5) : 1.0;
+  const awkMul = (isPlayerAtk && RUN.ultActive) ? 1.32 : 1.0;
 
   let eff = getTypeEffectiveness(m.t, defenderStats.types);
   if (eff >= 1.9 && heldItems && heldItems.expert_belt) {
-    eff *= (1 + 0.25 * heldItems.expert_belt);
+    eff *= (1 + 0.20 * Math.min(3, heldItems.expert_belt));
   }
 
-  let extraCrit = heldItems && heldItems.scope_lens ? heldItems.scope_lens * 12 : 0;
+  let extraCrit = heldItems && heldItems.scope_lens ? Math.min(3, heldItems.scope_lens) * 10 : 0;
   let critDmgMul = 1.5;
-  if (isPlayerAtk && RUN.hexes && RUN.hexes.jeweled_gauntlet) {
-    extraCrit += 30 * RUN.hexes.jeweled_gauntlet;
-    critDmgMul = 2.15;
+
+  if (mSlot) {
+    extraCrit += hasMoveMod(mSlot, "s_crit") * 9;
+    critDmgMul += hasMoveMod(mSlot, "s_crit") * 0.15;
   }
-  const isCrit = Math.random() * 100 < ((m.cr || 8) + extraCrit);
+  if (isPlayerAtk && RUN.hexes) {
+    if (RUN.hexes.sv_crit_rate) extraCrit += RUN.hexes.sv_crit_rate * 6;
+    if (RUN.hexes.sv_crit_dmg) critDmgMul += RUN.hexes.sv_crit_dmg * 0.18;
+    if (RUN.hexes.jeweled_gauntlet) {
+      extraCrit += 20;
+      critDmgMul += 0.35;
+    }
+  }
+  // Starter Innate Crit Traits
+  if (isPlayerAtk) {
+    if (RUN.baseId === 4 && (m.t === "fire" || m.t === "dragon")) {
+      extraCrit += 10;
+      if (targetEnemy && targetEnemy.burnT > 0) critDmgMul += 0.25;
+    }
+    if (RUN.baseId === 255) extraCrit += 12;
+    if (RUN.baseId === 501) critDmgMul += 0.25;
+    if (RUN.baseId === 816) { extraCrit += 15; critDmgMul += 0.40; }
+    if (RUN.baseId === 906) extraCrit += 14;
+  }
+
+  const isCrit = Math.random() * 100 < ((m.cr || 6) + extraCrit);
   const critMul = isCrit ? critDmgMul : 1.0;
 
   let modDmgMul = 1.0;
   if (mSlot) {
-    modDmgMul *= (1 + mSlot.mods.length * 0.14);
-    if (hasMoveMod(mSlot, "colossal") > 0) modDmgMul *= 1.18;
-    if (hasMoveMod(mSlot, "reaper") > 0) modDmgMul *= 1.35;
-    if (isMoveSuperWeapon(mSlot)) modDmgMul *= 1.32; // ★ Super Weapon 3-socket completion spike!
-  }
-  if (isPlayerAtk && RUN.hexes && RUN.hexes.berserker_drive) {
-    const missingPct = Math.max(0, (1 - RUN.hp / Math.max(1, RUN.maxHp)) * 10);
-    modDmgMul *= (1 + missingPct * 0.08 * RUN.hexes.berserker_drive);
-  }
-  if (!isPlayerAtk && RUN && RUN.hexes && RUN.hexes.trainer_resonance) {
-    modDmgMul *= (1 + 0.40 * RUN.hexes.trainer_resonance);
+    modDmgMul *= (1 + mSlot.mods.length * 0.08);
+    if (hasMoveMod(mSlot, "s_power") > 0) modDmgMul *= (1 + 0.14 * hasMoveMod(mSlot, "s_power"));
+    if (hasMoveMod(mSlot, "colossal") > 0) modDmgMul *= (1 + 0.18 * hasMoveMod(mSlot, "colossal"));
+    if (hasMoveMod(mSlot, "reaper") > 0) modDmgMul *= 1.25;
+    if (targetEnemy && hasMoveMod(mSlot, "s_exec") > 0 && targetEnemy.hp <= targetEnemy.maxHp * 0.4) {
+      modDmgMul *= (1 + 0.22 * hasMoveMod(mSlot, "s_exec"));
+    }
+    if (targetEnemy && (targetEnemy.isElite || targetEnemy.isBoss) && hasMoveMod(mSlot, "s_boss") > 0) {
+      modDmgMul *= (1 + 0.20 * hasMoveMod(mSlot, "s_boss"));
+    }
+    if (isMoveSuperWeapon(mSlot)) modDmgMul *= 1.22; // Balanced 22% Super-Weapon completion bonus
   }
 
-  const randVar = 0.92 + Math.random() * 0.14;
+  if (isPlayerAtk && RUN.hexes) {
+    if (RUN.hexes.berserker_drive) {
+      const missingPct = Math.max(0, (1 - RUN.hp / Math.max(1, RUN.maxHp)) * 10);
+      modDmgMul *= (1 + missingPct * 0.06 * RUN.hexes.berserker_drive);
+    }
+    if (RUN.hexes.gd_heavy_ord) modDmgMul *= (1 + 0.22 * RUN.hexes.gd_heavy_ord);
+    if (RUN.hexes.sv_boss_hunt && targetEnemy && (targetEnemy.isElite || targetEnemy.isBoss)) {
+      modDmgMul *= (1 + 0.14 * RUN.hexes.sv_boss_hunt);
+    }
+    if (RUN.hexes.sv_fire_zeal && RUN.hp <= RUN.maxHp * 0.75 && (m.t === "fire" || m.t === "fighting")) {
+      modDmgMul *= (1 + 0.16 * RUN.hexes.sv_fire_zeal);
+    }
+    if (RUN.hexes.sv_water_tide && targetEnemy && targetEnemy.slowT > 0) {
+      modDmgMul *= (1 + 0.16 * RUN.hexes.sv_water_tide);
+    }
+    if (RUN.hexes.sv_water_shell) {
+      const armorScale = Math.floor((RUN.stats.def + RUN.stats.spd) / 60) * 0.04;
+      modDmgMul *= (1 + Math.min(0.24, armorScale));
+    }
+  }
+
+  // Starter Innate Damage Traits
+  if (isPlayerAtk && RUN) {
+    if (RUN.baseId === 158 && (m.pat === "crunch_fangs" || m.pat === "iaijutsu_slash")) modDmgMul *= 1.22;
+    if (RUN.baseId === 258 && targetEnemy && targetEnemy.slowT > 0) modDmgMul *= 1.20;
+    if (RUN.baseId === 498) {
+      const miss = Math.max(0, (1 - RUN.hp / Math.max(1, RUN.maxHp)) * 10);
+      modDmgMul *= (1 + miss * 0.06);
+    }
+    if (RUN.baseId === 722 && targetEnemy && Math.hypot(targetEnemy.x - RUN.x, targetEnemy.y - RUN.y) >= 135) modDmgMul *= 1.25;
+    if (RUN.baseId === 725 && (m.t === "fire" || m.t === "dark")) modDmgMul *= 1.22;
+    if (RUN.baseId === 810 && m.t === "grass") modDmgMul *= 1.18;
+  }
+
+  if (!isPlayerAtk && RUN && RUN.hexes) {
+    if (RUN.hexes.sv_comp_train) modDmgMul *= (1 + 0.10 * RUN.hexes.sv_comp_train);
+    if (RUN.hexes.gd_companion) modDmgMul *= (1 + 0.25 * RUN.hexes.gd_companion);
+  }
+
+  const randVar = 0.93 + Math.random() * 0.12;
   const baseDmg = (((2 * attackerLv / 5 + 2) * m.p * (A / D)) / 50 + 2);
-  const finalDmg = Math.max(1, Math.round(baseDmg * stab * eff * critMul * aoeScale * awkMul * modDmgMul * randVar));
+  let finalDmg = Math.max(1, Math.round(baseDmg * stab * eff * critMul * aoeScale * awkMul * modDmgMul * randVar));
+  if (isPlayerAtk && RUN.baseId === 390) {
+    finalDmg += Math.round(RUN.level * 1.5); // Chimchar Iron Fist flat bonus
+  }
   return { dmg: finalDmg, eff, isCrit, stab };
 }
 
@@ -1276,6 +1361,10 @@ function renderMenu() {
         <div style="font-size:10px;color:#90caf9;margin-top:2px;">升级招式：${lvMovePreview} 等 (${lsData.tmMoves.length}种专属TM)</div>
       </div>
     </div>
+    <div style="background:#192824;border:1px solid #00e676;padding:5px 8px;border-radius:5px;font-size:10px;color:#b9f6ca;">
+      🌟 <b>${(STARTER_TRAITS[curId] && STARTER_TRAITS[curId].name) || '专属本命特性'}</b>
+      <div style="color:#e8f5e9;font-size:9px;margin-top:2px;">${(STARTER_TRAITS[curId] && STARTER_TRAITS[curId].desc) || ''}</div>
+    </div>
     <div style="display:flex;align-items:center;justify-content:space-between;background:#150e20;padding:4px 8px;border-radius:5px;">
       <span style="font-size:10px;color:#cbb98b;">进化链：</span>
       <div style="display:flex;align-items:center;gap:6px;">${evoChainHtml}</div>
@@ -1530,23 +1619,24 @@ window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
 // ============================================================================
-// Start Run, HUD, Hex Augment Draft, Evolution Binding & Timed Ultimate Awakening
+// Start Run, HUD, Strict 88/10/2 Hex Draft, Vampire Survivors XP & Scarcity
 // ============================================================================
 const ALL_BOSS_POOL = Object.values(GEN_BOSSES).flat();
 
 function getMaxHexSocketsForStage(evoStage) {
-  // Stage 0 (Lv.1-15): 1 socket; Stage 1 (Lv.16-31): 2 sockets; Stage 2 (Lv.32+): 3 sockets (unlocks ★Super-Weapon!)
   return Math.min(3, (evoStage || 0) + 1);
 }
 
 function addUltimateCharge(amount) {
   if (!RUN || !RUN.awakening || RUN.ultActive) return;
-  const rateMul = (1 + (RUN.ultUpgrades || 0) * 0.25) * ((RUN.hexes && RUN.hexes.keystone_radar) ? 1.45 : 1.0);
+  const relicBoost = (RUN.hexes && RUN.hexes.sv_ult_charge) ? (1 + 0.18 * RUN.hexes.sv_ult_charge) : 1.0;
+  const radarBoost = (RUN.hexes && RUN.hexes.keystone_radar) ? 1.30 : 1.0;
+  const rateMul = (1 + (RUN.ultUpgrades || 0) * 0.20) * relicBoost * radarBoost;
   const oldCharge = RUN.ultCharge;
   RUN.ultCharge = Math.min(100, RUN.ultCharge + amount * rateMul);
   if (oldCharge < 100 && RUN.ultCharge >= 100) {
     sfx("chest");
-    addPopup(RUN.x, RUN.y - 54, `🌈 【${RUN.awakening.title}】充能 100% 就绪！点击右下角释放大招！`, "#00e5ff", 1.42);
+    addPopup(RUN.x, RUN.y - 52, `🌈 【${RUN.awakening.title}】充能 100% 就绪！点击右下角释放大招！`, "#00e5ff", 1.35);
     updateUltButtonHud();
   }
 }
@@ -1556,8 +1646,8 @@ function activateUltimateAwakening() {
   const awk = RUN.awakening;
   RUN.ultActive = true;
   RUN.ultCharge = 0;
-  const extraDur = (RUN.ultUpgrades || 0) * 4 + ((RUN.hexes && RUN.hexes.keystone_radar) ? 5 : 0);
-  RUN.ultMaxTimer = 18 + extraDur;
+  const extraDur = (RUN.ultUpgrades || 0) * 3 + ((RUN.hexes && RUN.hexes.keystone_radar) ? 4 : 0);
+  RUN.ultMaxTimer = 15 + extraDur;
   RUN.ultTimer = RUN.ultMaxTimer;
   RUN.preUltSpeciesId = RUN.speciesId;
   if (awk.formId) {
@@ -1567,26 +1657,25 @@ function activateUltimateAwakening() {
   const oldMax = RUN.maxHp;
   RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
   RUN.maxHp = RUN.stats.maxHp;
-  RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(35, RUN.maxHp - oldMax + Math.round(RUN.maxHp * 0.35)));
-  RUN.invulnT = 2.0;
+  RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(25, RUN.maxHp - oldMax + Math.round(RUN.maxHp * 0.25)));
+  RUN.invulnT = 1.6;
 
   sfx("chest");
   playCry(RUN.speciesId);
 
-  // Massive Ultimate Entry Shockwave!
-  RUN.zones.push({ x: RUN.x, y: RUN.y, r: 220, life: 0.65, maxLife: 0.65, color: awk.color, kind: "sky_pillar" });
-  const near = queryEnemiesInRadius(RUN.x, RUN.y, 230);
+  RUN.zones.push({ x: RUN.x, y: RUN.y, r: 165, life: 0.45, maxLife: 0.45, color: awk.color, kind: "sky_pillar" });
+  const near = queryEnemiesInRadius(RUN.x, RUN.y, 175);
   for (let i = 0; i < near.length; i++) {
     const e = near[i];
-    hitEnemyWithMove(e, RUN.level, RUN.stats, RUN.moves[0].id, 2.2, RUN.moves[0]);
+    hitEnemyWithMove(e, RUN.level, RUN.stats, RUN.moves[0].id, 1.65, RUN.moves[0]);
     if (!e.isBoss) {
       const a = Math.atan2(e.y - RUN.y, e.x - RUN.x);
-      e.x += Math.cos(a) * 140;
-      e.y += Math.sin(a) * 140;
+      e.x += Math.cos(a) * 110;
+      e.y += Math.sin(a) * 110;
     }
   }
 
-  addPopup(RUN.x, RUN.y - 68, `🌈 终极觉醒爆发：【${awk.title}】(${RUN.ultMaxTimer}秒超载)！`, awk.color, 1.55);
+  addPopup(RUN.x, RUN.y - 60, `🌈 终极觉醒：【${awk.title}】(${RUN.ultMaxTimer}秒爆发)！`, awk.color, 1.42);
   updateHudSlots();
   updateUltButtonHud();
 }
@@ -1600,7 +1689,7 @@ function deactivateUltimateAwakening() {
   RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
   RUN.maxHp = RUN.stats.maxHp;
   RUN.hp = Math.min(RUN.hp, RUN.maxHp);
-  addPopup(RUN.x, RUN.y - 46, "⚡ 超进化爆发结束，能量进入重新充能！", "#80d8ff", 1.25);
+  addPopup(RUN.x, RUN.y - 44, "⚡ 超进化结束，重新累积充能！", "#80d8ff", 1.18);
   updateHudSlots();
   updateUltButtonHud();
 }
@@ -1620,7 +1709,7 @@ function updateUltButtonHud() {
   const iconEl = document.getElementById("ult-icon");
 
   const awk = RUN.awakening;
-  iconEl.textContent = awk.kind === "gmax" ? "☁️" : (awk.kind === "tera" ? "💎" : (awk.kind === "zmove" ? "⚡" : "🧬"));
+  iconEl.textContent = awk.kind === "gmax" ? "☁️" : (awk.kind === "tera" ? "👑" : (awk.kind === "zmove" ? "💎" : "🧬"));
 
   if (RUN.ultActive) {
     btn.className = "active-burst";
@@ -1673,18 +1762,23 @@ function startRun() {
     ultCharge: 0,
     ultActive: false,
     ultTimer: 0,
-    ultMaxTimer: 18,
+    ultMaxTimer: 15,
     ultUpgrades: 0,
     awkBurstTimer: 3.5,
-    rerolls: 3,
+    rerolls: 2,
     hexes: {},
     goliathStacks: 0,
     goliathHpBonus: 0,
-    gemPulseCount: 0,
+    torchicCombo: 0,
+    fuecocoStacks: 0,
+    quaxlyDanceT: 0,
+    cyndaquilDistAcc: 0,
+    chespinShieldT: 0,
+    sigCastCount: 0,
     waveEventIdx: 0,
     level: initLv,
     xp: 0,
-    xpNeed: 36,
+    xpNeed: 18, // Lv.5 -> Lv.6 needs 18 XP (approx 15 small 1-XP gems)
     hp: initStats.maxHp,
     maxHp: initStats.maxHp,
     stats: initStats,
@@ -1709,6 +1803,7 @@ function startRun() {
     paused: false,
     over: false,
     modalOpen: false,
+    pendingLevelUp: false,
     modalQueue: [],
     moves: startMoveIds.map((id, idx) => ({
       id,
@@ -1741,12 +1836,12 @@ function startRun() {
     fieldItems: [],
     popups: [],
     spawnAcc: 0,
-    swarmTimer: 26,
-    tmSpawnAcc: 18,
-    ballSpawnAcc: 22,
-    itemSpawnAcc: 15,
-    keystoneSpawnAcc: 52, // Rare field spawn timer for Mega/Gmax Key Stone!
-    bossAcc: 30,
+    swarmTimer: 35,
+    tmSpawnAcc: 48,       // Scarce TM spawns (every ~55s instead of 18s!)
+    ballSpawnAcc: 62,     // Scarce Companion Ball spawns (every ~70s!)
+    itemSpawnAcc: 42,     // Scarce Item spawns (every ~45s!)
+    keystoneSpawnAcc: 85, // Rare Awakening Relic spawns (every ~95s!)
+    bossAcc: 45,
     activeBoss: null
   };
 
@@ -1757,7 +1852,6 @@ function startRun() {
   playCry(charId);
   nextStageBgm();
 
-  // Pre-warm initial wild & starter sprites
   for (let i = 0; i < Math.min(28, wildPool.length); i++) {
     getImg(`./assets/pmd/${wildPool[i]}.png`);
   }
@@ -1765,9 +1859,7 @@ function startRun() {
     getImg(`./assets/pmd/${cid}.png`);
   }
 
-  for (let i = 0; i < 9; i++) spawnEnemy(false);
-  spawnFieldTM(true);
-  spawnCompanionBall(true);
+  for (let i = 0; i < 8; i++) spawnEnemy(false);
 }
 
 function updateHudSlots() {
@@ -1828,7 +1920,8 @@ function updateHudSlots() {
 
   const hexBar = document.getElementById("hud-hex-bar");
   if (hexBar) {
-    let badges = "";
+    const trait = STARTER_TRAITS[RUN.baseId];
+    let badges = trait ? `<span class="hex-badge" style="border-color:#00e676;color:#b9f6ca;">🌟${trait.name.slice(1, 5)}</span>` : "";
     for (const [hid, cnt] of Object.entries(RUN.hexes)) {
       const def = GLOBAL_HEX_POOL.find(x => x.id === hid);
       if (!def) continue;
@@ -1872,16 +1965,20 @@ function closeCurrentModal() {
 }
 
 // ============================================================================
-// LoL Arena (Hextech Mayhem) Augment Generator & Draft Modal with Reroll Dice!
+// Strict 10-Silver-to-1-Gold/Prismatic Rarity Distribution!
+// ~88% Silver (🥈) / ~10% Gold (🥇) / ~2% Prismatic (💎)
 // ============================================================================
 function rollHexTier() {
   const r = Math.random();
   if (!RUN || RUN.evoStage === 0) {
-    return r < 0.08 ? "prismatic" : (r < 0.38 ? "gold" : "silver");
+    // Stage 1: 91% Silver, 8% Gold, 1% Prismatic
+    return r < 0.010 ? "prismatic" : (r < 0.090 ? "gold" : "silver");
   } else if (RUN.evoStage === 1) {
-    return r < 0.20 ? "prismatic" : (r < 0.65 ? "gold" : "silver");
+    // Stage 2: 88% Silver, 10% Gold, 2% Prismatic
+    return r < 0.020 ? "prismatic" : (r < 0.120 ? "gold" : "silver");
   } else {
-    return r < 0.36 ? "prismatic" : (r < 0.82 ? "gold" : "silver");
+    // Stage 3 Final: 85% Silver, 12% Gold, 3% Prismatic
+    return r < 0.030 ? "prismatic" : (r < 0.150 ? "gold" : "silver");
   }
 }
 
@@ -1889,14 +1986,15 @@ function generateSingleHexChoice(excludeKeys = new Set()) {
   if (!RUN) return null;
   const tier = rollHexTier();
   const maxSockets = getMaxHexSocketsForStage(RUN.evoStage);
+  const starterElem = getStarterPrimaryElement(RUN.baseId);
   const candidates = [];
 
-  // 1. Move-Specific Socket Augments (Strongly bound to your 4 active moves!)
+  // 1. Move-Specific Socket Augments (Matches rolled tier!)
   for (let sIdx = 0; sIdx < RUN.moves.length; sIdx++) {
     const mSlot = RUN.moves[sIdx];
     if (!mSlot || mSlot.mods.length >= maxSockets) continue;
     const m = MOVES_DB[mSlot.id];
-    const modPool = MOVE_HEX_MODS.filter(mod => mod.tier === tier || (tier === "prismatic" && mod.tier === "gold"));
+    const modPool = MOVE_HEX_MODS.filter(mod => mod.tier === tier);
     for (const mod of modPool) {
       const key = `move_${sIdx}_${mod.id}`;
       if (excludeKeys.has(key)) continue;
@@ -1908,15 +2006,15 @@ function generateSingleHexChoice(excludeKeys = new Set()) {
         slotIdx: sIdx,
         modId: mod.id,
         icon: mod.icon,
-        title: `${willBeSuper ? '★合成超武 · ' : ''}【${m.n}】嵌槽：${mod.name}`,
+        title: `${willBeSuper ? '★超武进阶 · ' : ''}【${m.n}】${mod.name}`,
         subTag: `${sIdx === 0 ? '本命技' : '槽位' + (sIdx + 1)} (${mSlot.mods.length + 1}/${maxSockets}槽)`,
-        desc: mod.desc + (willBeSuper ? " 【★嵌满3槽：该招式将觉醒为超武形态，伤害与规模暴涨！】" : "")
+        desc: mod.desc + (willBeSuper ? " 【★满3槽：该招式将合成为超武形态，获得+22%伤害与专属弹道强化！】" : "")
       });
     }
   }
 
-  // 2. New Legitimate Move Unlocks (If player has < 4 moves, allow drafting a new move + free Hex!)
-  if (RUN.moves.length < 4) {
+  // 2. New Legitimate Move Unlocks (If player has < 4 moves & rolled Gold/Silver)
+  if (RUN.moves.length < 4 && (tier === "gold" || Math.random() < 0.25)) {
     const lsData = STARTER_LEARNSETS[RUN.baseId];
     const ownedIds = new Set(RUN.moves.map(x => x.id));
     const pool = [...lsData.levelMoves.map(x => x[0]), ...lsData.tmMoves].filter(id => !ownedIds.has(id) && MOVES_DB[id]);
@@ -1928,25 +2026,27 @@ function generateSingleHexChoice(excludeKeys = new Set()) {
         candidates.push({
           key,
           kind: "learn_move",
-          tier: "gold",
+          tier: "silver",
           moveId: pickMid,
           icon: "💿",
           title: `领悟新招式：【${m.n}】(第 ${RUN.moves.length + 1}/4 槽)`,
           subTag: `${TYPE_ZH[m.t]}·威力${m.p}`,
-          desc: `${m.mn} — 立即习得该招式并自动附赠 1 个初始海克斯词条！`
+          desc: `${m.mn}`
         });
       }
     }
   }
 
-  // 3. Global Hextech Mayhem Rules
-  const globalPool = GLOBAL_HEX_POOL.filter(g => g.tier === tier || (candidates.length === 0));
+  // 3. Global & Element-Archetype Exclusive Hextech Pool (Filtered by `g.req === "all" || g.req === starterElem`!)
+  const globalPool = GLOBAL_HEX_POOL.filter(
+    g => (g.tier === tier) && (g.req === "all" || g.req === starterElem)
+  );
   for (const g of globalPool) {
     const key = `global_${g.id}`;
     if (excludeKeys.has(key)) continue;
     const curStacks = (RUN.hexes && RUN.hexes[g.id]) || 0;
-    if ((g.id === "pandora_tm" || g.id === "transmute_prismatic") && curStacks >= 1) continue;
-    if (curStacks >= 3) continue;
+    const maxStacks = g.tier === "prismatic" ? 1 : (g.tier === "gold" ? 2 : 5);
+    if (curStacks >= maxStacks) continue;
     candidates.push({
       key,
       kind: "global_hex",
@@ -1954,13 +2054,14 @@ function generateSingleHexChoice(excludeKeys = new Set()) {
       hexId: g.id,
       icon: g.icon,
       title: g.name,
-      subTag: curStacks > 0 ? `可叠加 (当前${curStacks}层)` : "全局海克斯法则",
+      subTag: g.req !== "all" ? `★${TYPE_ZH[starterElem]}系专属流派` : (curStacks > 0 ? `已叠${curStacks}/${maxStacks}层` : "通用海克斯"),
       desc: g.desc
     });
   }
 
   if (candidates.length === 0) {
-    const fb = GLOBAL_HEX_POOL[Math.floor(Math.random() * GLOBAL_HEX_POOL.length)];
+    const svPool = GLOBAL_HEX_POOL.filter(g => g.tier === "silver" && (g.req === "all" || g.req === starterElem));
+    const fb = svPool[Math.floor(Math.random() * svPool.length)] || GLOBAL_HEX_POOL[0];
     return {
       key: `global_${fb.id}_${Math.random()}`,
       kind: "global_hex",
@@ -1968,7 +2069,7 @@ function generateSingleHexChoice(excludeKeys = new Set()) {
       hexId: fb.id,
       icon: fb.icon,
       title: fb.name,
-      subTag: "全局海克斯法则",
+      subTag: "通用海克斯",
       desc: fb.desc
     };
   }
@@ -1986,43 +2087,39 @@ function applyHexChoice(c) {
       const m = MOVES_DB[slot.id];
       const modDef = MOVE_HEX_MODS.find(x => x.id === c.modId);
       if (isMoveSuperWeapon(slot)) {
-        addPopup(RUN.x, RUN.y - 58, `★ 超武合成！【${m.n}】嵌满 3 海克斯觉醒为终极超武！`, "#00e5ff", 1.50);
+        addPopup(RUN.x, RUN.y - 54, `★ 超武合成！【${m.n}】嵌满 3 海克斯进阶为超武！`, "#00e5ff", 1.38);
       } else {
-        addPopup(RUN.x, RUN.y - 45, `⚡ 【${m.n}】嵌入海克斯：${modDef ? modDef.name : c.modId}！`, "#ffe066", 1.28);
+        addPopup(RUN.x, RUN.y - 42, `⚡ 【${m.n}】嵌入：${modDef ? modDef.name : c.modId}！`, "#ffe066", 1.20);
       }
     }
   } else if (c.kind === "learn_move") {
-    const starterMod = MOVE_HEX_MODS[Math.floor(Math.random() * 3)].id;
-    RUN.moves.push({ id: c.moveId, timer: 0.15, isSignature: false, mods: [starterMod] });
+    RUN.moves.push({ id: c.moveId, timer: 0.15, isSignature: false, mods: [] });
     RUN.learnedHistory.add(c.moveId);
-    addPopup(RUN.x, RUN.y - 45, `💿 习得【${MOVES_DB[c.moveId].n}】并激活初始海克斯！`, "#00e5ff", 1.32);
+    addPopup(RUN.x, RUN.y - 42, `💿 习得新招式【${MOVES_DB[c.moveId].n}】！`, "#ffe066", 1.25);
   } else if (c.kind === "global_hex") {
-    if (c.hexId === "transmute_prismatic") {
-      const prisPool = GLOBAL_HEX_POOL.filter(x => x.tier === "prismatic" && x.id !== "pandora_tm");
-      const pick = prisPool[Math.floor(Math.random() * prisPool.length)];
-      RUN.hexes[pick.id] = (RUN.hexes[pick.id] || 0) + 1;
-      RUN.rerolls = (RUN.rerolls || 0) + 2;
-      addPopup(RUN.x, RUN.y - 56, `💎 质变成功！获得棱彩【${pick.name}】+2骰子！`, "#00e5ff", 1.48);
-    } else if (c.hexId === "pandora_tm") {
+    if (c.hexId === "pandora_tm") {
       RUN.hexes.pandora_tm = 1;
-      const maxSockets = getMaxHexSocketsForStage(RUN.evoStage);
+      RUN.rerolls = (RUN.rerolls || 0) + 2;
       for (let i = 1; i < RUN.moves.length; i++) {
         const randLeg = LEGENDARY_MOVES_POOL[Math.floor(Math.random() * LEGENDARY_MOVES_POOL.length)];
         RUN.moves[i].id = randLeg;
-        if (RUN.moves[i].mods.length < maxSockets) {
-          const rMod = MOVE_HEX_MODS[Math.floor(Math.random() * MOVE_HEX_MODS.length)].id;
-          RUN.moves[i].mods.push(rMod);
-        }
       }
-      addPopup(RUN.x, RUN.y - 56, `🎲 潘多拉技能机触发！全身招式蜕变为神兽禁术！`, "#e040fb", 1.50);
+      addPopup(RUN.x, RUN.y - 52, `🎲 潘多拉秘传触发！副槽招式重随为传说招式！`, "#e040fb", 1.38);
     } else {
       RUN.hexes[c.hexId] = (RUN.hexes[c.hexId] || 0) + 1;
-      if (c.hexId === "silver_dice") {
-        RUN.rerolls = (RUN.rerolls || 0) + 4;
+      if (c.hexId === "sv_dice_bag") {
+        RUN.rerolls = (RUN.rerolls || 0) + 2;
+      } else if (c.hexId === "sv_vitality") {
+        RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.round(RUN.maxHp * 0.20));
       } else if (c.hexId === "keystone_radar") {
-        spawnAwakeningRelicItem(RUN.x + 36, RUN.y);
+        spawnAwakeningRelicItem(RUN.x + 42, RUN.y);
+      } else if (c.hexId === "gd_companion") {
+        spawnCompanionBall(true, RUN.x - 42, RUN.y);
+        for (const comp of RUN.companions) {
+          gainCompanionXp(comp, comp.xpNeed * 2);
+        }
       }
-      addPopup(RUN.x, RUN.y - 48, `✨ 激活海克斯：【${c.title}】！`, c.tier === "prismatic" ? "#00e5ff" : "#ffe066", 1.35);
+      addPopup(RUN.x, RUN.y - 44, `✨ 激活海克斯：【${c.title}】！`, c.tier === "prismatic" ? "#00e5ff" : "#ffe066", 1.25);
     }
   }
 
@@ -2034,7 +2131,7 @@ function applyHexChoice(c) {
   updateUltButtonHud();
 }
 
-function triggerHexAugmentDraft(sourceTitle = "⚡ 升级！选择你的海克斯强化") {
+function triggerHexAugmentDraft(sourceTitle = "⚡ 升级奖励：选择 1 项海克斯强化") {
   if (!RUN) return;
   enqueueModal(() => {
     const ov = document.getElementById("modal-ov");
@@ -2051,10 +2148,11 @@ function triggerHexAugmentDraft(sourceTitle = "⚡ 升级！选择你的海克�
 
     function renderDraftCards() {
       const maxSockets = getMaxHexSocketsForStage(RUN.evoStage);
+      const trait = STARTER_TRAITS[RUN.baseId];
       let cardsHtml = "";
       cards.forEach((c, idx) => {
         const tierClass = c.tier === "prismatic" ? "hex-prismatic" : (c.tier === "gold" ? "hex-gold" : "hex-silver");
-        const tierBadge = c.tier === "prismatic" ? "💎棱彩阶" : (c.tier === "gold" ? "🥇黄金阶" : "🥈白银阶");
+        const tierBadge = c.tier === "prismatic" ? "💎棱彩(2%)" : (c.tier === "gold" ? "🥇黄金(10%)" : "🥈白银");
         const tierCol = c.tier === "prismatic" ? "#00e5ff" : (c.tier === "gold" ? "#ffd54f" : "#cfd8dc");
         cardsHtml += `
           <div style="display:flex;gap:6px;align-items:stretch;margin-top:7px;">
@@ -2077,9 +2175,9 @@ function triggerHexAugmentDraft(sourceTitle = "⚡ 升级！选择你的海克�
 
       box.innerHTML = `
         <div style="text-align:center;margin-bottom:6px;">
-          <div style="font-size:17px;font-weight:900;color:#00e5ff;text-shadow:0 0 8px rgba(0,229,255,0.5);">${sourceTitle}</div>
-          <div style="font-size:10px;color:#cbb98b;margin-top:2px;">
-            当前形态：<b>${POKEMON_ZH[RUN.speciesId]}</b> (单招式上限 <b>${maxSockets}</b> 嵌槽 · 3槽合成★超武) · 剩余骰子：<b style="color:#80d8ff;">🎲${RUN.rerolls}</b>
+          <div style="font-size:16px;font-weight:900;color:#ffe066;">${sourceTitle}</div>
+          <div style="font-size:10px;color:#b9f6ca;margin-top:2px;">
+            ${trait ? trait.name : ''} · 单招式上限 <b>${maxSockets}</b> 嵌槽 · 剩余骰子：<b style="color:#80d8ff;">🎲${RUN.rerolls}</b>
           </div>
         </div>
         <div>${cardsHtml}</div>
@@ -2255,7 +2353,7 @@ function triggerAwakeningModal(pickedRelicType = null) {
 }
 
 function spawnFieldTM(nearPlayer = false) {
-  if (!RUN || RUN.fieldTMs.length >= 5) return;
+  if (!RUN || RUN.fieldTMs.length >= 2) return;
   const lsData = STARTER_LEARNSETS[RUN.baseId];
   const ownedIds = new Set(RUN.moves.map(m => m.id));
   const groundIds = new Set(RUN.fieldTMs.map(t => t.moveId));
@@ -2272,7 +2370,7 @@ function spawnFieldTM(nearPlayer = false) {
 }
 
 function spawnCompanionBall(nearPlayer = false, customX = null, customY = null) {
-  if (!RUN || RUN.fieldBalls.length >= 4) return;
+  if (!RUN || RUN.fieldBalls.length >= 2) return;
   const ang = Math.random() * Math.PI * 2;
   const dist = nearPlayer ? 125 : (185 + Math.random() * 140);
   RUN.fieldBalls.push({
@@ -2282,14 +2380,14 @@ function spawnCompanionBall(nearPlayer = false, customX = null, customY = null) 
 }
 
 function spawnFieldItem(nearPlayer = false, forceCategory = null, customX = null, customY = null) {
-  if (!RUN || RUN.fieldItems.length >= 8) return;
+  if (!RUN || RUN.fieldItems.length >= 4) return;
   const ang = Math.random() * Math.PI * 2;
   const dist = nearPlayer ? 105 : (155 + Math.random() * 130);
   const x = customX !== null ? customX : RUN.x + Math.cos(ang) * dist;
   const y = customY !== null ? customY : RUN.y + Math.sin(ang) * dist;
 
-  // Low rare chance (~5.5%) for a regular item spawn after Lv.12 to be a Key Stone!
-  if (!forceCategory && RUN.level >= 12 && Math.random() < 0.055) {
+  // Rare 2.2% chance after Lv.15 for a field item to be an Awakening Relic!
+  if (!forceCategory && RUN.level >= 15 && Math.random() < 0.022) {
     spawnAwakeningRelicItem(x, y);
     return;
   }
@@ -2599,17 +2697,26 @@ function triggerCompanionBallModal() {
 }
 
 // ============================================================================
-// Player Level-Up -> Tight Evolution-Skill Binding + Hextech Draft!
+// Vampire Survivors Steep Marginal XP Curve & Evolution-Skill Binding!
+// Early levels require 18->28->40 XP, while later levels scale steeply with
+// `level^2.15` so picking up a high-tier XP gem NEVER causes infinite level-up spam!
 // ============================================================================
+function computeNextLevelXpNeed(lv) {
+  // Lv.5: 18 XP | Lv.10: 58 XP | Lv.16: 145 XP | Lv.25: 385 XP | Lv.35: 840 XP | Lv.45: 1580 XP
+  const d = Math.max(1, lv - 4);
+  return Math.round(14 + d * 7 + Math.pow(d, 2.12) * 1.35);
+}
+
 function triggerPlayerLevelUp() {
+  if (!RUN) return;
+  RUN.xp = Math.max(0, RUN.xp - RUN.xpNeed);
   RUN.level++;
   if (RUN.level > (SAVE.maxLevel || 0)) {
     SAVE.maxLevel = RUN.level;
     writeSave();
   }
-  RUN.xp = Math.max(0, RUN.xp - RUN.xpNeed);
-  RUN.xpNeed = Math.round(22 + RUN.level * 10 + Math.pow(RUN.level, 1.32) * 3.2);
-  if (RUN.level % 5 === 0) {
+  RUN.xpNeed = computeNextLevelXpNeed(RUN.level);
+  if (RUN.level % 6 === 0) {
     RUN.rerolls = (RUN.rerolls || 0) + 1;
   }
   sfx("level");
@@ -2631,24 +2738,19 @@ function triggerPlayerLevelUp() {
       }
       playCry(lsData.chain[newStage]);
 
-      // Evolve Slot-0 Signature Move automatically & grant a free Hex socket!
       const newSigMoveId = sigChain[newStage];
       const oldSigName = MOVES_DB[RUN.moves[0].id]?.n || "招式";
       RUN.moves[0].id = newSigMoveId;
       const newSigName = MOVES_DB[newSigMoveId]?.n || "奥义";
       const maxS = getMaxHexSocketsForStage(RUN.evoStage);
-      if (RUN.moves[0].mods.length < maxS) {
-        const freeMod = MOVE_HEX_MODS[newStage === 2 ? 6 : 3]; // Gold/Prismatic mod on evolution!
-        RUN.moves[0].mods.push(freeMod.id);
-      }
 
-      RUN.zones.push({ x: RUN.x, y: RUN.y, r: 175, life: 0.55, maxLife: 0.55, color: "#00e5ff", kind: "sky_pillar" });
+      RUN.zones.push({ x: RUN.x, y: RUN.y, r: 145, life: 0.42, maxLife: 0.42, color: "#00e5ff", kind: "sky_pillar" });
       addPopup(
         RUN.x,
-        RUN.y - 60,
-        `🌟 进化【${POKEMON_ZH[lsData.chain[newStage]]}】！本命技蜕变【${oldSigName}➔${newSigName}】& 解锁第${maxS}海克斯槽！`,
+        RUN.y - 54,
+        `🌟 进化【${POKEMON_ZH[lsData.chain[newStage]]}】！本命技蜕变【${oldSigName}➔${newSigName}】& 解锁第${maxS}嵌槽！`,
         "#00e5ff",
-        1.52
+        1.38
       );
     }
   }
@@ -2656,25 +2758,25 @@ function triggerPlayerLevelUp() {
   const oldMaxHp = RUN.maxHp;
   RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
   RUN.maxHp = RUN.stats.maxHp;
-  RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(10, RUN.maxHp - oldMaxHp + 8));
+  RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(6, RUN.maxHp - oldMaxHp + 5));
   updateHudSlots();
 
-  // Every single level-up triggers the LoL Arena Hextech Augment 3-Card Draft!
   const draftTitle = evolvedNow
-    ? `🌟 形态进化突破！选择【${POKEMON_ZH[lsData.chain[RUN.evoStage]]}】的觉醒海克斯`
-    : `⚡ Lv.${RUN.level} 升级！海克斯强化三选一`;
+    ? `🌟 形态进化突破！选择【${POKEMON_ZH[lsData.chain[RUN.evoStage]]}】的海克斯强化`
+    : `⚡ Lv.${RUN.level} 升级！选择 1 项海克斯强化`;
   triggerHexAugmentDraft(draftTitle);
 }
 
 // ============================================================================
-// Execute 23 Move Archetypes — Enhanced with Socketed Hex Modifiers & Super-Weapons!
+// Execute 23 Move Archetypes — Crisp, Clean Geometry & Starter Trait Hooks!
 // ============================================================================
 function executeUnitMove(unit, moveId, isBonusCast = false, mSlotOverride = null) {
   if (!RUN) return;
-  if (RUN.projectiles.length > 140) RUN.projectiles.length = 140;
-  if (RUN.slashes.length > 85) RUN.slashes.length = 85;
-  if (RUN.zones.length > 55) RUN.zones.length = 55;
-  if (RUN.lightnings.length > 45) RUN.lightnings.length = 45;
+  if (RUN.projectiles.length > 110) RUN.projectiles.length = 110;
+  if (RUN.slashes.length > 65) RUN.slashes.length = 65;
+  if (RUN.zones.length > 42) RUN.zones.length = 42;
+  if (RUN.lightnings.length > 35) RUN.lightnings.length = 35;
+
   const m = MOVES_DB[moveId];
   if (!m) return;
   const isComp = !unit.isPlayerUnit;
@@ -2682,7 +2784,6 @@ function executeUnitMove(unit, moveId, isBonusCast = false, mSlotOverride = null
   const isSuper = isMoveSuperWeapon(mSlot);
 
   let col = TYPE_META[m.t]?.color || "#ffffff";
-  // Mega Charizard X turns fire moves into blue-purple dragon flames!
   if (!isComp && RUN.ultActive && RUN.awakening && RUN.awakening.formId === 10006 && m.t === "fire") {
     col = "#00e5ff";
   } else if (isSuper) {
@@ -2690,111 +2791,139 @@ function executeUnitMove(unit, moveId, isBonusCast = false, mSlotOverride = null
   }
 
   const pat = m.pat;
-  const goliathScale = (!isComp && RUN.goliathStacks) ? Math.min(0.75, RUN.goliathStacks * 0.022) : 0;
+  // Compact, controlled visual scaling so skills NEVER obscure the screen!
+  const goliathScale = (!isComp && RUN.goliathStacks) ? Math.min(0.24, RUN.goliathStacks * 0.012) : 0;
+  const areaHexScale = (!isComp && RUN.hexes && RUN.hexes.sv_area) ? Math.min(0.32, RUN.hexes.sv_area * 0.08) : 0;
+  const chikoAura = (!isComp && RUN.baseId === 152) ? 0.18 : 0;
+  const sAreaCnt = hasMoveMod(mSlot, "s_area");
   const colossalCnt = hasMoveMod(mSlot, "colossal");
   const multiCnt = hasMoveMod(mSlot, "multishot");
   const bounceCnt = hasMoveMod(mSlot, "bounce");
+  const pierceCnt = hasMoveMod(mSlot, "s_pierce") + ((!isComp && RUN.hexes && RUN.hexes.sv_water_mist) ? 1 : 0);
   const aftershockCnt = hasMoveMod(mSlot, "aftershock");
   const singCnt = hasMoveMod(mSlot, "singularity");
   const novaCnt = hasMoveMod(mSlot, "supernova");
-  const spdMul = 1 + hasMoveMod(mSlot, "overclock") * 0.35;
+  const spdMul = 1 + hasMoveMod(mSlot, "s_speed") * 0.20 + ((!isComp && RUN.hexes && RUN.hexes.sv_proj_spd) ? RUN.hexes.sv_proj_spd * 0.12 : 0);
 
-  const scale = (isComp ? 0.88 : (1.08 + goliathScale)) * (1 + colossalCnt * 0.42) * (isSuper ? 1.28 : 1.0) * (!isComp && RUN.ultActive ? 1.25 : 1.0);
-  const bonusProjectiles = multiCnt * 2 + (isSuper ? 2 : 0) + (!isComp && RUN.ultActive ? 1 : 0);
+  // Base visual scale is kept crisp (0.85~1.22 max) so the player can always see enemies and bullets clearly!
+  const scale = (isComp ? 0.76 : 0.88) * (1 + goliathScale + areaHexScale + chikoAura + sAreaCnt * 0.14 + colossalCnt * 0.22 + (isSuper ? 0.15 : 0));
+  const bonusProjectiles = multiCnt + hasMoveMod(mSlot, "gatling") + (isSuper ? 1 : 0) + (!isComp && RUN.baseId === 656 ? 1 : 0);
 
-  const target = nearestEnemy(unit.x, unit.y, 400);
+  const target = nearestEnemy(unit.x, unit.y, 380);
   const aimAng = target ? Math.atan2(target.y - unit.y, target.x - unit.x) : Math.atan2(unit.facingY || 0, unit.facingX || 1);
 
   if (isComp) {
-    unit.lungeT = 0.18;
-    unit.lungeDx = Math.cos(aimAng) * 14;
-    unit.lungeDy = Math.sin(aimAng) * 14;
-    if (Math.random() < 0.28 && unit.calloutT <= 0) {
-      unit.calloutText = `${m.n}！`;
-      unit.calloutT = 1.1;
-    }
+    unit.lungeT = 0.16;
+    unit.lungeDx = Math.cos(aimAng) * 12;
+    unit.lungeDy = Math.sin(aimAng) * 12;
   } else if (!isBonusCast) {
-    // 1. Prismatic Double Cast
-    if (RUN.hexes && RUN.hexes.double_cast) {
-      const procChance = Math.min(1.0, 0.65 + (RUN.hexes.double_cast - 1) * 0.35);
-      if (Math.random() < procChance) {
-        RUN.pendingCasts = RUN.pendingCasts || [];
-        RUN.pendingCasts.push({ delay: 0.20, moveId, mSlot });
+    // Starter Innate Cast Passives
+    if (RUN.baseId === 255) RUN.torchicCombo = Math.min(18, (RUN.torchicCombo || 0) + 1);
+    if (RUN.baseId === 909 && (m.t === "fire" || pat === "sonic_boom")) RUN.fuecocoStacks = Math.min(70, (RUN.fuecocoStacks || 0) + 1);
+
+    // Signature Slot-0 Cast Counters for Synergies
+    if (mSlot && mSlot === RUN.moves[0]) {
+      RUN.sigCastCount = (RUN.sigCastCount || 0) + 1;
+      // Popplio (728) innate: Signature move heals & buffs companions
+      if (RUN.baseId === 728 && RUN.sigCastCount % 2 === 0) {
+        RUN.hp = Math.min(RUN.maxHp, RUN.hp + 4);
+      }
+      // Gold Water Clone (Every 3rd signature cast fires rear water clone wave)
+      if (RUN.hexes && RUN.hexes.gd_water_clone && RUN.sigCastCount % 3 === 0) {
+        executeUnitMove(RUN, moveId, true, mSlot);
+      }
+      // Fennekin (653) innate: Every 4th cast fires homing fox-fire
+      if (RUN.baseId === 653 && RUN.sigCastCount % 4 === 0) {
+        for (let f = -1; f <= 1; f += 2) {
+          RUN.projectiles.push({
+            uid: allocAttackUid(), kind: "homing_star",
+            x: unit.x, y: unit.y, vx: Math.cos(aimAng + f * 0.5) * 320, vy: Math.sin(aimAng + f * 0.5) * 320,
+            r: 9, pierce: 2, homing: true, life: 1.3, color: "#ea80fc",
+            attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.65
+          });
+        }
+      }
+      // Prismatic Combo Symphony (Every 2nd signature cast triggers Slot 1)
+      if (RUN.moves[1] && RUN.hexes && RUN.hexes.combo_symphony && RUN.sigCastCount % 2 === 0) {
+        executeUnitMove(RUN, RUN.moves[1].id, true, RUN.moves[1]);
+      }
+      // Prismatic Trainer Resonance (Every 2nd signature cast makes companions fire)
+      if (RUN.hexes && RUN.hexes.trainer_resonance && RUN.sigCastCount % 2 === 0) {
+        for (let c = 0; c < RUN.companions.length; c++) {
+          executeUnitMove(RUN.companions[c], RUN.companions[c].moveId, true, null);
+        }
       }
     }
-    // 2. Prismatic Combo Symphony (Slot 0 triggers Slot 1)
-    if (mSlot && mSlot === RUN.moves[0] && RUN.moves[1] && RUN.hexes && RUN.hexes.combo_symphony) {
-      executeUnitMove(RUN, RUN.moves[1].id, true, RUN.moves[1]);
-    }
-    // 3. Prismatic Trainer Resonance (Slot 0 makes all companions fire immediately!)
-    if (mSlot && mSlot === RUN.moves[0] && RUN.hexes && RUN.hexes.trainer_resonance) {
-      for (let c = 0; c < RUN.companions.length; c++) {
-        executeUnitMove(RUN.companions[c], RUN.companions[c].moveId, true, null);
+
+    // Prismatic Double Cast (35% chance)
+    if (RUN.hexes && RUN.hexes.double_cast && Math.random() < 0.35) {
+      RUN.pendingCasts = RUN.pendingCasts || [];
+      if (RUN.pendingCasts.length < 6) {
+        RUN.pendingCasts.push({ delay: 0.24, moveId, mSlot });
       }
     }
   }
 
-  // Prismatic Supernova Mod: Radial homing star burst on cast!
+  // Prismatic Supernova Mod: 3 compact homing star bolts
   if (novaCnt > 0 && !isBonusCast) {
-    const starCount = 6;
-    for (let s = 0; s < starCount; s++) {
-      const sa = (s / starCount) * Math.PI * 2 + RUN.time;
+    for (let s = 0; s < 3; s++) {
+      const sa = aimAng + (s - 1) * 0.65;
       RUN.projectiles.push({
         uid: allocAttackUid(),
         kind: "homing_star",
         x: unit.x, y: unit.y,
-        vx: Math.cos(sa) * 360, vy: Math.sin(sa) * 360,
-        r: 12 * scale, pierce: 2 + bounceCnt, homing: true, life: 1.4, color: "#00e5ff",
-        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.62
+        vx: Math.cos(sa) * 340, vy: Math.sin(sa) * 340,
+        r: 9, pierce: 1 + pierceCnt, homing: true, life: 1.25, color: "#00e5ff",
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.50
       });
     }
   }
 
-  // Gold Aftershock Mod: Delayed secondary explosion at target!
-  if (aftershockCnt > 0) {
-    const ax = target ? target.x : unit.x + Math.cos(aimAng) * 115;
-    const ay = target ? target.y : unit.y + Math.sin(aimAng) * 115;
+  // Gold Aftershock Mod
+  if (aftershockCnt > 0 && !isBonusCast) {
+    const ax = target ? target.x : unit.x + Math.cos(aimAng) * 110;
+    const ay = target ? target.y : unit.y + Math.sin(aimAng) * 110;
     RUN.zones.push({
-      x: ax, y: ay, r: 78 * scale, life: 0.48, maxLife: 0.48, color: "#00e5ff",
+      x: ax, y: ay, r: 54 * scale, life: 0.50, maxLife: 0.50, color: "#00e5ff",
       kind: "aftershock_bomb", triggered: false,
       attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
     });
   }
 
-  // Gold Singularity Mod: Pull nearby enemies toward target point!
+  // Gold Singularity Mod
   if (singCnt > 0) {
-    const gx = target ? target.x : unit.x + Math.cos(aimAng) * 110;
-    const gy = target ? target.y : unit.y + Math.sin(aimAng) * 110;
-    const nearPull = queryEnemiesInRadius(gx, gy, 165 * scale);
+    const gx = target ? target.x : unit.x + Math.cos(aimAng) * 105;
+    const gy = target ? target.y : unit.y + Math.sin(aimAng) * 105;
+    const nearPull = queryEnemiesInRadius(gx, gy, 115 * scale);
     for (let i = 0; i < nearPull.length; i++) {
       const pe = nearPull[i];
       if (!pe.isBoss) {
-        pe.x += (gx - pe.x) * 0.38;
-        pe.y += (gy - pe.y) * 0.38;
+        pe.x += (gx - pe.x) * 0.28;
+        pe.y += (gy - pe.y) * 0.28;
       }
-      pe.slowT = Math.max(pe.slowT, 1.5);
+      pe.slowT = Math.max(pe.slowT, 1.2);
     }
   }
 
   if (pat === "vine_tether") {
-    const maxT = (m.p >= 60 ? 5 : 3) + bonusProjectiles;
-    const near = queryEnemiesInRadius(unit.x, unit.y, 235 * scale).slice(0, maxT);
+    const maxT = (m.p >= 60 ? 4 : 3) + bonusProjectiles;
+    const near = queryEnemiesInRadius(unit.x, unit.y, 210 * scale).slice(0, maxT);
     for (let i = 0; i < near.length; i++) {
       const e = near[i];
-      hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.95, mSlot);
+      hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.92, mSlot);
       e.leechT = 3.2;
-      RUN.tethers.push({ owner: unit, target: e, life: 0.65, maxLife: 0.65, color: col });
+      RUN.tethers.push({ owner: unit, target: e, life: 0.52, maxLife: 0.52, color: col });
     }
   } else if (pat === "whip_wave") {
     const baseDirs = m.p >= 85 ? 2 : 1;
-    const totalDirs = baseDirs + multiCnt + (isSuper ? 2 : 0);
+    const totalDirs = Math.min(4, baseDirs + bonusProjectiles);
     for (let dIdx = 0; dIdx < totalDirs; dIdx++) {
       const ang = aimAng + (dIdx * Math.PI * 2) / totalDirs;
       RUN.meleeSwings.push({
         uid: allocAttackUid(),
         owner: unit, kind: "whip", ang,
-        len: (m.p >= 90 ? 150 : 118) * scale, wid: 38 * scale,
-        life: 0.26, maxLife: 0.26, color: col,
+        len: (m.p >= 90 ? 128 : 102) * scale, wid: 28 * scale,
+        life: 0.22, maxLife: 0.22, color: col,
         attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
@@ -2804,64 +2933,65 @@ function executeUnitMove(unit, moveId, isBonusCast = false, mSlotOverride = null
         swapRemove(RUN.orbitals, i);
       }
     }
-    const count = (m.p >= 85 ? 6 : (m.p >= 55 ? 4 : 3)) + bonusProjectiles;
-    const radius = (m.p >= 85 ? 92 : 74) * scale;
+    const quaxlyExtra = (!isComp && RUN.baseId === 912) ? 1 : 0;
+    const count = Math.min(8, (m.p >= 85 ? 5 : 3) + bonusProjectiles + quaxlyExtra);
+    const radius = (m.p >= 85 ? 82 : 68) * scale;
     for (let i = 0; i < count; i++) {
       RUN.orbitals.push({
         uid: allocAttackUid(),
         owner: unit, moveId, mSlot,
-        ang: (i / count) * Math.PI * 2, dist: radius, r: 17 * scale,
-        speed: (m.t === "fire" ? 6.2 : 5.2) * spdMul, life: isSuper ? 3.4 : 2.5, color: col,
+        ang: (i / count) * Math.PI * 2, dist: radius, r: 12 * scale,
+        speed: (m.t === "fire" ? 5.8 : 4.8) * spdMul, life: isSuper ? 3.0 : 2.3, color: col,
         attackerLv: unit.level, attackerStats: unit.stats
       });
     }
   } else if (pat === "tidal_vortex") {
-    const count = (m.p >= 90 ? 2 : 1) + Math.ceil(bonusProjectiles * 0.5);
+    const count = Math.min(3, (m.p >= 90 ? 2 : 1) + Math.floor(bonusProjectiles * 0.5));
     for (let i = 0; i < count; i++) {
-      const ang = aimAng + (i - (count - 1) / 2) * 0.48;
+      const ang = aimAng + (i - (count - 1) / 2) * 0.45;
       RUN.vortexes.push({
-        x: unit.x + Math.cos(ang) * 45,
-        y: unit.y + Math.sin(ang) * 45,
-        vx: Math.cos(ang) * 120 * spdMul,
-        vy: Math.sin(ang) * 120 * spdMul,
-        r: (m.p >= 90 ? 70 : 56) * scale,
-        life: 2.5, maxLife: 2.5, tick: 0.05, color: col,
+        x: unit.x + Math.cos(ang) * 40,
+        y: unit.y + Math.sin(ang) * 40,
+        vx: Math.cos(ang) * 115 * spdMul,
+        vy: Math.sin(ang) * 115 * spdMul,
+        r: (m.p >= 90 ? 52 : 42) * scale,
+        life: 2.1, maxLife: 2.1, tick: 0.05, color: col,
         attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "cross_shuriken") {
-    const count = (m.h > 1 ? Math.min(4, m.h) : (m.p >= 70 ? 2 : 1)) + bonusProjectiles;
-    // Ash-Greninja Ultimate Giant Golden Shuriken!
+    const count = Math.min(6, (m.h > 1 ? Math.min(3, m.h) : (m.p >= 70 ? 2 : 1)) + bonusProjectiles);
     const isGoldenShuriken = (!isComp && RUN.ultActive && RUN.awakening && RUN.awakening.formId === 10658);
     for (let i = 0; i < count; i++) {
-      const ang = aimAng + (i - (count - 1) / 2) * 0.22;
-      const spd = 390 * spdMul;
+      const ang = aimAng + (i - (count - 1) / 2) * 0.20;
+      const spd = 380 * spdMul;
       RUN.boomerangs.push({
         uidOut: allocAttackUid(),
         uidBack: allocAttackUid(),
         owner: unit, x: unit.x, y: unit.y,
         vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
-        ax: -Math.cos(ang) * 550, ay: -Math.sin(ang) * 550,
-        r: (isGoldenShuriken ? 28 : 18) * scale, life: 1.75, age: 0,
+        ax: -Math.cos(ang) * 540, ay: -Math.sin(ang) * 540,
+        r: (isGoldenShuriken ? 19 : 13) * scale, life: 1.6, age: 0,
         color: isGoldenShuriken ? "#ffd600" : col,
         attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "flamethrower") {
-    const coneRange = (m.p >= 85 ? 205 : 165) * scale;
-    const coneHalf = 0.50 + multiCnt * 0.18 + (isSuper ? 0.25 : 0);
-    for (let k = 0; k < 20; k++) {
-      if (RUN.particles.length >= 170) break;
-      const a = aimAng + (Math.random() - 0.5) * (coneHalf * 2);
-      const spd = (230 + Math.random() * 250) * spdMul;
+    const coneRange = (m.p >= 85 ? 175 : 142) * scale;
+    const coneHalf = 0.42 + multiCnt * 0.12;
+    // Crisp, small flame particles (max 10 per burst, radius 3~5px so screen stays clean!)
+    for (let k = 0; k < 10; k++) {
+      if (RUN.particles.length >= 85) break;
+      const a = aimAng + (Math.random() - 0.5) * (coneHalf * 1.8);
+      const spd = (220 + Math.random() * 210) * spdMul;
       RUN.particles.push({
-        x: unit.x + Math.cos(a) * 14,
-        y: unit.y + Math.sin(a) * 14,
+        x: unit.x + Math.cos(a) * 12,
+        y: unit.y + Math.sin(a) * 12,
         vx: Math.cos(a) * spd,
         vy: Math.sin(a) * spd,
-        r: (6 + Math.random() * 7) * scale,
-        life: 0.36 + Math.random() * 0.18,
-        maxLife: 0.54,
+        r: (3.2 + Math.random() * 2.5) * scale,
+        life: 0.28 + Math.random() * 0.12,
+        maxLife: 0.40,
         kind: "flame"
       });
     }
@@ -2872,115 +3002,115 @@ function executeUnitMove(unit, moveId, isBonusCast = false, mSlotOverride = null
       const dy = e.y - unit.y;
       const diff = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - aimAng), Math.cos(Math.atan2(dy, dx) - aimAng)));
       if (diff <= coneHalf) {
-        hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.95, mSlot);
-        e.burnT = 3.5;
+        hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.92, mSlot);
+        e.burnT = 3.2;
       }
     }
   } else if (pat === "daimonji_blast") {
-    const blasts = 1 + Math.floor(bonusProjectiles * 0.5);
+    const blasts = Math.min(3, 1 + Math.floor(bonusProjectiles * 0.5));
     for (let b = 0; b < blasts; b++) {
-      const tx = (target && b === 0) ? target.x : unit.x + Math.cos(aimAng + b * 1.2) * (125 + b * 35);
-      const ty = (target && b === 0) ? target.y : unit.y + Math.sin(aimAng + b * 1.2) * (125 + b * 35);
-      const rad = (m.p >= 120 ? 92 : 75) * scale;
-      RUN.zones.push({ x: tx, y: ty, r: rad, life: 0.65, maxLife: 0.65, color: col, kind: "daimonji" });
+      const tx = (target && b === 0) ? target.x : unit.x + Math.cos(aimAng + b * 1.3) * 115;
+      const ty = (target && b === 0) ? target.y : unit.y + Math.sin(aimAng + b * 1.3) * 115;
+      const rad = (m.p >= 120 ? 68 : 56) * scale;
+      RUN.zones.push({ x: tx, y: ty, r: rad, life: 0.48, maxLife: 0.48, color: col, kind: "daimonji" });
       const near = queryEnemiesInRadius(tx, ty, rad);
       for (let i = 0; i < near.length; i++) {
-        hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.05, mSlot);
-        near[i].burnT = 4.0;
+        hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.0, mSlot);
+        near[i].burnT = 3.8;
       }
     }
   } else if (pat === "meteor_shower") {
-    const count = (m.p >= 130 ? 4 : 3) + bonusProjectiles;
+    const count = Math.min(5, (m.p >= 130 ? 3 : 2) + bonusProjectiles);
     for (let i = 0; i < count; i++) {
-      const tx = (target && i === 0) ? target.x : unit.x + (Math.random() - 0.5) * 260;
-      const ty = (target && i === 0) ? target.y : unit.y + (Math.random() - 0.5) * 260;
+      const tx = (target && i === 0) ? target.x : unit.x + (Math.random() - 0.5) * 220;
+      const ty = (target && i === 0) ? target.y : unit.y + (Math.random() - 0.5) * 220;
       RUN.meteors.push({
         tx, ty,
-        x: tx + 140, y: ty - 260,
-        flightT: 0, flightDur: (0.36 + i * 0.06) / spdMul,
-        r: (m.p >= 130 ? 70 : 56) * scale,
+        x: tx + 110, y: ty - 210,
+        flightT: 0, flightDur: (0.34 + i * 0.06) / spdMul,
+        r: (m.p >= 130 ? 54 : 44) * scale,
         color: col,
         attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "quake_fissure") {
-    const branches = (m.p >= 100 ? 5 : 3) + bonusProjectiles;
+    const branches = Math.min(6, (m.p >= 100 ? 4 : 3) + bonusProjectiles);
     for (let b = 0; b < branches; b++) {
-      const ang = aimAng + (b - (branches - 1) / 2) * 0.52;
-      const len = (m.p >= 100 ? 170 : 130) * scale;
+      const ang = aimAng + (b - (branches - 1) / 2) * 0.50;
+      const len = (m.p >= 100 ? 145 : 115) * scale;
       const pts = [{ x: unit.x, y: unit.y }];
-      for (let s = 1; s <= 5; s++) {
+      for (let s = 1; s <= 4; s++) {
         const perp = ang + Math.PI / 2;
-        const jitter = (s % 2 === 0 ? 1 : -1) * 14;
+        const jitter = (s % 2 === 0 ? 1 : -1) * 10;
         pts.push({
-          x: unit.x + Math.cos(ang) * (len * s / 5) + Math.cos(perp) * jitter,
-          y: unit.y + Math.sin(ang) * (len * s / 5) + Math.sin(perp) * jitter
+          x: unit.x + Math.cos(ang) * (len * s / 4) + Math.cos(perp) * jitter,
+          y: unit.y + Math.sin(ang) * (len * s / 4) + Math.sin(perp) * jitter
         });
       }
-      RUN.fissures.push({ pts, life: 0.55, maxLife: 0.55, color: col });
+      RUN.fissures.push({ pts, life: 0.44, maxLife: 0.44, color: col });
       const endPt = pts[pts.length - 1];
-      const near = queryEnemiesInRadius((unit.x + endPt.x) * 0.5, (unit.y + endPt.y) * 0.5, len * 0.65);
+      const near = queryEnemiesInRadius((unit.x + endPt.x) * 0.5, (unit.y + endPt.y) * 0.5, len * 0.62);
       for (let i = 0; i < near.length; i++) {
         const e = near[i];
-        if (distToSegment(e.x, e.y, unit.x, unit.y, endPt.x, endPt.y) <= 36 + e.radius) {
-          hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.96, mSlot);
+        if (distToSegment(e.x, e.y, unit.x, unit.y, endPt.x, endPt.y) <= 30 + e.radius) {
+          hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.94, mSlot);
           e.slowT = 1.4;
         }
       }
     }
   } else if (pat === "blizzard_storm") {
-    const rad = (m.p >= 90 ? 140 : 110) * scale;
-    RUN.zones.push({ x: unit.x, y: unit.y, r: rad, life: 0.58, maxLife: 0.58, color: "#80deea", kind: "blizzard_field", followOwner: true, owner: unit });
-    for (let k = 0; k < 14; k++) {
-      if (RUN.particles.length >= 170) break;
+    const rad = (m.p >= 90 ? 112 : 92) * scale;
+    RUN.zones.push({ x: unit.x, y: unit.y, r: rad, life: 0.48, maxLife: 0.48, color: "#80deea", kind: "blizzard_field", followOwner: true, owner: unit });
+    for (let k = 0; k < 8; k++) {
+      if (RUN.particles.length >= 85) break;
       const a = Math.random() * Math.PI * 2;
       const d = Math.random() * rad;
       RUN.particles.push({
         x: unit.x + Math.cos(a) * d, y: unit.y + Math.sin(a) * d,
-        vx: Math.cos(a + 1.2) * 140, vy: Math.sin(a + 1.2) * 140,
-        r: 5 + Math.random() * 4, life: 0.45, maxLife: 0.45, kind: "ice"
+        vx: Math.cos(a + 1.2) * 120, vy: Math.sin(a + 1.2) * 120,
+        r: 2.5 + Math.random() * 2, life: 0.35, maxLife: 0.35, kind: "ice"
       });
     }
     const near = queryEnemiesInRadius(unit.x, unit.y, rad);
     for (let i = 0; i < near.length; i++) {
-      hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 0.94, mSlot);
-      near[i].slowT = 2.4;
+      hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 0.92, mSlot);
+      near[i].slowT = 2.2;
     }
   } else if (pat === "gravity_well") {
-    const count = 1 + Math.floor(bonusProjectiles * 0.5);
+    const count = Math.min(2, 1 + Math.floor(bonusProjectiles * 0.5));
     for (let i = 0; i < count; i++) {
-      const tx = (target && i === 0) ? target.x : unit.x + Math.cos(aimAng + i * 1.5) * 125;
-      const ty = (target && i === 0) ? target.y : unit.y + Math.sin(aimAng + i * 1.5) * 125;
+      const tx = (target && i === 0) ? target.x : unit.x + Math.cos(aimAng + i * 1.5) * 115;
+      const ty = (target && i === 0) ? target.y : unit.y + Math.sin(aimAng + i * 1.5) * 115;
       RUN.vortexes.push({
         x: tx, y: ty, vx: 0, vy: 0,
-        r: (m.p >= 85 ? 88 : 70) * scale,
-        life: 1.5, maxLife: 1.5, tick: 0.05, isBlackHole: true, color: col,
+        r: (m.p >= 85 ? 64 : 52) * scale,
+        life: 1.35, maxLife: 1.35, tick: 0.05, isBlackHole: true, color: col,
         attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "sonic_boom") {
-    const maxR = (m.p >= 90 ? 132 : 102) * scale;
-    for (let w = 0; w < 3; w++) {
+    const maxR = (m.p >= 90 ? 112 : 88) * scale * ((!isComp && RUN.baseId === 728) ? 1.22 : 1.0);
+    for (let w = 0; w < 2; w++) {
       RUN.slashes.push({
         kind: "sonic", x: unit.x, y: unit.y,
-        r: maxR * (0.55 + w * 0.22), life: 0.32 + w * 0.08, maxLife: 0.40, color: col
+        r: maxR * (0.65 + w * 0.30), life: 0.26 + w * 0.06, maxLife: 0.32, color: col
       });
     }
     const near = queryEnemiesInRadius(unit.x, unit.y, maxR);
     for (let i = 0; i < near.length; i++) {
-      hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 0.94, mSlot);
+      hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 0.92, mSlot);
     }
   } else if (pat === "fist_flurry") {
-    const reach = (m.p >= 100 ? 120 : 94) * scale;
-    const punches = 7 + bonusProjectiles * 2;
+    const reach = (m.p >= 100 ? 105 : 84) * scale;
+    const punches = Math.min(8, 5 + bonusProjectiles);
     for (let k = 0; k < punches; k++) {
-      const a = aimAng + (Math.random() - 0.5) * 0.95;
-      const d = 30 + Math.random() * reach;
+      const a = aimAng + (Math.random() - 0.5) * 0.80;
+      const d = 26 + Math.random() * reach * 0.85;
       RUN.slashes.push({
         kind: "fist",
         x: unit.x + Math.cos(a) * d,
         y: unit.y + Math.sin(a) * d,
-        ang: a, r: 17 * scale, life: 0.24, maxLife: 0.24, color: col
+        ang: a, r: 11 * scale, life: 0.20, maxLife: 0.20, color: col
       });
     }
     const near = queryEnemiesInRadius(unit.x, unit.y, reach);
@@ -2989,74 +3119,75 @@ function executeUnitMove(unit, moveId, isBonusCast = false, mSlotOverride = null
       const dx = e.x - unit.x;
       const dy = e.y - unit.y;
       const diff = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - aimAng), Math.cos(Math.atan2(dy, dx) - aimAng)));
-      if (diff <= 0.72) {
-        hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.98, mSlot);
+      if (diff <= 0.68) {
+        hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.96, mSlot);
       }
     }
   } else if (pat === "iaijutsu_slash") {
-    const slashes = 1 + Math.floor(bonusProjectiles * 0.5);
+    const slashes = Math.min(3, 1 + Math.floor(bonusProjectiles * 0.5));
     for (let s = 0; s < slashes; s++) {
-      const tx = (target && s === 0) ? target.x : unit.x + Math.cos(aimAng + (s - 0.5) * 0.6) * 90;
-      const ty = (target && s === 0) ? target.y : unit.y + Math.sin(aimAng + (s - 0.5) * 0.6) * 90;
-      const rad = (m.p >= 85 ? 82 : 65) * scale;
+      const tx = (target && s === 0) ? target.x : unit.x + Math.cos(aimAng + (s - 0.5) * 0.55) * 82;
+      const ty = (target && s === 0) ? target.y : unit.y + Math.sin(aimAng + (s - 0.5) * 0.55) * 82;
+      const rad = (m.p >= 85 ? 64 : 52) * scale;
       RUN.slashes.push({
-        kind: "cross_slash", x: tx, y: ty, ang: aimAng + s * 0.4, r: rad, life: 0.28, maxLife: 0.28, color: col
+        kind: "cross_slash", x: tx, y: ty, ang: aimAng + s * 0.35, r: rad, life: 0.24, maxLife: 0.24, color: col
       });
       const near = queryEnemiesInRadius(tx, ty, rad);
       for (let i = 0; i < near.length; i++) {
-        hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.02, mSlot);
+        hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.0, mSlot);
       }
     }
   } else if (pat === "spear_thrust") {
-    const count = (m.h > 1 ? Math.min(3, m.h) : 2) + bonusProjectiles;
+    const count = Math.min(4, (m.h > 1 ? 2 : 1) + bonusProjectiles);
     for (let i = 0; i < count; i++) {
-      const ang = aimAng + (i - (count - 1) / 2) * 0.20;
+      const ang = aimAng + (i - (count - 1) / 2) * 0.18;
       RUN.meleeSwings.push({
         uid: allocAttackUid(),
         owner: unit, kind: "thrust", ang,
-        len: (m.p >= 80 ? 126 : 100) * scale, wid: 30 * scale,
-        life: 0.22, maxLife: 0.22, color: col,
+        len: (m.p >= 80 ? 112 : 90) * scale, wid: 22 * scale,
+        life: 0.20, maxLife: 0.20, color: col,
         attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "santa_hazard") {
-    const count = (m.p >= 80 ? 2 : 1) + bonusProjectiles;
+    const count = Math.min(3, (m.p >= 80 ? 2 : 1) + Math.floor(bonusProjectiles * 0.5));
     for (let i = 0; i < count; i++) {
-      let tx = (target && i === 0) ? target.x : unit.x + Math.cos(aimAng + i * 1.25) * 115;
-      let ty = (target && i === 0) ? target.y : unit.y + Math.sin(aimAng + i * 1.25) * 115;
+      let tx = (target && i === 0) ? target.x : unit.x + Math.cos(aimAng + i * 1.2) * 105;
+      let ty = (target && i === 0) ? target.y : unit.y + Math.sin(aimAng + i * 1.2) * 105;
       RUN.projectiles.push({
         uid: allocAttackUid(),
-        kind: "santa_bottle", x: unit.x, y: unit.y - 10,
+        kind: "santa_bottle", x: unit.x, y: unit.y - 8,
         startX: unit.x, startY: unit.y, tx, ty,
-        flightT: 0, flightDur: 0.34 / spdMul, r: 12 * scale,
-        poolR: (m.p >= 80 ? 68 : 56) * scale, life: 0.4, color: col,
+        flightT: 0, flightDur: 0.32 / spdMul, r: 9 * scale,
+        poolR: (m.p >= 80 ? 52 : 44) * scale, life: 0.38, color: col,
         attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "homing_swarm") {
-    const count = (m.p >= 75 ? 5 : 4) + bonusProjectiles;
+    const count = Math.min(7, (m.p >= 75 ? 4 : 3) + bonusProjectiles);
     for (let i = 0; i < count; i++) {
-      const ang = aimAng + (i - (count - 1) / 2) * 0.42;
+      const ang = aimAng + (i - (count - 1) / 2) * 0.36;
       RUN.projectiles.push({
         uid: allocAttackUid(),
         kind: "homing_star",
         x: unit.x, y: unit.y,
-        vx: Math.cos(ang) * 350 * spdMul, vy: Math.sin(ang) * 350 * spdMul,
-        r: 13 * scale, pierce: 2 + bounceCnt * 2, homing: true, life: 1.5, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.72
+        vx: Math.cos(ang) * 340 * spdMul, vy: Math.sin(ang) * 340 * spdMul,
+        r: 9.5 * scale, pierce: 1 + pierceCnt, homing: true, life: 1.35, color: col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.68
       });
     }
   } else if (pat === "ricochet_ball") {
-    const count = (m.p >= 90 ? 2 : 1) + bonusProjectiles;
+    const count = Math.min(4, (m.p >= 90 ? 2 : 1) + bonusProjectiles);
+    const scorbunnyBounce = (!isComp && RUN.baseId === 813) ? 2 : 0;
     for (let i = 0; i < count; i++) {
-      const ang = aimAng + (i - (count - 1) / 2) * 0.32;
+      const ang = aimAng + (i - (count - 1) / 2) * 0.28;
       RUN.projectiles.push({
         uid: allocAttackUid(),
         kind: "runetracer",
         x: unit.x, y: unit.y,
-        vx: Math.cos(ang) * 460 * spdMul, vy: Math.sin(ang) * 460 * spdMul,
-        r: 17 * scale, pierce: 99, bounce: 6 + bounceCnt * 3, life: 2.2, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.94
+        vx: Math.cos(ang) * 430 * spdMul, vy: Math.sin(ang) * 430 * spdMul,
+        r: 12 * scale, pierce: 99, bounce: 4 + bounceCnt * 2 + scorbunnyBounce, life: 1.9, color: col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.90
       });
     }
   } else if (pat === "chain_lightning") {
@@ -3064,11 +3195,11 @@ function executeUnitMove(unit, moveId, isBonusCast = false, mSlotOverride = null
     let curX = unit.x;
     let curY = unit.y;
     const uid = allocAttackUid();
-    const maxJumps = 5 + bonusProjectiles * 2 + bounceCnt * 3;
+    const maxJumps = Math.min(8, 4 + bonusProjectiles + bounceCnt * 2);
     for (let k = 0; k < maxJumps; k++) {
       let best = null;
-      let bestD = 240 * 240;
-      const cands = queryEnemiesInRadius(curX, curY, 240);
+      let bestD = 210 * 210;
+      const cands = queryEnemiesInRadius(curX, curY, 210);
       for (let i = 0; i < cands.length; i++) {
         const e = cands[i];
         if (e.lastHitUid !== uid) {
@@ -3079,66 +3210,66 @@ function executeUnitMove(unit, moveId, isBonusCast = false, mSlotOverride = null
       if (!best) break;
       best.lastHitUid = uid;
       chainTargets.push({ x1: curX, y1: curY, x2: best.x, y2: best.y });
-      hitEnemyWithMove(best, unit.level, unit.stats, moveId, 0.94, mSlot);
+      hitEnemyWithMove(best, unit.level, unit.stats, moveId, 0.90, mSlot);
       curX = best.x;
       curY = best.y;
     }
     if (chainTargets.length > 0) {
-      RUN.lightnings.push({ segs: chainTargets, life: 0.26, maxLife: 0.26, color: col });
+      RUN.lightnings.push({ segs: chainTargets, life: 0.22, maxLife: 0.22, color: col });
     }
   } else if (pat === "gravity_boulder") {
-    const count = (m.p >= 100 ? 3 : 2) + bonusProjectiles;
+    const count = Math.min(4, (m.p >= 100 ? 2 : 1) + bonusProjectiles);
     for (let i = 0; i < count; i++) {
       const dirX = (target ? (target.x >= unit.x ? 1 : -1) : 1) * (i % 2 === 0 ? 1 : -0.8);
       RUN.projectiles.push({
         uid: allocAttackUid(),
         kind: "gravity_axe",
-        x: unit.x, y: unit.y - 14,
-        vx: dirX * (75 + i * 48 + Math.random() * 25),
-        vy: -360 - i * 40, gravity: 840,
-        r: 21 * scale, pierce: 6 + bounceCnt * 2, life: 1.5, rot: 0, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.98
+        x: unit.x, y: unit.y - 12,
+        vx: dirX * (75 + i * 45 + Math.random() * 20),
+        vy: -340 - i * 35, gravity: 820,
+        r: 14 * scale, pierce: 4 + pierceCnt * 2, life: 1.4, rot: 0, color: col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.95
       });
     }
   } else if (pat === "phantom_stampede") {
-    const count = (m.p >= 110 ? 3 : (m.p >= 75 ? 2 : 1)) + bonusProjectiles;
+    const count = Math.min(4, (m.p >= 110 ? 2 : 1) + bonusProjectiles);
     for (let i = 0; i < count; i++) {
       const ang = aimAng + (i - (count - 1) / 2) * 0.20;
-      const spd = 470 * spdMul;
+      const spd = 440 * spdMul;
       RUN.phantoms.push({
         uid: allocAttackUid(),
         pid: unit.speciesId,
         x: unit.x, y: unit.y,
         vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
-        r: (m.p >= 100 ? 31 : 25) * scale,
-        scale: (1.68 + (unit.evoStage || 0) * 0.2) * scale,
-        life: 0.38, maxLife: 0.38, color: col,
+        r: (m.p >= 100 ? 24 : 20) * scale,
+        scale: (1.42 + (unit.evoStage || 0) * 0.14) * scale,
+        life: 0.34, maxLife: 0.34, color: col,
         attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "crunch_fangs") {
-    const count = 1 + Math.floor(bonusProjectiles * 0.5);
+    const count = Math.min(2, 1 + Math.floor(bonusProjectiles * 0.5));
     for (let c = 0; c < count; c++) {
-      const fx = (target && c === 0) ? target.x : unit.x + Math.cos(aimAng + c * 1.1) * 80;
-      const fy = (target && c === 0) ? target.y : unit.y + Math.sin(aimAng + c * 1.1) * 80;
-      const rad = 60 * scale;
-      RUN.zones.push({ x: fx, y: fy, r: rad, life: 0.28, maxLife: 0.28, color: col, kind: "fangs" });
+      const fx = (target && c === 0) ? target.x : unit.x + Math.cos(aimAng + c * 1.1) * 75;
+      const fy = (target && c === 0) ? target.y : unit.y + Math.sin(aimAng + c * 1.1) * 75;
+      const rad = 46 * scale;
+      RUN.zones.push({ x: fx, y: fy, r: rad, life: 0.24, maxLife: 0.24, color: col, kind: "fangs" });
       const near = queryEnemiesInRadius(fx, fy, rad);
       for (let i = 0; i < near.length; i++) {
-        hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.05, mSlot);
-        near[i].rootT = 0.70;
+        hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.0, mSlot);
+        near[i].rootT = 0.65;
       }
     }
   } else {
-    const beams = 1 + Math.floor(bonusProjectiles * 0.5);
-    const beamLen = (m.p >= 90 ? 430 : 310) * scale;
-    const beamWid = (m.p >= 100 ? 30 : 20) * scale;
+    const beams = Math.min(3, 1 + Math.floor(bonusProjectiles * 0.5));
+    const beamLen = (m.p >= 90 ? 370 : 270) * scale * ((!isComp && RUN.baseId === 393) ? 1.25 : 1.0);
+    const beamWid = (m.p >= 100 ? 18 : 13) * scale;
     for (let b = 0; b < beams; b++) {
-      const ba = aimAng + (b - (beams - 1) / 2) * 0.22;
+      const ba = aimAng + (b - (beams - 1) / 2) * 0.18;
       RUN.lasers.push({
         uid: allocAttackUid(),
         owner: unit, ang: ba, len: beamLen, wid: beamWid,
-        life: 0.32, maxLife: 0.32, color: col,
+        life: 0.26, maxLife: 0.26, color: col,
         attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
@@ -3150,106 +3281,149 @@ function hitEnemyWithMove(e, attackerLv, attackerStats, moveId, aoeScale = 1.0, 
   if (!e || e.hp <= 0 || !RUN || _hitDepth > 3) return;
   _hitDepth++;
   try {
-  const res = calculatePokemonDamage(attackerLv, attackerStats, moveId, e.level, e.stats, aoeScale, RUN.heldItems, mSlot);
-  let totalDmg = res.dmg;
+    const res = calculatePokemonDamage(attackerLv, attackerStats, moveId, e.level, e.stats, aoeScale, RUN.heldItems, mSlot, e);
+    let totalDmg = res.dmg;
 
-  const m = MOVES_DB[moveId];
-  const isPlayerAtk = (RUN && attackerStats === RUN.stats);
+    const m = MOVES_DB[moveId];
+    const isPlayerAtk = (RUN && attackerStats === RUN.stats);
 
-  // 1. Prismatic Three-Hit True Damage (Every 3rd hit deals 10% maxHp True Damage!)
-  if (isPlayerAtk && RUN.hexes && RUN.hexes.three_hit) {
-    e.hitStacks = (e.hitStacks || 0) + 1;
-    if (e.hitStacks >= 3) {
-      e.hitStacks = 0;
-      const cap = e.isBoss ? RUN.level * 26 : e.maxHp * 0.25;
-      const trueDmg = Math.max(8, Math.min(Math.round(cap), Math.round(e.maxHp * 0.10 * RUN.hexes.three_hit)));
-      totalDmg += trueDmg;
-      RUN.slashes.push({ kind: "cross_slash", x: e.x, y: e.y, ang: 0.78, r: 30, life: 0.18, maxLife: 0.18, color: "#00e5ff" });
-    }
-  }
-
-  // 2. Gold Elemental Overload Reaction (Triggering a different element on primed enemy!)
-  if (m && RUN && RUN.hexes && RUN.hexes.elem_overload) {
-    if (e.lastElem && e.lastElem !== m.t && (RUN.time - (e.lastElemT || 0) <= 2.5)) {
-      e.lastElem = null;
-      const reactDmg = Math.round(res.dmg * 0.85 * RUN.hexes.elem_overload);
-      totalDmg += reactDmg;
-      e.stats.def = Math.max(5, Math.floor(e.stats.def * 0.82));
-      e.stats.spd = Math.max(5, Math.floor(e.stats.spd * 0.82));
-      RUN.zones.push({ x: e.x, y: e.y, r: 58, life: 0.24, maxLife: 0.24, color: "#ffea00", kind: "garlic_ring" });
-    } else {
-      e.lastElem = m.t;
-      e.lastElemT = RUN.time;
-    }
-  }
-
-  // 3. Bounce Mod: Chain to 1 nearby enemy for 40% damage!
-  if (mSlot && hasMoveMod(mSlot, "bounce") > 0 && aoeScale > 0.35) {
-    const near = queryEnemiesInRadius(e.x, e.y, 130);
-    for (let i = 0; i < near.length; i++) {
-      const other = near[i];
-      if (other !== e && other.hp > 0) {
-        other.hp -= Math.max(2, Math.round(totalDmg * 0.42));
-        RUN.lightnings.push({ segs: [{ x1: e.x, y1: e.y, x2: other.x, y2: other.y }], life: 0.16, maxLife: 0.16, color: "#ffd54f" });
-        if (other.hp <= 0) killEnemy(other);
-        break;
+    // 1. Prismatic Three-Hit True Damage (Balanced 6% maxHp True Damage, capped vs Bosses)
+    if (isPlayerAtk && RUN.hexes && RUN.hexes.three_hit) {
+      e.hitStacks = (e.hitStacks || 0) + 1;
+      if (e.hitStacks >= 3) {
+        e.hitStacks = 0;
+        const cap = e.isBoss ? RUN.level * 18 : e.maxHp * 0.18;
+        const trueDmg = Math.max(5, Math.min(Math.round(cap), Math.round(e.maxHp * 0.06)));
+        totalDmg += trueDmg;
+        RUN.slashes.push({ kind: "cross_slash", x: e.x, y: e.y, ang: 0.78, r: 20, life: 0.15, maxLife: 0.15, color: "#00e5ff" });
       }
     }
-  }
 
-  e.hp -= totalDmg;
-  e.flashT = 0.08;
-  sfx("hit");
-
-  // Charge Ultimate Awakening slightly on combat hits!
-  if (isPlayerAtk && RUN.awakening && !RUN.ultActive) {
-    addUltimateCharge(0.16);
-  }
-
-  // Lifesteal & Vampiric Siphon Overheal Nova
-  const shellLv = (RUN.heldItems && RUN.heldItems.shell_bell) || 0;
-  const vampLv = (RUN.hexes && RUN.hexes.vampiric_siphon) || 0;
-  const drainPct = ((m && m.dr) || 0) * 0.42 + shellLv * 5 + vampLv * 12;
-  if (drainPct > 0) {
-    const healAmt = Math.max(1, Math.round(totalDmg * (drainPct / 100)));
-    if (RUN.hp < RUN.maxHp) {
-      RUN.hp = Math.min(RUN.maxHp, RUN.hp + healAmt);
-    } else if (vampLv > 0 && Math.random() < 0.22) {
-      RUN.zones.push({ x: RUN.x, y: RUN.y, r: 95, life: 0.22, maxLife: 0.22, color: "#ff1744", kind: "garlic_ring" });
+    // 2. Gold Elemental Overload Reaction (1.5x burst & 20% armor shred)
+    if (m && RUN && RUN.hexes && RUN.hexes.elem_overload) {
+      if (e.lastElem && e.lastElem !== m.t && (RUN.time - (e.lastElemT || 0) <= 2.5)) {
+        e.lastElem = null;
+        totalDmg += Math.round(res.dmg * 0.50);
+        e.stats.def = Math.max(5, Math.floor(e.stats.def * 0.85));
+        e.stats.spd = Math.max(5, Math.floor(e.stats.spd * 0.85));
+        RUN.zones.push({ x: e.x, y: e.y, r: 40, life: 0.20, maxLife: 0.20, color: "#ffea00", kind: "garlic_ring" });
+      } else {
+        e.lastElem = m.t;
+        e.lastElemT = RUN.time;
+      }
     }
-  }
-  if (m && m.t === "fire" && Math.random() < 0.30) e.burnT = 3.2;
-  if (m && m.t === "ice" && Math.random() < 0.35) e.slowT = 1.8;
 
-  if (e._dmgPop && e._dmgPop.life > 0.12) {
-    e._dmgPop.accDmg = (e._dmgPop.accDmg || 0) + totalDmg;
-    e._dmgPop.x = e.x;
-    e._dmgPop.y = e.y - 18;
-    e._dmgPop.life = 0.42;
-    e._dmgPop.text = (res.isCrit ? "💥" : (res.eff >= 1.9 ? "绝佳!" : "")) + e._dmgPop.accDmg;
-    if (res.isCrit) e._dmgPop.color = "#ff8a65";
-    else if (res.eff >= 1.9) e._dmgPop.color = "#ffeb3b";
-  } else if (res.isCrit || res.eff >= 1.9 || RUN.popups.length < 12) {
-    let effText = res.isCrit ? "💥" : (res.eff >= 1.9 ? "绝佳!" : "");
-    let color = res.isCrit ? "#ff8a65" : (res.eff >= 1.9 ? "#ffeb3b" : "#ffffff");
-    const pop = { x: e.x, y: e.y - 16, accDmg: totalDmg, text: `${effText}${totalDmg}`, color, scale: res.isCrit || res.eff >= 1.9 ? 1.08 : 0.88, life: 0.44, maxLife: 0.44 };
-    if (RUN.popups.length < 24) {
-      RUN.popups.push(pop);
-      e._dmgPop = pop;
+    // 3. Gold Fire Calibration (Hit burning target -> secondary crimson pop)
+    if (isPlayerAtk && m && m.t === "fire" && e.burnT > 0 && RUN.hexes && RUN.hexes.gd_fire_calib) {
+      totalDmg += Math.round(res.dmg * 0.45);
+      RUN.zones.push({ x: e.x, y: e.y, r: 34, life: 0.18, maxLife: 0.18, color: "#ff3d00", kind: "garlic_ring" });
     }
-  }
 
-  if (e.hp <= 0 && !e._dead) {
-    e._dead = true;
-    killEnemy(e, mSlot);
-  }
+    // 4. Sprigatito (906) Innate: Crits detonate a magic flower bomb!
+    if (isPlayerAtk && RUN.baseId === 906 && res.isCrit) {
+      totalDmg += Math.round(res.dmg * 0.35);
+      RUN.zones.push({ x: e.x, y: e.y, r: 36, life: 0.20, maxLife: 0.20, color: "#00e676", kind: "garlic_ring" });
+    }
+
+    // 5. Chimchar (390) Innate: Armor shred on multi-hit/punch
+    if (isPlayerAtk && RUN.baseId === 390) {
+      e.stats.def = Math.max(6, Math.floor(e.stats.def * 0.92));
+    }
+
+    // 6. Gold Bounce Mod: Chain to 1 nearby enemy for 35% damage
+    if (mSlot && hasMoveMod(mSlot, "bounce") > 0 && aoeScale > 0.35 && _hitDepth <= 1) {
+      const near = queryEnemiesInRadius(e.x, e.y, 110);
+      for (let i = 0; i < near.length; i++) {
+        const other = near[i];
+        if (other !== e && other.hp > 0) {
+          other.hp -= Math.max(2, Math.round(totalDmg * 0.35));
+          RUN.lightnings.push({ segs: [{ x1: e.x, y1: e.y, x2: other.x, y2: other.y }], life: 0.14, maxLife: 0.14, color: "#ffd54f" });
+          if (other.hp <= 0 && !other._dead) {
+            other._dead = true;
+            killEnemy(other);
+          }
+          break;
+        }
+      }
+    }
+
+    e.hp -= totalDmg;
+    e.flashT = 0.07;
+    sfx("hit");
+
+    if (isPlayerAtk && RUN.awakening && !RUN.ultActive) {
+      addUltimateCharge(0.12);
+    }
+
+    // Status Procs & Starter Status Traits
+    const statusChanceBoost = mSlot ? hasMoveMod(mSlot, "s_status") * 0.25 : 0;
+    const statusDurBoost = mSlot ? hasMoveMod(mSlot, "s_status") * 1.5 : 0;
+    if (m && m.t === "fire" && Math.random() < (0.28 + statusChanceBoost)) e.burnT = 3.0 + statusDurBoost;
+    if (m && (m.t === "ice" || (RUN.hexes && RUN.hexes.sv_water_tide && m.t === "water")) && Math.random() < (0.32 + statusChanceBoost)) {
+      e.slowT = 1.8 + statusDurBoost;
+    }
+    if (isPlayerAtk && RUN.baseId === 258 && (m.t === "water" || m.t === "ground")) e.slowT = Math.max(e.slowT, 2.0);
+    if (isPlayerAtk && RUN.baseId === 158) e.burnT = Math.max(e.burnT, 3.0); // Totodile bleed
+    if (isPlayerAtk && RUN.baseId === 722 && Math.random() < 0.35) e.rootT = Math.max(e.rootT, 1.0); // Rowlet Spirit Shackle root
+
+    // Lifesteal & Bulbasaur (1) Innate Thorn Burst on Heal
+    const shellLv = (RUN.heldItems && RUN.heldItems.shell_bell) || 0;
+    const vampLv = (RUN.hexes && RUN.hexes.vampiric_siphon) || 0;
+    const sLeechCnt = mSlot ? hasMoveMod(mSlot, "s_leech") : 0;
+    let drainPct = ((m && m.dr) || 0) * 0.38 + shellLv * 4 + vampLv * 6;
+    if (RUN.baseId === 1) drainPct *= 1.30;
+    if (RUN.baseId === 498) drainPct += Math.max(0, (1 - RUN.hp / Math.max(1, RUN.maxHp)) * 5);
+
+    if ((drainPct > 0 || (sLeechCnt > 0 && Math.random() < 0.25)) && isPlayerAtk) {
+      const healAmt = sLeechCnt > 0 ? 2 : Math.max(1, Math.round(totalDmg * (drainPct / 100)));
+      if (RUN.hp < RUN.maxHp) {
+        RUN.hp = Math.min(RUN.maxHp, RUN.hp + healAmt);
+        // Bulbasaur (1) Innate: Healing fires 3 emerald thorn needles!
+        if (RUN.baseId === 1 && Math.random() < 0.35 && RUN.projectiles.length < 95) {
+          for (let b = 0; b < 3; b++) {
+            const ba = (b * Math.PI * 2) / 3 + RUN.time;
+            RUN.projectiles.push({
+              uid: allocAttackUid(), kind: "homing_star",
+              x: RUN.x, y: RUN.y, vx: Math.cos(ba) * 320, vy: Math.sin(ba) * 320,
+              r: 8, pierce: 1, homing: true, life: 1.0, color: "#00e676",
+              attackerLv: RUN.level, attackerStats: RUN.stats, moveId: RUN.moves[0].id, mSlot: RUN.moves[0], aoeScale: 0.45
+            });
+          }
+        }
+      } else if (vampLv > 0 && Math.random() < 0.15) {
+        RUN.zones.push({ x: RUN.x, y: RUN.y, r: 72, life: 0.20, maxLife: 0.20, color: "#ff1744", kind: "garlic_ring" });
+      }
+    }
+
+    if (e._dmgPop && e._dmgPop.life > 0.12) {
+      e._dmgPop.accDmg = (e._dmgPop.accDmg || 0) + totalDmg;
+      e._dmgPop.x = e.x;
+      e._dmgPop.y = e.y - 18;
+      e._dmgPop.life = 0.40;
+      e._dmgPop.text = (res.isCrit ? "💥" : (res.eff >= 1.9 ? "绝佳!" : "")) + e._dmgPop.accDmg;
+      if (res.isCrit) e._dmgPop.color = "#ff8a65";
+      else if (res.eff >= 1.9) e._dmgPop.color = "#ffeb3b";
+    } else if (res.isCrit || res.eff >= 1.9 || RUN.popups.length < 10) {
+      let effText = res.isCrit ? "💥" : (res.eff >= 1.9 ? "绝佳!" : "");
+      let color = res.isCrit ? "#ff8a65" : (res.eff >= 1.9 ? "#ffeb3b" : "#ffffff");
+      const pop = { x: e.x, y: e.y - 16, accDmg: totalDmg, text: `${effText}${totalDmg}`, color, scale: res.isCrit || res.eff >= 1.9 ? 1.05 : 0.85, life: 0.42, maxLife: 0.42 };
+      if (RUN.popups.length < 20) {
+        RUN.popups.push(pop);
+        e._dmgPop = pop;
+      }
+    }
+
+    if (e.hp <= 0 && !e._dead) {
+      e._dead = true;
+      killEnemy(e, mSlot);
+    }
   } finally {
     _hitDepth--;
   }
 }
 
 // ============================================================================
-// Escalating Spawning, Climax Wave Events & Boss Encounters
+// Vampire Survivors Wave Escalation, Scarce Drops & Fixed 1/3/10 XP Gems!
 // ============================================================================
 function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite = false) {
   if (!RUN) return;
@@ -3266,18 +3440,18 @@ function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite
     affix = BOSS_AFFIXES[Math.floor(Math.random() * BOSS_AFFIXES.length)];
   } else {
     const wp = RUN.wildPool;
-    const progress = Math.min(1.0, Math.max(0, (pLv - 5) / 26 + timeMin * 0.08));
+    const progress = Math.min(1.0, Math.max(0, (pLv - 5) / 26 + timeMin * 0.10));
     const maxIdx = Math.min(wp.length, Math.max(12, Math.floor((0.25 + progress * 0.75) * wp.length)));
-    const minIdx = Math.min(maxIdx - 6, Math.floor(progress * 0.62 * wp.length));
+    const minIdx = Math.min(maxIdx - 6, Math.floor(progress * 0.65 * wp.length));
     const idx = minIdx + Math.floor(Math.random() * Math.max(1, maxIdx - minIdx));
     species = wp[Math.max(0, Math.min(wp.length - 1, idx))];
-    const eliteChance = 0.12 + Math.min(0.22, Math.max(0, timeMin - 2.0) * 0.035);
+    const eliteChance = 0.10 + Math.min(0.24, Math.max(0, timeMin - 1.5) * 0.04);
     if (!isElite && pLv >= 7 && Math.random() < eliteChance) isElite = true;
   }
 
   const eStats = computePokemonStats(species, enemyLv, false, isBoss);
   if (isElite && !isBoss) {
-    eStats.maxHp = Math.floor(eStats.maxHp * (2.3 + Math.min(1.2, timeMin * 0.15)));
+    eStats.maxHp = Math.floor(eStats.maxHp * (2.5 + Math.min(1.8, timeMin * 0.22)));
   }
   if (affix) {
     eStats.maxHp = Math.floor(eStats.maxHp * affix.hpMul);
@@ -3286,10 +3460,10 @@ function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite
   const ang = customAng !== null ? customAng : Math.random() * Math.PI * 2;
   const dist = customDist !== null ? customDist : (Math.max(canvas.width, canvas.height) * 0.50 + 36);
 
-  const lateSpdBoost = Math.min(34, Math.max(0, timeMin - 3.0) * 4.5);
+  const lateSpdBoost = Math.min(38, Math.max(0, timeMin - 2.5) * 5.2);
   let moveSpd = isBoss
-    ? Math.min(118, 66 + eStats.spe * 0.22 + pLv * 0.55 + lateSpdBoost * 0.6)
-    : Math.min(136, 54 + eStats.spe * 0.30 + Math.min(28, pLv * 0.65) + lateSpdBoost);
+    ? Math.min(124, 68 + eStats.spe * 0.22 + pLv * 0.55 + lateSpdBoost * 0.65)
+    : Math.min(142, 56 + eStats.spe * 0.30 + Math.min(30, pLv * 0.65) + lateSpdBoost);
   if (affix) moveSpd *= affix.spdMul;
 
   const enemy = {
@@ -3306,7 +3480,7 @@ function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite
     maxHp: eStats.maxHp,
     speed: moveSpd,
     radius: isBoss ? 34 : (isElite ? 22 : 16),
-    scale: isBoss ? 2.38 * (affix ? affix.scaleMul : 1) : (isElite ? 1.85 : 1.50),
+    scale: isBoss ? 2.35 * (affix ? affix.scaleMul : 1) : (isElite ? 1.82 : 1.48),
     isBoss,
     flashT: 0,
     slowT: 0,
@@ -3318,8 +3492,8 @@ function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite
     lastElemT: 0,
     lastHitUid: 0,
     lastOrbHitT: -99,
-    shootTimer: (isElite || isBoss) ? (1.8 + Math.random() * 1.3) : 999,
-    skillTimer: isBoss ? 3.0 : 999,
+    shootTimer: (isElite || isBoss) ? (1.7 + Math.random() * 1.2) : 999,
+    skillTimer: isBoss ? 2.8 : 999,
     dashWarnT: 0,
     dashVx: 0,
     dashVy: 0,
@@ -3331,49 +3505,45 @@ function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite
     RUN.activeBoss = enemy;
     playCry(species);
     playBgmTrack(Math.random() < 0.5 ? 14 : 13, true);
-    addPopup(RUN.x, RUN.y - 60, `👑 ${affix.name} Lv.${enemyLv} ${POKEMON_ZH[species]} 降临！`, affix.color, 1.38);
+    addPopup(RUN.x, RUN.y - 60, `👑 ${affix.name} Lv.${enemyLv} ${POKEMON_ZH[species]} 降临！`, affix.color, 1.35);
   }
 }
 
 function triggerSwarmAmbush() {
   if (!RUN) return;
   const timeMin = RUN.time / 60;
-  const count = 14 + Math.min(22, Math.floor(RUN.level * 0.55 + timeMin * 2.5));
+  const count = 14 + Math.min(24, Math.floor(RUN.level * 0.55 + timeMin * 3.0));
   for (let i = 0; i < count; i++) {
     const ang = (i / count) * Math.PI * 2;
-    spawnEnemy(false, ang, 225, i % 3 === 0);
+    spawnEnemy(false, ang, 220, i % 3 === 0);
   }
-  addPopup(RUN.x, RUN.y - 48, `⚠️ 狂暴怪潮包围圈突袭！小心突围！`, "#ff9100", 1.28);
+  addPopup(RUN.x, RUN.y - 48, `⚠️ 狂暴怪潮合围突袭！`, "#ff9100", 1.22);
 }
 
-// High-Tension Timed Climax Wave Events (Every 90s so 3m, 4.5m, 6m, 7.5m, 9m stay super intense!)
 function checkClimaxWaveEvents() {
   if (!RUN) return;
   const timeMin = RUN.time / 60;
-  const nextMilestone = (RUN.waveEventIdx + 1) * 1.5; // 1.5m, 3.0m, 4.5m, 6.0m, 7.5m...
+  const nextMilestone = (RUN.waveEventIdx + 1) * 1.5; // Every 90s: 1.5m, 3.0m, 4.5m, 6.0m, 7.5m...
   if (timeMin < nextMilestone) return;
   RUN.waveEventIdx++;
 
   if (RUN.waveEventIdx % 3 === 1) {
-    // Climax 1: Iron Fortress Ring (20 Elites closing in from 360 degrees!)
     for (let i = 0; i < 18; i++) {
       const a = (i / 18) * Math.PI * 2;
       spawnEnemy(false, a, 210, true);
     }
-    addPopup(RUN.x, RUN.y - 64, "🚨 高潮事件：【铁壁精英包围网】降临！击败精英拾取海克斯！", "#ff1744", 1.45);
+    addPopup(RUN.x, RUN.y - 60, "🚨 波次高潮：【铁壁精英包围网】降临！", "#ff1744", 1.38);
   } else if (RUN.waveEventIdx % 3 === 2) {
-    // Climax 2: Twin Apex Boss Invasion + Rare Key Stone Drop!
     spawnEnemy(true);
     spawnEnemy(true);
-    spawnAwakeningRelicItem(RUN.x + 85, RUN.y - 65);
-    addPopup(RUN.x, RUN.y - 68, "🌋 高潮事件：【时空双神同屏降临】+ 战场刷新超进化钥石！", "#ffd600", 1.50);
+    spawnAwakeningRelicItem(RUN.x + 95, RUN.y - 75);
+    addPopup(RUN.x, RUN.y - 64, "🌋 波次高潮：【双神头目同屏降临】+ 刷新超进化信物！", "#ffd600", 1.42);
   } else {
-    // Climax 3: Berserk Stampede + Free Hex Chest!
     for (let i = 0; i < 24; i++) {
       const a = (i / 24) * Math.PI * 2;
       spawnEnemy(false, a, 195, i % 2 === 0);
     }
-    triggerHexAugmentDraft("🎁 坚守奖励：高潮波次海克斯空投！");
+    triggerHexAugmentDraft("🎁 波次坚守宝箱：选择 1 项海克斯强化");
   }
 }
 
@@ -3385,75 +3555,90 @@ function killEnemy(e, mSlot = null) {
     if (!RUN.activeBoss) nextStageBgm();
   }
 
-  // Charge Ultimate Awakening on kills!
   if (RUN.awakening && !RUN.ultActive) {
-    addUltimateCharge(e.isBoss ? 32 : (e.isElite ? 6.5 : 1.4));
+    addUltimateCharge(e.isBoss ? 28 : (e.isElite ? 4.5 : 0.9));
   }
 
-  // Prismatic Reaper Mod: Refund cooldowns on kill!
+  // Quaxly (912) Innate: Every 12 kills grants 4s Aqua Step Dance haste!
+  if (RUN.baseId === 912 && RUN.kills % 12 === 0) {
+    RUN.quaxlyDanceT = 4.0;
+  }
+
+  // Gold Grass Bloom: Every 12 kills spawns a healing/shooting thorn flower zone!
+  if (RUN.hexes && RUN.hexes.gd_grass_bloom && RUN.kills % 12 === 0 && RUN.zones.length < 35) {
+    RUN.zones.push({
+      x: e.x, y: e.y, r: 48, life: 4.0, maxLife: 4.0, color: "#00e676",
+      kind: "santa_pool", tick: 0.1, attackerLv: RUN.level, attackerStats: RUN.stats, moveId: RUN.moves[0].id, mSlot: RUN.moves[0]
+    });
+  }
+
+  // Silver Fire Ember: Burning enemy explodes on death
+  if (e.burnT > 0 && RUN.hexes && RUN.hexes.sv_fire_ember && RUN.zones.length < 38) {
+    RUN.zones.push({ x: e.x, y: e.y, r: 42, life: 0.22, maxLife: 0.22, color: "#ff6d00", kind: "garlic_ring" });
+  }
+
+  // Prismatic Reaper Mod: Refund 20% cooldown on kill
   if (mSlot && hasMoveMod(mSlot, "reaper") > 0) {
-    for (let i = 0; i < RUN.moves.length; i++) {
-      RUN.moves[i].timer = Math.max(0.05, RUN.moves[i].timer * 0.45);
-    }
-    addUltimateCharge(1.2);
+    mSlot.timer = Math.max(0.08, mSlot.timer * 0.80);
   }
 
-  // Prismatic Goliath (Heartsteel) Scaling on every 18 kills!
-  if (RUN.hexes && RUN.hexes.goliath && RUN.kills % 18 === 0) {
+  // Prismatic Goliath (Capped at 20 stacks, every 30 kills)
+  if (RUN.hexes && RUN.hexes.goliath && RUN.kills % 30 === 0 && (RUN.goliathStacks || 0) < 20) {
     RUN.goliathStacks = (RUN.goliathStacks || 0) + 1;
-    RUN.goliathHpBonus = (RUN.goliathHpBonus || 0) + 12 * RUN.hexes.goliath;
+    RUN.goliathHpBonus = (RUN.goliathHpBonus || 0) + 8;
     const oldMax = RUN.maxHp;
     RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
     RUN.maxHp = RUN.stats.maxHp;
-    RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(12, RUN.maxHp - oldMax));
-    addPopup(RUN.x, RUN.y - 34, `🦖 心之钢叠层(${RUN.goliathStacks})：体型与技能范围膨胀！`, "#ffab40", 1.15);
+    RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(8, RUN.maxHp - oldMax));
     updateHudSlots();
   }
 
-  const xpMul = (RUN.hexes && RUN.hexes.apex_collector) ? (1 + 0.28 * RUN.hexes.apex_collector) : 1.0;
-  const baseXp = Math.max(3, Math.round(((e.stats.bst * e.level) / 205) * xpMul));
-
+  // Authentic Vampire Survivors Fixed XP Gem Values!
+  // Normal wilds drop 1~2 XP (Blue Gem); Elites drop 6~8 XP (Green/Red Gem); Bosses drop 35 XP!
+  // This guarantees later levels (which need 300~900 XP) require real horde clearing, never 1-gem level-ups!
   if (e.isBoss) {
     RUN.bossesKilledThisRun++;
     SAVE.bossKills = (SAVE.bossKills || 0) + 1;
-    RUN.rerolls = (RUN.rerolls || 0) + 2;
+    RUN.rerolls = (RUN.rerolls || 0) + 1;
     writeSave();
     spawnFieldTM(true);
-    spawnCompanionBall(false, e.x - 26, e.y);
+    if (Math.random() < 0.65) spawnCompanionBall(false, e.x - 26, e.y);
     spawnFieldItem(false, "vitamin", e.x + 26, e.y);
 
-    // Bosses have a 38% chance (or 100% if player hasn't unlocked Awakening yet after Lv.14) to drop a Key Stone!
-    if ((!RUN.awakening && RUN.level >= 14) || Math.random() < 0.38) {
+    if ((!RUN.awakening && RUN.level >= 15) || Math.random() < 0.35) {
       spawnAwakeningRelicItem(e.x, e.y - 24);
     }
 
-    RUN.gems.push({ x: e.x, y: e.y + 18, xp: baseXp * 6, tier: 3, kind: "xp" });
-    addPopup(e.x, e.y - 24, `🎁 击败头目 ${POKEMON_ZH[e.species]}！奖励 +2 颗🎲骰子与稀有战利品！`, "#ff80ab", 1.32);
+    RUN.gems.push({ x: e.x, y: e.y + 18, xp: 35, tier: 3, kind: "xp" });
+    addPopup(e.x, e.y - 24, `🎁 击败头目 ${POKEMON_ZH[e.species]}！掉落稀有战利品与+1🎲骰子！`, "#ff80ab", 1.28);
   } else {
     const roll = Math.random();
-    if (e.isElite && roll < 0.032 && RUN.level >= 12) {
+    const gemXp = e.isElite ? 7 : (e.level >= 25 ? 2 : 1);
+    const gemTier = e.isElite ? 2 : (e.level >= 25 ? 1 : 0);
+
+    // Strictly scarce ground drops (98.5% of normal monsters only drop XP gems!)
+    if (e.isElite && roll < 0.018 && RUN.level >= 14) {
       spawnAwakeningRelicItem(e.x, e.y);
-    } else if (roll < 0.022) {
-      RUN.gems.push({ x: e.x, y: e.y, heal: Math.round(RUN.maxHp * 0.20), kind: "berry" });
-    } else if (e.isElite && roll < 0.35) {
+    } else if (roll < 0.012) {
+      RUN.gems.push({ x: e.x, y: e.y, heal: Math.round(RUN.maxHp * 0.16), kind: "berry" });
+    } else if (e.isElite && roll < 0.14) {
       spawnFieldItem(false, null, e.x, e.y);
-    } else if (roll < 0.040) {
+    } else if (roll < 0.008) {
       spawnFieldItem(false, null, e.x, e.y);
     } else {
-      if (RUN.gems.length > 140) {
-        RUN.gems[0].xp = (RUN.gems[0].xp || 5) + baseXp;
-        RUN.gems[0].tier = 2;
+      if (RUN.gems.length > 135) {
+        RUN.gems[0].xp = (RUN.gems[0].xp || 1) + gemXp;
+        RUN.gems[0].tier = Math.max(RUN.gems[0].tier || 0, gemTier);
       } else {
-        const tier = e.level >= 28 ? 2 : (e.level >= 14 ? 1 : 0);
-        RUN.gems.push({ x: e.x, y: e.y, xp: baseXp, tier, kind: "xp" });
+        RUN.gems.push({ x: e.x, y: e.y, xp: gemXp, tier: gemTier, kind: "xp" });
       }
     }
   }
 }
 
 function addPopup(x, y, text, color = "#fff", scale = 1.0) {
-  if (!RUN || RUN.popups.length > 55) return;
-  RUN.popups.push({ x: x + (Math.random() - 0.5) * 16, y, text, color, scale, life: 0.58, maxLife: 0.58 });
+  if (!RUN || RUN.popups.length > 45) return;
+  RUN.popups.push({ x: x + (Math.random() - 0.5) * 14, y, text, color, scale, life: 0.52, maxLife: 0.52 });
 }
 
 function nearestEnemy(x, y, maxDist = 420) {
@@ -3484,6 +3669,7 @@ function pauseRun() {
   const ov = document.getElementById("modal-ov");
   const box = document.getElementById("modal-box");
   ov.style.display = "flex";
+  const trait = STARTER_TRAITS[RUN.baseId];
   const movesSummary = RUN.moves.map((ms, idx) => {
     const m = MOVES_DB[ms.id];
     const mods = ms.mods.map(mid => MOVE_HEX_MODS.find(x => x.id === mid)?.tag || mid).join("+");
@@ -3492,11 +3678,12 @@ function pauseRun() {
 
   box.innerHTML = `
     <div style="text-align:center;padding:8px;">
-      <div style="font-size:20px;font-weight:900;color:#ffe066;margin-bottom:8px;">⏸️ 暂停 · 海克斯构筑总览</div>
+      <div style="font-size:20px;font-weight:900;color:#ffe066;margin-bottom:8px;">⏸️ 暂停 · 宝可梦流派与构筑总览</div>
       <div style="font-size:12px;color:#ccc;line-height:1.6;margin-bottom:12px;background:#160e22;padding:8px;border-radius:6px;text-align:left;">
-        主控：<b>Lv.${RUN.level} ${POKEMON_ZH[RUN.speciesId]}</b> (HP ${Math.ceil(RUN.hp)}/${RUN.maxHp})<br/>
+        主控：<b>Lv.${RUN.level} ${POKEMON_ZH[RUN.speciesId]}</b> (HP ${Math.ceil(RUN.hp)}/${RUN.maxHp} · 下级需 ${RUN.xp}/${RUN.xpNeed} XP)<br/>
+        本命流派：<b style="color:#00e676;">${trait ? trait.name : ''}</b><br/>
         六维：物攻${RUN.stats.atk} · 特攻${RUN.stats.spa} · 物防${RUN.stats.def} · 特防${RUN.stats.spd} · 速度${RUN.stats.spe}<br/>
-        超进化大招：<b style="color:#00e5ff;">${RUN.awakening ? RUN.awakening.title + ' (Lv.' + (1 + (RUN.ultUpgrades || 0)) + ')' : '未拾取钥石'}</b><br/>
+        超进化信物：<b style="color:#00e5ff;">${RUN.awakening ? RUN.awakening.title + ' (Lv.' + (1 + (RUN.ultUpgrades || 0)) + ')' : '尚未拾取信物'}</b><br/>
         当前招式与海克斯嵌槽：<br/><b style="color:#ffd54f;">${movesSummary}</b>
       </div>
       <div style="display:flex;gap:10px;justify-content:center;">
@@ -3556,7 +3743,7 @@ function endRun(victory) {
 }
 
 // ============================================================================
-// High-Performance 60FPS Update Loop (Spatial Hash Grid + Timed Ultimate + Climax Waves)
+// High-Performance 60FPS Update Loop (Vampire Survivors Pacing + Starter Traits)
 // ============================================================================
 let lastTime = performance.now();
 
@@ -3566,35 +3753,31 @@ function updateRun(dt) {
   const timeMin = RUN.time / 60;
   if (RUN.time > (SAVE.maxTime || 0)) SAVE.maxTime = Math.floor(RUN.time);
   if (RUN.invulnT > 0) RUN.invulnT -= dt;
+  if (RUN.quaxlyDanceT > 0) RUN.quaxlyDanceT -= dt;
 
-  // Check timed high-intensity climax wave events!
   checkClimaxWaveEvents();
 
-  // Passive Ultimate Awakening charge (+1.2% per second when unlocked, plus active combat charge)
   if (RUN.awakening && !RUN.ultActive) {
-    addUltimateCharge(dt * 1.2);
+    addUltimateCharge(dt * 0.9);
   }
 
-  // Active Timed Ultimate Awakening countdown!
   if (RUN.ultActive) {
     RUN.ultTimer -= dt;
     RUN.awkBurstTimer -= dt;
     if (RUN.awkBurstTimer <= 0) {
-      RUN.awkBurstTimer = 3.2;
+      RUN.awkBurstTimer = 3.5;
       const awk = RUN.awakening;
-      RUN.zones.push({ x: RUN.x, y: RUN.y, r: 175, life: 0.45, maxLife: 0.45, color: awk.color, kind: "sky_pillar" });
-      const near = queryEnemiesInRadius(RUN.x, RUN.y, 175);
+      RUN.zones.push({ x: RUN.x, y: RUN.y, r: 135, life: 0.38, maxLife: 0.38, color: awk.color, kind: "sky_pillar" });
+      const near = queryEnemiesInRadius(RUN.x, RUN.y, 140);
       for (let k = 0; k < near.length; k++) {
-        hitEnemyWithMove(near[k], RUN.level, RUN.stats, RUN.moves[0].id, 1.55, RUN.moves[0]);
+        hitEnemyWithMove(near[k], RUN.level, RUN.stats, RUN.moves[0].id, 1.35, RUN.moves[0]);
       }
-      addPopup(RUN.x, RUN.y - 44, `🌈 ${awk.title.split("：")[1] || awk.title} 领域轰炸！`, awk.color, 1.22);
     }
     if (RUN.ultTimer <= 0) {
       deactivateUltimateAwakening();
     }
   }
 
-  // Process pending Double Casts
   if (RUN.pendingCasts && RUN.pendingCasts.length > 0) {
     for (let i = RUN.pendingCasts.length - 1; i >= 0; i--) {
       const pc = RUN.pendingCasts[i];
@@ -3606,7 +3789,6 @@ function updateRun(dt) {
     }
   }
 
-  // Rebuild O(1) Spatial Hash Grid for all living enemies at start of frame!
   clearSpatialGrid();
   for (let i = RUN.enemies.length - 1; i >= 0; i--) {
     const e = RUN.enemies[i];
@@ -3617,21 +3799,30 @@ function updateRun(dt) {
     }
   }
 
+  // Passive Regeneration (Leftovers + Silver Regen + Chikorita 152 / Grookey 810 Innate!)
   const leftoversLv = (RUN.heldItems && RUN.heldItems.leftovers) || 0;
-  if (leftoversLv > 0 && RUN.hp < RUN.maxHp) {
+  const svRegenLv = (RUN.hexes && RUN.hexes.sv_regen) || 0;
+  const innateRegen = (RUN.baseId === 152 || RUN.baseId === 810) ? Math.max(1, Math.round(RUN.maxHp * 0.012)) : 0;
+  if ((leftoversLv > 0 || svRegenLv > 0 || innateRegen > 0) && RUN.hp < RUN.maxHp) {
     RUN.regenAcc += dt;
     if (RUN.regenAcc >= 1.0) {
       RUN.regenAcc -= 1.0;
-      RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(1, Math.round(RUN.maxHp * 0.012 * Math.min(3, leftoversLv))));
+      const heal = Math.round(RUN.maxHp * 0.012 * Math.min(3, leftoversLv)) + Math.round(svRegenLv * 1.5) + innateRegen;
+      RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(1, heal));
       updateHudSlots();
     }
   }
 
+  // Controlled Move Speed (Max +6% per Silver Wing stack, strict cap so you NEVER fly uncontrollably!)
   let spdMul = 1.0;
-  if (RUN.hexes && RUN.hexes.berserker_drive) spdMul += 0.25 * RUN.hexes.berserker_drive;
-  if (RUN.hexes && RUN.hexes.silver_haste) spdMul += 0.18 * RUN.hexes.silver_haste;
-  if (RUN.ultActive) spdMul += 0.22;
-  const playerMoveSpd = Math.min(265, (142 + RUN.stats.spe * 0.40) * spdMul);
+  if (RUN.hexes) {
+    if (RUN.hexes.sv_move_spd) spdMul += Math.min(4, RUN.hexes.sv_move_spd) * 0.06;
+    if (RUN.hexes.gd_swift_exec) spdMul += 0.08;
+  }
+  if (RUN.baseId === 255) spdMul += Math.min(0.14, (RUN.torchicCombo || 0) * 0.008);
+  if (RUN.baseId === 912 && RUN.quaxlyDanceT > 0) spdMul += 0.12;
+  if (RUN.ultActive) spdMul += 0.14;
+  const playerMoveSpd = Math.min(205, (132 + Math.min(32, RUN.stats.spe * 0.28)) * spdMul);
 
   let mx = JOY.active ? JOY.dx : 0;
   let my = JOY.active ? JOY.dy : 0;
@@ -3643,10 +3834,23 @@ function updateRun(dt) {
   const mlen = Math.hypot(mx, my);
   if (mlen > 0.01) {
     mx /= mlen; my /= mlen;
-    RUN.x += mx * playerMoveSpd * dt;
-    RUN.y += my * playerMoveSpd * dt;
+    const stepDist = playerMoveSpd * dt;
+    RUN.x += mx * stepDist;
+    RUN.y += my * stepDist;
     RUN.vx = mx; RUN.vy = my;
     RUN.facingX = mx; RUN.facingY = my;
+
+    // Cyndaquil (155) Innate: Leave volcanic fire mines behind while moving!
+    if (RUN.baseId === 155) {
+      RUN.cyndaquilDistAcc = (RUN.cyndaquilDistAcc || 0) + stepDist;
+      if (RUN.cyndaquilDistAcc >= 115 && RUN.zones.length < 36) {
+        RUN.cyndaquilDistAcc = 0;
+        RUN.zones.push({
+          x: RUN.x - mx * 18, y: RUN.y - my * 18, r: 42, life: 2.6, maxLife: 2.6, color: "#ff6d00",
+          kind: "santa_pool", tick: 0.1, attackerLv: RUN.level, attackerStats: RUN.stats, moveId: RUN.moves[0].id, mSlot: RUN.moves[0]
+        });
+      }
+    }
   } else {
     RUN.vx = 0; RUN.vy = 0;
   }
@@ -3662,6 +3866,7 @@ function updateRun(dt) {
 
   // Dynamic Companion AI
   const numComps = RUN.companions.length;
+  const compSpdMul = (RUN.hexes && RUN.hexes.sv_comp_train) ? (1 + 0.08 * RUN.hexes.sv_comp_train) : 1.0;
   for (let i = 0; i < numComps; i++) {
     const comp = RUN.companions[i];
     if (comp.calloutT > 0) comp.calloutT -= dt;
@@ -3670,34 +3875,34 @@ function updateRun(dt) {
     const m = MOVES_DB[comp.moveId];
     const isMeleeComp = m && (m.pat === "fist_flurry" || m.pat === "iaijutsu_slash" || m.pat === "spear_thrust" || m.pat === "whip_wave" || m.pat === "bible_orbit" || m.pat === "sonic_boom");
     const distToPlayer = Math.hypot(comp.x - RUN.x, comp.y - RUN.y);
-    const cSpd = Math.min(245, 148 + comp.stats.spe * 0.45);
-    const foe = nearestEnemy(comp.x, comp.y, 240);
+    const cSpd = Math.min(220, 138 + comp.stats.spe * 0.38);
+    const foe = nearestEnemy(comp.x, comp.y, 230);
 
     let goalX = RUN.x;
     let goalY = RUN.y;
 
-    if (distToPlayer > 220 || !foe) {
+    if (distToPlayer > 210 || !foe) {
       comp.patrolAng += dt * (1.2 + (i % 3) * 0.35);
-      const patrolR = 52 + (i % 2) * 24;
+      const patrolR = 50 + (i % 2) * 22;
       goalX = RUN.x + Math.cos(comp.patrolAng + (i * Math.PI * 2) / numComps) * patrolR;
       goalY = RUN.y + Math.sin(comp.patrolAng + (i * Math.PI * 2) / numComps) * patrolR;
     } else if (isMeleeComp) {
-      const angToFoe = Math.atan2(comp.y - foe.y, comp.x - foe.x) + dt * 2.2;
-      goalX = foe.x + Math.cos(angToFoe) * 42;
-      goalY = foe.y + Math.sin(angToFoe) * 42;
+      const angToFoe = Math.atan2(comp.y - foe.y, comp.x - foe.x) + dt * 2.1;
+      goalX = foe.x + Math.cos(angToFoe) * 40;
+      goalY = foe.y + Math.sin(angToFoe) * 40;
     } else {
-      const angToFoe = Math.atan2(comp.y - foe.y, comp.x - foe.x) + dt * 1.4;
-      goalX = foe.x + Math.cos(angToFoe) * 120;
-      goalY = foe.y + Math.sin(angToFoe) * 120;
+      const angToFoe = Math.atan2(comp.y - foe.y, comp.x - foe.x) + dt * 1.3;
+      goalX = foe.x + Math.cos(angToFoe) * 115;
+      goalY = foe.y + Math.sin(angToFoe) * 115;
     }
 
     for (let j = 0; j < numComps; j++) {
       if (i === j) continue;
       const other = RUN.companions[j];
       const sd = Math.hypot(comp.x - other.x, comp.y - other.y);
-      if (sd < 36 && sd > 0.1) {
-        goalX += ((comp.x - other.x) / sd) * 24;
-        goalY += ((comp.y - other.y) / sd) * 24;
+      if (sd < 34 && sd > 0.1) {
+        goalX += ((comp.x - other.x) / sd) * 22;
+        goalY += ((comp.y - other.y) / sd) * 22;
       }
     }
 
@@ -3705,15 +3910,15 @@ function updateRun(dt) {
     const dy = goalY - comp.y;
     const d = Math.hypot(dx, dy);
     if (d > 4) {
-      comp.vx = (dx / d) * Math.min(cSpd, d * 5.5);
-      comp.vy = (dy / d) * Math.min(cSpd, d * 5.5);
+      comp.vx = (dx / d) * Math.min(cSpd, d * 5.2);
+      comp.vy = (dy / d) * Math.min(cSpd, d * 5.2);
       comp.x += comp.vx * dt;
       comp.y += comp.vy * dt;
       comp.facingX = comp.vx;
       comp.facingY = comp.vy;
     }
 
-    comp.timer -= dt;
+    comp.timer -= dt * compSpdMul;
     if (comp.timer <= 0) {
       comp.timer = computeMoveCooldown(comp.moveId, comp.stats);
       executeUnitMove(comp, comp.moveId);
@@ -3744,19 +3949,19 @@ function updateRun(dt) {
     vx.y += vx.vy * dt;
     vx.tick -= dt;
     const doDmg = vx.tick <= 0;
-    if (doDmg) vx.tick = 0.40;
+    if (doDmg) vx.tick = 0.42;
 
-    const near = queryEnemiesInRadius(vx.x, vx.y, vx.r * 1.45);
+    const near = queryEnemiesInRadius(vx.x, vx.y, vx.r * 1.35);
     for (let k = 0; k < near.length; k++) {
       const e = near[k];
       const d = Math.hypot(e.x - vx.x, e.y - vx.y);
       if (!e.isBoss && d > 10) {
         const pullA = Math.atan2(vx.y - e.y, vx.x - e.x);
-        e.x += Math.cos(pullA) * (vx.isBlackHole ? 105 : 60) * dt;
-        e.y += Math.sin(pullA) * (vx.isBlackHole ? 105 : 60) * dt;
+        e.x += Math.cos(pullA) * (vx.isBlackHole ? 85 : 50) * dt;
+        e.y += Math.sin(pullA) * (vx.isBlackHole ? 85 : 50) * dt;
       }
       if (doDmg && d <= vx.r + e.radius) {
-        hitEnemyWithMove(e, vx.attackerLv, vx.attackerStats, vx.moveId, 0.58, vx.mSlot);
+        hitEnemyWithMove(e, vx.attackerLv, vx.attackerStats, vx.moveId, 0.55, vx.mSlot);
       }
     }
   }
@@ -3768,10 +3973,10 @@ function updateRun(dt) {
     mt.curX = mt.x + (mt.tx - mt.x) * u;
     mt.curY = mt.y + (mt.ty - mt.y) * u;
     if (u >= 1) {
-      RUN.zones.push({ x: mt.tx, y: mt.ty, r: mt.r, life: 0.42, maxLife: 0.42, color: mt.color, kind: "sky_pillar" });
+      RUN.zones.push({ x: mt.tx, y: mt.ty, r: mt.r, life: 0.35, maxLife: 0.35, color: mt.color, kind: "sky_pillar" });
       const near = queryEnemiesInRadius(mt.tx, mt.ty, mt.r);
       for (let k = 0; k < near.length; k++) {
-        hitEnemyWithMove(near[k], mt.attackerLv, mt.attackerStats, mt.moveId, 0.96, mt.mSlot);
+        hitEnemyWithMove(near[k], mt.attackerLv, mt.attackerStats, mt.moveId, 0.94, mt.mSlot);
       }
       swapRemove(RUN.meteors, i);
     }
@@ -3794,7 +3999,7 @@ function updateRun(dt) {
     const ph = RUN.phantoms[i];
     ph.life -= dt;
     if (ph.life <= 0) {
-      RUN.zones.push({ x: ph.x, y: ph.y, r: ph.r * 1.5, life: 0.22, maxLife: 0.22, color: ph.color, kind: "garlic_ring" });
+      RUN.zones.push({ x: ph.x, y: ph.y, r: ph.r * 1.3, life: 0.20, maxLife: 0.20, color: ph.color, kind: "garlic_ring" });
       swapRemove(RUN.phantoms, i);
       continue;
     }
@@ -3805,11 +4010,11 @@ function updateRun(dt) {
       const e = near[k];
       if (e.lastHitUid !== ph.uid) {
         e.lastHitUid = ph.uid;
-        hitEnemyWithMove(e, ph.attackerLv, ph.attackerStats, ph.moveId, 0.96, ph.mSlot);
+        hitEnemyWithMove(e, ph.attackerLv, ph.attackerStats, ph.moveId, 0.94, ph.mSlot);
         if (!e.isBoss) {
           const a = Math.atan2(e.y - ph.y, e.x - ph.x);
-          e.x += Math.cos(a) * 28;
-          e.y += Math.sin(a) * 28;
+          e.x += Math.cos(a) * 24;
+          e.y += Math.sin(a) * 24;
         }
       }
     }
@@ -3819,10 +4024,10 @@ function updateRun(dt) {
     const dc = RUN.decoys[i];
     dc.life -= dt;
     if (dc.life <= 0) {
-      RUN.zones.push({ x: dc.x, y: dc.y, r: 125, life: 0.38, maxLife: 0.38, color: "#ff4081", kind: "sky_pillar" });
-      const near = queryEnemiesInRadius(dc.x, dc.y, 125);
+      RUN.zones.push({ x: dc.x, y: dc.y, r: 110, life: 0.34, maxLife: 0.34, color: "#ff4081", kind: "sky_pillar" });
+      const near = queryEnemiesInRadius(dc.x, dc.y, 110);
       for (let k = 0; k < near.length; k++) {
-        hitEnemyWithMove(near[k], RUN.level, RUN.stats, RUN.moves[0].id, 1.55, RUN.moves[0]);
+        hitEnemyWithMove(near[k], RUN.level, RUN.stats, RUN.moves[0].id, 1.45, RUN.moves[0]);
       }
       swapRemove(RUN.decoys, i);
     }
@@ -3838,9 +4043,9 @@ function updateRun(dt) {
     const near = queryEnemiesInRadius(o.x, o.y, o.r);
     for (let k = 0; k < near.length; k++) {
       const e = near[k];
-      if (RUN.time - e.lastOrbHitT >= 0.30) {
+      if (RUN.time - e.lastOrbHitT >= 0.32) {
         e.lastOrbHitT = RUN.time;
-        hitEnemyWithMove(e, o.attackerLv, o.attackerStats, o.moveId, 0.75, o.mSlot);
+        hitEnemyWithMove(e, o.attackerLv, o.attackerStats, o.moveId, 0.72, o.mSlot);
       }
     }
   }
@@ -3856,8 +4061,8 @@ function updateRun(dt) {
       const distO = Math.hypot(toOx, toOy);
       if (distO < 24 && b.age > 0.7) { swapRemove(RUN.boomerangs, i); continue; }
       if (distO > 1) {
-        b.vx += (toOx / distO) * 960 * dt;
-        b.vy += (toOy / distO) * 960 * dt;
+        b.vx += (toOx / distO) * 940 * dt;
+        b.vy += (toOy / distO) * 940 * dt;
       }
     } else {
       b.vx += b.ax * dt;
@@ -3871,7 +4076,7 @@ function updateRun(dt) {
       const e = near[k];
       if (e.lastHitUid !== curUid) {
         e.lastHitUid = curUid;
-        hitEnemyWithMove(e, b.attackerLv, b.attackerStats, b.moveId, 0.90, b.mSlot);
+        hitEnemyWithMove(e, b.attackerLv, b.attackerStats, b.moveId, 0.88, b.mSlot);
       }
     }
   }
@@ -3893,10 +4098,10 @@ function updateRun(dt) {
       const e = near[k];
       if (e.lastHitUid !== sw.uid && distToSegment(e.x, e.y, x1, y1, x2, y2) <= sw.wid * 0.5 + e.radius) {
         e.lastHitUid = sw.uid;
-        hitEnemyWithMove(e, sw.attackerLv, sw.attackerStats, sw.moveId, 0.98, sw.mSlot);
+        hitEnemyWithMove(e, sw.attackerLv, sw.attackerStats, sw.moveId, 0.96, sw.mSlot);
         if (!e.isBoss) {
-          e.x += Math.cos(curAng) * 24;
-          e.y += Math.sin(curAng) * 24;
+          e.x += Math.cos(curAng) * 22;
+          e.y += Math.sin(curAng) * 22;
         }
       }
     }
@@ -3916,7 +4121,7 @@ function updateRun(dt) {
       const e = near[k];
       if (e.lastHitUid !== ls.uid && distToSegment(e.x, e.y, x1, y1, x2, y2) <= ls.wid * 0.5 + e.radius) {
         e.lastHitUid = ls.uid;
-        hitEnemyWithMove(e, ls.attackerLv, ls.attackerStats, ls.moveId, 0.94, ls.mSlot);
+        hitEnemyWithMove(e, ls.attackerLv, ls.attackerStats, ls.moveId, 0.92, ls.mSlot);
       }
     }
   }
@@ -3931,10 +4136,10 @@ function updateRun(dt) {
       p.flightT += dt;
       const u = Math.min(1, p.flightT / p.flightDur);
       p.x = p.startX + (p.tx - p.startX) * u;
-      p.y = p.startY + (p.ty - p.startY) * u - Math.sin(u * Math.PI) * 65;
+      p.y = p.startY + (p.ty - p.startY) * u - Math.sin(u * Math.PI) * 55;
       if (u >= 1) {
         RUN.zones.push({
-          x: p.tx, y: p.ty, r: p.poolR, life: 3.4, maxLife: 3.4, color: p.color,
+          x: p.tx, y: p.ty, r: p.poolR, life: 3.0, maxLife: 3.0, color: p.color,
           kind: "santa_pool", tick: 0.05, attackerLv: p.attackerLv, attackerStats: p.attackerStats, moveId: p.moveId, mSlot: p.mSlot
         });
         swapRemove(RUN.projectiles, i);
@@ -3948,7 +4153,7 @@ function updateRun(dt) {
       p.rot = (p.rot || 0) + 10 * dt;
     }
     if (p.homing) {
-      const t = nearestEnemy(p.x, p.y, 280);
+      const t = nearestEnemy(p.x, p.y, 260);
       if (t) {
         const spd = Math.hypot(p.vx, p.vy);
         const ta = Math.atan2(t.y - p.y, t.x - p.x);
@@ -3973,7 +4178,7 @@ function updateRun(dt) {
       const e = near[k];
       if (e.lastHitUid === p.uid) continue;
       e.lastHitUid = p.uid;
-      hitEnemyWithMove(e, p.attackerLv, p.attackerStats, p.moveId, p.aoeScale || 0.9, p.mSlot);
+      hitEnemyWithMove(e, p.attackerLv, p.attackerStats, p.moveId, p.aoeScale || 0.88, p.mSlot);
       p.pierce--;
       if (p.pierce <= 0) { p.life = 0; break; }
     }
@@ -3992,16 +4197,16 @@ function updateRun(dt) {
       z.kind = "sky_pillar";
       const near = queryEnemiesInRadius(z.x, z.y, z.r);
       for (let k = 0; k < near.length; k++) {
-        hitEnemyWithMove(near[k], z.attackerLv, z.attackerStats, z.moveId, 0.78, z.mSlot);
+        hitEnemyWithMove(near[k], z.attackerLv, z.attackerStats, z.moveId, 0.55, z.mSlot);
       }
     } else if (z.kind === "santa_pool") {
       z.tick -= dt;
       if (z.tick <= 0) {
-        z.tick = 0.45;
+        z.tick = 0.48;
         const near = queryEnemiesInRadius(z.x, z.y, z.r);
         for (let k = 0; k < near.length; k++) {
-          hitEnemyWithMove(near[k], z.attackerLv, z.attackerStats, z.moveId, 0.55, z.mSlot);
-          near[k].slowT = 0.8;
+          hitEnemyWithMove(near[k], z.attackerLv, z.attackerStats, z.moveId, 0.52, z.mSlot);
+          near[k].slowT = 0.7;
         }
       }
     }
@@ -4014,10 +4219,19 @@ function updateRun(dt) {
     eb.x += eb.vx * dt;
     eb.y += eb.vy * dt;
     if (RUN.invulnT <= 0 && Math.hypot(eb.x - RUN.x, eb.y - RUN.y) <= eb.r + 13) {
+      // Snivy (495) & Water Mist Dodge check
+      const dodgeChance = (RUN.baseId === 495 ? 0.12 : 0) + ((RUN.hexes && RUN.hexes.sv_water_mist) ? 0.15 : 0);
+      if (Math.random() < dodgeChance) {
+        addPopup(RUN.x, RUN.y - 24, "闪避!", "#80d8ff", 0.95);
+        swapRemove(RUN.enemyBullets, i);
+        continue;
+      }
       RUN.invulnT = 0.30;
-      const dmg = Math.max(4, Math.round(eb.dmg));
+      let dmg = Math.max(4, Math.round(eb.dmg));
+      if (RUN.baseId === 650) dmg = Math.max(2, Math.round(dmg * 0.65)); // Chespin Bulletproof -35% projectile dmg!
+      if (RUN.baseId === 7) dmg = Math.max(2, Math.round(dmg * 0.85));
       RUN.hp -= dmg;
-      addPopup(RUN.x, RUN.y - 24, `-${dmg}`, "#ff1744", 1.12);
+      addPopup(RUN.x, RUN.y - 24, `-${dmg}`, "#ff1744", 1.10);
       swapRemove(RUN.enemyBullets, i);
       if (RUN.hp <= 0) {
         if ((RUN.heldItems && RUN.heldItems.focus_sash) > 0) {
@@ -4025,7 +4239,7 @@ function updateRun(dt) {
           RUN.hp = Math.round(RUN.maxHp * 0.5);
           RUN.invulnT = 1.5;
           sfx("chest");
-          addPopup(RUN.x, RUN.y - 40, "🎗️ 气势披带触发！", "#ffe066", 1.35);
+          addPopup(RUN.x, RUN.y - 40, "🎗️ 气势披带触发！", "#ffe066", 1.32);
         } else {
           endRun(false);
           return;
@@ -4035,9 +4249,9 @@ function updateRun(dt) {
     }
   }
 
-  // High-Density Escalating Horde Capacity (Scales up to 170 monsters on screen with 60FPS!)
-  const targetEnemyCap = Math.min(170, 26 + RUN.level * 3 + Math.floor(timeMin * 9));
-  RUN.spawnAcc += dt * (2.0 + RUN.level * 0.16 + timeMin * 0.35);
+  // Vampire Survivors Horde Density & Scarce Field Spawns!
+  const targetEnemyCap = Math.min(168, 24 + RUN.level * 3 + Math.floor(timeMin * 10));
+  RUN.spawnAcc += dt * (2.1 + RUN.level * 0.15 + timeMin * 0.42);
   while (RUN.spawnAcc >= 1 && RUN.enemies.length < targetEnemyCap) {
     RUN.spawnAcc -= 1;
     spawnEnemy(false);
@@ -4045,48 +4259,46 @@ function updateRun(dt) {
 
   RUN.swarmTimer -= dt;
   if (RUN.swarmTimer <= 0) {
-    RUN.swarmTimer = Math.max(18, 30 - timeMin * 1.2);
+    RUN.swarmTimer = Math.max(22, 36 - timeMin * 1.1);
     triggerSwarmAmbush();
   }
 
   RUN.tmSpawnAcc -= dt;
   if (RUN.tmSpawnAcc <= 0) {
-    RUN.tmSpawnAcc = 24;
+    RUN.tmSpawnAcc = 55 + Math.random() * 15; // Scarce TM spawns (~62s)
     spawnFieldTM(false);
   }
 
   RUN.ballSpawnAcc -= dt;
   if (RUN.ballSpawnAcc <= 0) {
-    RUN.ballSpawnAcc = 30;
+    RUN.ballSpawnAcc = 68 + Math.random() * 18; // Scarce Companion Ball spawns (~77s)
     spawnCompanionBall(false);
   }
 
   RUN.itemSpawnAcc -= dt;
   if (RUN.itemSpawnAcc <= 0) {
-    RUN.itemSpawnAcc = 18;
+    RUN.itemSpawnAcc = 44 + Math.random() * 12; // Scarce Item spawns (~50s)
     spawnFieldItem(false);
   }
 
-  // Low-frequency rare field spawn for Mega/Gmax Key Stone!
   RUN.keystoneSpawnAcc -= dt;
   if (RUN.keystoneSpawnAcc <= 0) {
-    RUN.keystoneSpawnAcc = 55 + Math.random() * 25;
-    if (RUN.level >= 12 && Math.random() < (RUN.awakening ? 0.45 : 0.72)) {
+    RUN.keystoneSpawnAcc = 90 + Math.random() * 30; // Rare Awakening Relic spawns (~105s)
+    if (RUN.level >= 14 && Math.random() < (RUN.awakening ? 0.35 : 0.65)) {
       spawnAwakeningRelicItem();
     }
   }
 
   RUN.bossAcc -= dt;
   if (RUN.bossAcc <= 0) {
-    RUN.bossAcc = Math.max(20, 32 - timeMin * 1.1) + Math.random() * 10;
+    RUN.bossAcc = Math.max(24, 38 - timeMin * 1.1) + Math.random() * 10;
     spawnEnemy(true);
-    if ((RUN.level >= 15 || timeMin >= 3.5) && Math.random() < 0.38) {
+    if ((RUN.level >= 16 || timeMin >= 3.2) && Math.random() < 0.38) {
       spawnEnemy(true);
-      addPopup(RUN.x, RUN.y - 78, `⚡ 双神降临！两只传说头目同时现身！`, "#ffd600", 1.45);
+      addPopup(RUN.x, RUN.y - 72, `⚡ 双神降临！两只传说头目同时现身！`, "#ffd600", 1.38);
     }
   }
 
-  // Update Enemies + Fast Spatial-Grid Crowd Separation
   const activeDecoy = RUN.decoys[0] || null;
   const maxTeleportDist = Math.max(canvas.width, canvas.height) * 0.92;
   for (let i = RUN.enemies.length - 1; i >= 0; i--) {
@@ -4103,17 +4315,19 @@ function updateRun(dt) {
     if (e.leechT > 0) {
       e.leechT -= dt;
       if (Math.random() < dt * 2.0) {
-        const drainAmt = Math.max(1, Math.round(e.maxHp * 0.035));
+        const Mul = (RUN.hexes && RUN.hexes.sv_grass_seed) ? (1 + 0.25 * RUN.hexes.sv_grass_seed) : 1.0;
+        const drainAmt = Math.max(1, Math.round(e.maxHp * 0.03 * Mul));
         e.hp -= drainAmt;
-        RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(1, Math.round(drainAmt * 0.45)));
-        if (e.hp <= 0) { killEnemy(e); swapRemove(RUN.enemies, i); continue; }
+        RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(1, Math.round(drainAmt * 0.40)));
+        if (e.hp <= 0 && !e._dead) { e._dead = true; killEnemy(e); swapRemove(RUN.enemies, i); continue; }
       }
     }
     if (e.burnT > 0) {
       e.burnT -= dt;
       if (Math.random() < dt * 2.0) {
-        e.hp -= Math.max(1, Math.round(e.maxHp * 0.032));
-        if (e.hp <= 0) { killEnemy(e); swapRemove(RUN.enemies, i); continue; }
+        const fireMul = ((RUN.hexes && RUN.hexes.sv_fire_ember) ? (1 + 0.35 * RUN.hexes.sv_fire_ember) : 1.0) * (RUN.baseId === 909 ? 1.8 : 1.0);
+        e.hp -= Math.max(1, Math.round(e.maxHp * 0.028 * fireMul));
+        if (e.hp <= 0 && !e._dead) { e._dead = true; killEnemy(e); swapRemove(RUN.enemies, i); continue; }
       }
     }
 
@@ -4133,19 +4347,18 @@ function updateRun(dt) {
 
     if (e.isElite && !e.isBoss) {
       e.shootTimer -= dt;
-      if (e.shootTimer <= 0 && dist < 255 && RUN.enemyBullets.length < 52) {
-        e.shootTimer = Math.max(1.6, 2.7 - timeMin * 0.1);
+      if (e.shootTimer <= 0 && dist < 255 && RUN.enemyBullets.length < 48) {
+        e.shootTimer = Math.max(1.5, 2.6 - timeMin * 0.1);
         const a = Math.atan2(dy, dx);
-        const rawDmg = (((2 * e.level / 5 + 2) * 32 * (e.stats.spa / Math.max(1, RUN.stats.spd))) / 50 + 3);
+        const rawDmg = (((2 * e.level / 5 + 2) * 34 * (e.stats.spa / Math.max(1, RUN.stats.spd))) / 50 + 3);
         RUN.enemyBullets.push({
           x: e.x, y: e.y, vx: Math.cos(a) * 195, vy: Math.sin(a) * 195,
-          r: 7, dmg: rawDmg, life: 2.1, color: TYPE_META[e.stats.types[0]]?.color || "#ff5252"
+          r: 6.5, dmg: rawDmg, life: 2.1, color: TYPE_META[e.stats.types[0]]?.color || "#ff5252"
         });
       }
     }
 
     if (e.isBoss) {
-      // Boss Phase-2 Primal Reversion / Mega Evolution at 55% HP!
       if (!e.primalAwakened && e.hp <= e.maxHp * 0.55 && BOSS_PRIMAL_MAP[e.species]) {
         const pm = BOSS_PRIMAL_MAP[e.species];
         e.primalAwakened = true;
@@ -4153,17 +4366,17 @@ function updateRun(dt) {
         e.stats = computePokemonStats(e.species, e.level + 3, false, true);
         e.maxHp = Math.floor(e.maxHp * 1.42);
         e.hp = Math.floor(e.maxHp * 0.85);
-        e.scale *= 1.18;
+        e.scale *= 1.16;
         if (e.affix) e.affix.color = pm.color;
         playCry(e.species);
-        RUN.zones.push({ x: e.x, y: e.y, r: 150, life: 0.55, maxLife: 0.55, color: pm.color, kind: "sky_pillar" });
-        addPopup(e.x, e.y - 52, `🌋 头目二阶段突破：【${pm.name}】原始回归/超进化！`, pm.color, 1.48);
+        RUN.zones.push({ x: e.x, y: e.y, r: 135, life: 0.45, maxLife: 0.45, color: pm.color, kind: "sky_pillar" });
+        addPopup(e.x, e.y - 52, `🌋 头目二阶段突破：【${pm.name}】原始回归/超进化！`, pm.color, 1.42);
       }
       e.skillTimer -= dt;
       if (e.skillTimer <= 0 && dist < 370) {
-        e.skillTimer = 3.6 * (e.affix ? e.affix.skillCdMul : 1.0);
+        e.skillTimer = 3.5 * (e.affix ? e.affix.skillCdMul : 1.0);
         const a = Math.atan2(dy, dx);
-        const rawDmg = (((2 * e.level / 5 + 2) * 48 * (Math.max(e.stats.atk, e.stats.spa) / Math.max(1, RUN.stats.spd))) / 50 + 4);
+        const rawDmg = (((2 * e.level / 5 + 2) * 50 * (Math.max(e.stats.atk, e.stats.spa) / Math.max(1, RUN.stats.spd))) / 50 + 4);
         const bCol = e.affix ? e.affix.color : "#ff1744";
 
         const roll = Math.random();
@@ -4173,10 +4386,10 @@ function updateRun(dt) {
             const ba = a + (k / ways) * Math.PI * 2;
             RUN.enemyBullets.push({
               x: e.x, y: e.y, vx: Math.cos(ba) * 205, vy: Math.sin(ba) * 205,
-              r: 9, dmg: rawDmg, life: 2.3, color: bCol
+              r: 8, dmg: rawDmg, life: 2.3, color: bCol
             });
           }
-          addPopup(e.x, e.y - 36, `⚠️ ${POKEMON_ZH[e.species]} 释放全方位弹幕！`, bCol, 1.15);
+          addPopup(e.x, e.y - 36, `⚠️ ${POKEMON_ZH[e.species]} 释放全方位弹幕！`, bCol, 1.12);
         } else if (roll < 0.72) {
           e.dashWarnT = 0.65;
           e.dashVx = Math.cos(a) * 275;
@@ -4185,7 +4398,7 @@ function updateRun(dt) {
             const ba = a + k * 0.24;
             RUN.enemyBullets.push({
               x: e.x, y: e.y, vx: Math.cos(ba) * 230, vy: Math.sin(ba) * 230,
-              r: 9, dmg: rawDmg, life: 1.9, color: bCol
+              r: 8, dmg: rawDmg, life: 1.9, color: bCol
             });
           }
         } else {
@@ -4193,12 +4406,12 @@ function updateRun(dt) {
             const blinkA = Math.random() * Math.PI * 2;
             e.x = RUN.x + Math.cos(blinkA) * 125;
             e.y = RUN.y + Math.sin(blinkA) * 125;
-            addPopup(e.x, e.y - 36, `⚡ ${POKEMON_ZH[e.species]} 暗影瞬移！`, "#00e5ff", 1.2);
+            addPopup(e.x, e.y - 36, `⚡ ${POKEMON_ZH[e.species]} 暗影瞬移！`, "#00e5ff", 1.18);
           } else {
             for (let m = 0; m < 4; m++) {
               spawnEnemy(false, Math.random() * Math.PI * 2, 145, true);
             }
-            addPopup(e.x, e.y - 36, `📣 ${POKEMON_ZH[e.species]} 召唤精英护卫！`, "#ff9100", 1.15);
+            addPopup(e.x, e.y - 36, `📣 ${POKEMON_ZH[e.species]} 召唤精英护卫！`, "#ff9100", 1.12);
           }
         }
       }
@@ -4241,23 +4454,28 @@ function updateRun(dt) {
       RUN.invulnT = 0.32;
       const usePhys = e.stats.atk >= e.stats.spa;
       let eAtk = usePhys ? e.stats.atk : e.stats.spa;
-      if (usePhys && e.burnT > 0) eAtk = Math.floor(eAtk * 0.55);
+      if (usePhys && e.burnT > 0) eAtk = Math.floor(eAtk * 0.60);
+      if (RUN.baseId === 725) eAtk = Math.floor(eAtk * 0.82); // Litten Intimidate -18% enemy atk
       const pDef = Math.max(1, usePhys ? RUN.stats.def : RUN.stats.spd);
       const eff = getTypeEffectiveness(e.stats.types[0], RUN.stats.types);
-      const rawHit = (((2 * e.level / 5 + 2) * (e.isBoss ? 58 : (e.isElite ? 45 : 36)) * (eAtk / pDef)) / 50 + 3) * eff;
-      const dmgTaken = Math.max(3, Math.round(rawHit));
+      const rawHit = (((2 * e.level / 5 + 2) * (e.isBoss ? 60 : (e.isElite ? 46 : 38)) * (eAtk / pDef)) / 50 + 3) * eff;
+      let dmgTaken = Math.max(3, Math.round(rawHit) - ((RUN.hexes && RUN.hexes.sv_armor) ? RUN.hexes.sv_armor * 2 : 0));
+      if (RUN.baseId === 7) dmgTaken = Math.max(2, Math.round(dmgTaken * 0.85));
+      if (RUN.baseId === 387 && Math.hypot(RUN.vx, RUN.vy) < 0.1) dmgTaken = Math.max(2, Math.round(dmgTaken * 0.75));
       RUN.hp -= dmgTaken;
-      addPopup(RUN.x, RUN.y - 22, `-${dmgTaken}`, "#ff5252", 1.12);
+      addPopup(RUN.x, RUN.y - 22, `-${dmgTaken}`, "#ff5252", 1.10);
 
+      // Squirtle (7) / Rocky Helmet / Silver Thorns Counter-Wave
       const helmetLv = (RUN.heldItems && RUN.heldItems.rocky_helmet) || 0;
-      if (helmetLv > 0) {
-        RUN.zones.push({ x: RUN.x, y: RUN.y, r: 85, life: 0.25, maxLife: 0.25, color: "#ffab40", kind: "garlic_ring" });
-        const near = queryEnemiesInRadius(RUN.x, RUN.y, 85);
+      const thornsLv = (RUN.hexes && RUN.hexes.sv_thorns) || 0;
+      if (helmetLv > 0 || thornsLv > 0 || RUN.baseId === 7 || RUN.baseId === 650) {
+        RUN.zones.push({ x: RUN.x, y: RUN.y, r: 75, life: 0.22, maxLife: 0.22, color: RUN.baseId === 7 ? "#00b0ff" : "#ffab40", kind: "garlic_ring" });
+        const near = queryEnemiesInRadius(RUN.x, RUN.y, 75);
         for (let k = 0; k < near.length; k++) {
           const nearE = near[k];
-          const counterDmg = Math.max(5, Math.round(nearE.maxHp * 0.14 * helmetLv));
+          const counterDmg = Math.max(6, Math.round(nearE.maxHp * 0.10 * helmetLv + RUN.level * 8 * (thornsLv + (RUN.baseId === 7 ? 1 : 0))));
           nearE.hp -= counterDmg;
-          if (nearE.hp <= 0) killEnemy(nearE);
+          if (nearE.hp <= 0 && !nearE._dead) { nearE._dead = true; killEnemy(nearE); }
         }
       }
 
@@ -4267,12 +4485,12 @@ function updateRun(dt) {
           RUN.hp = Math.round(RUN.maxHp * 0.5);
           RUN.invulnT = 1.5;
           sfx("chest");
-          addPopup(RUN.x, RUN.y - 40, "🎗️ 气势披带触发！保留HP并震退怪群！", "#ffe066", 1.38);
+          addPopup(RUN.x, RUN.y - 40, "🎗️ 气势披带触发！保留HP并震退怪群！", "#ffe066", 1.32);
           for (let k = 0; k < RUN.enemies.length; k++) {
             const other = RUN.enemies[k];
             const a = Math.atan2(other.y - RUN.y, other.x - RUN.x);
-            other.x += Math.cos(a) * 140;
-            other.y += Math.sin(a) * 140;
+            other.x += Math.cos(a) * 130;
+            other.y += Math.sin(a) * 130;
           }
           updateHudSlots();
         } else {
@@ -4286,7 +4504,7 @@ function updateRun(dt) {
 
   for (let i = RUN.fieldTMs.length - 1; i >= 0; i--) {
     const tm = RUN.fieldTMs[i];
-    if (Math.hypot(RUN.x - tm.x, RUN.y - tm.y) < 32) {
+    if (Math.hypot(RUN.x - tm.x, RUN.y - tm.y) < 30) {
       swapRemove(RUN.fieldTMs, i);
       offerPlayerMove(tm.moveId, "拾取场地技能机");
       break;
@@ -4295,7 +4513,7 @@ function updateRun(dt) {
 
   for (let i = RUN.fieldBalls.length - 1; i >= 0; i--) {
     const b = RUN.fieldBalls[i];
-    if (Math.hypot(RUN.x - b.x, RUN.y - b.y) < 32) {
+    if (Math.hypot(RUN.x - b.x, RUN.y - b.y) < 30) {
       swapRemove(RUN.fieldBalls, i);
       triggerCompanionBallModal();
       break;
@@ -4304,48 +4522,40 @@ function updateRun(dt) {
 
   for (let i = RUN.fieldItems.length - 1; i >= 0; i--) {
     const it = RUN.fieldItems[i];
-    if (Math.hypot(RUN.x - it.x, RUN.y - it.y) < 34) {
+    if (Math.hypot(RUN.x - it.x, RUN.y - it.y) < 32) {
       swapRemove(RUN.fieldItems, i);
       pickupFieldItem(it);
       break;
     }
   }
 
-  const magnetRadius = 98 * (1 + ((RUN.hexes && RUN.hexes.apex_collector) || 0) * 1.2);
+  // Vampire SurvivorsTight Pickup Radius (62px base, +22% per Silver Magnet stack so you don't vacuum the whole screen for free!)
+  const magnetRadius = 62 * (1 + Math.min(4, (RUN.hexes && RUN.hexes.sv_magnet) || 0) * 0.22);
   for (let i = RUN.gems.length - 1; i >= 0; i--) {
     const g = RUN.gems[i];
     const d = Math.hypot(RUN.x - g.x, RUN.y - g.y);
     if (d < magnetRadius || g.magnetized) {
       g.magnetized = true;
       const ang = Math.atan2(RUN.y - g.y, RUN.x - g.x);
-      g.x += Math.cos(ang) * 460 * dt;
-      g.y += Math.sin(ang) * 460 * dt;
+      g.x += Math.cos(ang) * 420 * dt;
+      g.y += Math.sin(ang) * 420 * dt;
     }
-    if (d < 24) {
+    if (d < 22) {
       swapRemove(RUN.gems, i);
       sfx("gem");
       if (g.kind === "berry") {
-        RUN.hp = Math.min(RUN.maxHp, RUN.hp + g.heal);
-        addPopup(RUN.x, RUN.y - 24, `+${g.heal} HP`, "#69f0ae", 1.05);
+        const berryBoost = (RUN.hexes && RUN.hexes.sv_regen) ? (1 + 0.20 * RUN.hexes.sv_regen) : 1.0;
+        const healAmt = Math.round(g.heal * berryBoost);
+        RUN.hp = Math.min(RUN.maxHp, RUN.hp + healAmt);
+        addPopup(RUN.x, RUN.y - 24, `+${healAmt} HP`, "#69f0ae", 1.0);
         updateHudSlots();
       } else {
         RUN.xp += g.xp;
         if (RUN.awakening && !RUN.ultActive) {
-          addUltimateCharge(0.6);
-        }
-        if (RUN.hexes && RUN.hexes.apex_collector) {
-          RUN.gemPulseCount = (RUN.gemPulseCount || 0) + 1;
-          if (RUN.gemPulseCount >= 15) {
-            RUN.gemPulseCount = 0;
-            const foe = nearestEnemy(RUN.x, RUN.y, 240);
-            if (foe) {
-              RUN.lightnings.push({ segs: [{ x1: RUN.x, y1: RUN.y, x2: foe.x, y2: foe.y }], life: 0.22, maxLife: 0.22, color: "#00e5ff" });
-              hitEnemyWithMove(foe, RUN.level, RUN.stats, RUN.moves[0].id, 0.85, RUN.moves[0]);
-            }
-          }
+          addUltimateCharge(0.35);
         }
         for (let k = 0; k < RUN.companions.length; k++) {
-          gainCompanionXp(RUN.companions[k], Math.max(1, Math.round(g.xp * 0.85)));
+          gainCompanionXp(RUN.companions[k], Math.max(1, Math.round(g.xp * 2.5)));
         }
         if (RUN.xp >= RUN.xpNeed) {
           RUN.pendingLevelUp = true;
@@ -4367,12 +4577,11 @@ function updateRun(dt) {
     triggerPlayerLevelUp();
   }
 
-  // Throttle DOM HUD text updates to 5Hz (every 0.2s)
   RUN.hudTimer -= dt;
   if (RUN.hudTimer <= 0) {
     RUN.hudTimer = 0.20;
     document.getElementById("xp-fill").style.width = `${Math.min(100, (RUN.xp / RUN.xpNeed) * 100)}%`;
-    document.getElementById("xp-lv").textContent = `LV.${RUN.level} ${POKEMON_ZH[RUN.speciesId]}${RUN.ultActive ? ' [🔥超进化爆发中]' : ''}`;
+    document.getElementById("xp-lv").textContent = `LV.${RUN.level} ${POKEMON_ZH[RUN.speciesId]} (${RUN.xp}/${RUN.xpNeed})${RUN.ultActive ? ' [🔥超进化]' : ''}`;
     const mins = String(Math.floor(RUN.time / 60)).padStart(2, "0");
     const secs = String(Math.floor(RUN.time % 60)).padStart(2, "0");
     document.getElementById("hud-timer").textContent = `${mins}:${secs}`;
@@ -4983,7 +5192,7 @@ function render2D() {
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 6;
     ctx.stroke();
-    ctx.drawImage(meteorModel, mx - 26, my - 26, 52, 52);
+    ctx.drawImage(meteorModel, mx - 18, my - 18, 36, 36);
     ctx.restore();
   }
 
@@ -5019,7 +5228,7 @@ function render2D() {
       ctx.translate(sx, sy);
       ctx.rotate(sl.ang);
       ctx.globalAlpha = alpha;
-      const sz = sl.r * 2.4;
+      const sz = sl.r * 1.85;
       ctx.drawImage(fistModel, -sz * 0.5, -sz * 0.5, sz, sz);
     } else if (sl.kind === "sonic") {
       const curR = sl.r * (1.18 - alpha * 0.38);
@@ -5073,7 +5282,7 @@ function render2D() {
     const m = MOVES_DB[o.moveId];
     const modelType = (m && m.t === "grass") ? "leaf_blade" : ((m && m.t === "fire") ? "fire_dragon_orb" : "water_shuriken");
     const modelCanvas = getSkillModelCanvas(modelType, o.color);
-    const sz = o.r * 2.5;
+    const sz = o.r * 1.9;
     ctx.save();
     ctx.translate(sx, sy);
     ctx.rotate(o.ang + Math.PI * 0.5);
@@ -5087,7 +5296,7 @@ function render2D() {
     const sx = b.x - camX;
     const sy = b.y - camY;
     const shurikenCanvas = getSkillModelCanvas("water_shuriken", b.color);
-    const sz = b.r * 2.4;
+    const sz = b.r * 1.85;
     ctx.save();
     ctx.translate(sx, sy);
     ctx.rotate(RUN.time * 18);
@@ -5154,7 +5363,7 @@ function render2D() {
     ctx.save();
     // Outer energy sheath
     ctx.strokeStyle = ls.color;
-    ctx.lineWidth = ls.wid * 1.25;
+    ctx.lineWidth = ls.wid * 0.95;
     ctx.lineCap = "round";
     ctx.globalAlpha = 0.55;
     ctx.beginPath();
@@ -5202,7 +5411,7 @@ function render2D() {
     else if (m && m.t === "water") modelKey = "water_shuriken";
 
     const modCanvas = getSkillModelCanvas(modelKey, p.color);
-    const sz = Math.max(24, p.r * 2.35);
+    const sz = Math.max(16, p.r * 1.80);
     const ang = p.rot !== undefined ? p.rot : Math.atan2(p.vy || 0, p.vx || 1);
     ctx.save();
     ctx.translate(sx, sy);
