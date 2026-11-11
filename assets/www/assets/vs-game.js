@@ -1132,11 +1132,9 @@ function getSkillModelCanvas(modelKey, primaryColor = "#00e5ff") {
     g.fillStyle = fg;
     g.strokeStyle = "#ffffff";
     g.lineWidth = 2;
-    // Main armored gauntlet block
-    g.beginPath();
-    g.roundRect(-12, -16, 26, 32, 7);
-    g.fill();
-    g.stroke();
+    // Main armored gauntlet block (pure path, no roundRect compatibility issues)
+    g.fillRect(-12, -15, 25, 30);
+    g.strokeRect(-12, -15, 25, 30);
     // 4 3D Knuckle ridges on front
     g.fillStyle = "#ffffff";
     for (let k = -11; k <= 11; k += 7) {
@@ -1150,6 +1148,29 @@ function getSkillModelCanvas(modelKey, primaryColor = "#00e5ff") {
     g.beginPath();
     g.arc(10, 0, 22, -0.95, 0.95);
     g.stroke();
+    g.restore();
+  } else if (modelKey === "vortex_swirl") {
+    // Pre-baked 3D Maelstrom / Fire Spin Vortex (Eliminates per-frame createRadialGradient in render2D!)
+    const isDark = primaryColor === "#120524";
+    const rg = g.createRadialGradient(cx, cy, 3, cx, cy, 30);
+    rg.addColorStop(0, isDark ? "#000000" : "#ffffff");
+    rg.addColorStop(0.42, isDark ? "#4a148c" : primaryColor);
+    rg.addColorStop(0.82, isDark ? "#ea80fc" : "#01579b");
+    rg.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = rg;
+    g.beginPath();
+    g.arc(cx, cy, 30, 0, Math.PI * 2);
+    g.fill();
+    g.save();
+    g.translate(cx, cy);
+    for (let arm = 0; arm < 4; arm++) {
+      g.rotate(Math.PI / 2);
+      g.strokeStyle = isDark ? "#00e5ff" : "#ffffff";
+      g.lineWidth = 3;
+      g.beginPath();
+      g.arc(7, 0, 16, 0.1, Math.PI * 1.25);
+      g.stroke();
+    }
     g.restore();
   } else {
     // "astral_plasma_bolt": 3D Star-Core Energy Missile with dual intersecting rings & comet tail
@@ -1260,19 +1281,22 @@ function drawPokemonSprite(ctx, pid, x, y, vx, vy, animTime, scale = 1.6, flashW
 // Underlying Engine Optimization #3: Throttled WebAudio Bus (Zero Node Leak!)
 // ============================================================================
 let bgmAudio = null;
+let sharedCryAudio = null;
+let lastCryMs = 0;
 let curBgmIdx = 0;
 
 function playBgmTrack(idx, loop = true) {
   try {
     curBgmIdx = ((idx % BGM_TRACKS.length) + BGM_TRACKS.length) % BGM_TRACKS.length;
     const tr = BGM_TRACKS[curBgmIdx];
-    if (bgmAudio) { bgmAudio.pause(); bgmAudio = null; }
-    bgmAudio = new Audio(tr.file);
-    bgmAudio.loop = loop;
-    bgmAudio.volume = 0.42;
-    bgmAudio.onended = () => {
-      if (!loop && RUN && !RUN.over) nextStageBgm();
-    };
+    if (!bgmAudio) {
+      bgmAudio = new Audio();
+      bgmAudio.volume = 0.42;
+    } else {
+      bgmAudio.pause();
+    }
+    bgmAudio.src = tr.file;
+    bgmAudio.loop = true; // Keep looping current track so mid-combat never triggers synchronous MediaPlayer decode stalls!
     bgmAudio.play().catch(() => {});
     if (RUN) {
       addPopup(RUN.x, RUN.y - 52, `🎵 BGM：${tr.name}`, "#81d4fa", 1.08);
@@ -1284,7 +1308,7 @@ function nextStageBgm() {
   if (RUN && RUN.stage && RUN.stage.bgmPool) {
     const pool = RUN.stage.bgmPool;
     const pick = pool[Math.floor(Math.random() * pool.length)];
-    playBgmTrack(pick, false);
+    playBgmTrack(pick, true);
   } else {
     playBgmTrack((curBgmIdx + 1) % BGM_TRACKS.length, true);
   }
@@ -1292,9 +1316,17 @@ function nextStageBgm() {
 
 function playCry(pid) {
   try {
-    const a = new Audio(`./assets/cries/${pid}.ogg`);
-    a.volume = 0.45;
-    a.play().catch(() => {});
+    const nowMs = performance.now();
+    if (nowMs - lastCryMs < 350) return; // Throttle cries so simultaneous spawns/evolutions never lock Android MediaPlayer!
+    lastCryMs = nowMs;
+    if (!sharedCryAudio) {
+      sharedCryAudio = new Audio();
+      sharedCryAudio.volume = 0.42;
+    } else {
+      sharedCryAudio.pause();
+    }
+    sharedCryAudio.src = `./assets/cries/${pid}.ogg`;
+    sharedCryAudio.play().catch(() => {});
   } catch (e) {}
 }
 
@@ -3599,7 +3631,6 @@ function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite
   if (isBoss) {
     RUN.activeBoss = enemy;
     playCry(species);
-    playBgmTrack(Math.random() < 0.5 ? 14 : 13, true);
     addPopup(RUN.x, RUN.y - 60, `👑 ${affix.name} Lv.${enemyLv} ${POKEMON_ZH[species]} 降临！`, affix.color, 1.35);
   }
 }
@@ -3647,7 +3678,6 @@ function killEnemy(e, mSlot = null) {
   SAVE.totalKills = (SAVE.totalKills || 0) + 1;
   if (RUN.activeBoss === e) {
     RUN.activeBoss = RUN.enemies.find(other => other !== e && other.isBoss && other.hp > 0) || null;
-    if (!RUN.activeBoss) nextStageBgm();
   }
 
   if (RUN.awakening && !RUN.ultActive) {
@@ -4782,50 +4812,19 @@ function render2D() {
     ctx.restore();
   }
 
-  // 2. 3D Multi-Ring Swirling Maelstrom Vortexes & Psychic Singularity Black Holes
+  // 2. Pre-Baked 3D Swirling Maelstrom Vortexes & Black Holes (Zero per-frame createRadialGradient!)
   for (let i = 0; i < RUN.vortexes.length; i++) {
     const vx = RUN.vortexes[i];
-    const sx = vx.x - camX;
-    const sy = vx.y - camY;
+    const sx = (vx.x - camX) | 0;
+    const sy = (vx.y - camY) | 0;
     if (sx < -vx.r - 20 || sx > w + vx.r + 20 || sy < -vx.r - 20 || sy > h + vx.r + 20) continue;
-    const alpha = Math.min(1, vx.life * 1.5);
+    const vModel = getSkillModelCanvas("vortex_swirl", vx.isBlackHole ? "#120524" : vx.color);
+    const sz = vx.r * 2.1;
     ctx.save();
+    ctx.globalAlpha = Math.min(1, vx.life * 1.4) * 0.88;
     ctx.translate(sx, sy);
-    // Perspective 2.5D tilt + rotation
-    const rot = RUN.time * (vx.isBlackHole ? -7.5 : 6.5);
-    const rg = ctx.createRadialGradient(0, 0, 4, 0, 0, vx.r);
-    if (vx.isBlackHole) {
-      rg.addColorStop(0, "#000000");
-      rg.addColorStop(0.45, "#4a148c");
-      rg.addColorStop(0.82, "#ea80fc");
-      rg.addColorStop(1, "rgba(0,0,0,0)");
-    } else {
-      rg.addColorStop(0, "#ffffff");
-      rg.addColorStop(0.35, vx.color);
-      rg.addColorStop(0.80, "#01579b");
-      rg.addColorStop(1, "rgba(0,0,0,0)");
-    }
-    ctx.globalAlpha = alpha * 0.78;
-    ctx.fillStyle = rg;
-    ctx.beginPath();
-    ctx.arc(0, 0, vx.r, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 4 Sculpted Spiral Turbine Blades + Foam/Starlight Crest
-    ctx.rotate(rot);
-    ctx.globalAlpha = alpha * 0.95;
-    for (let arm = 0; arm < 4; arm++) {
-      ctx.rotate(Math.PI / 2);
-      ctx.strokeStyle = vx.isBlackHole ? "#00e5ff" : "#e1f5fe";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(vx.r * 0.24, 0, vx.r * 0.56, 0.1, Math.PI * 1.25);
-      ctx.stroke();
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.arc(vx.r * 0.65, vx.r * 0.18, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    ctx.rotate(RUN.time * (vx.isBlackHole ? -7.0 : 6.0));
+    ctx.drawImage(vModel, -sz * 0.5, -sz * 0.5, sz, sz);
     ctx.restore();
   }
 
@@ -4838,13 +4837,9 @@ function render2D() {
     const alpha = Math.max(0, Math.min(1, z.life / z.maxLife));
     ctx.save();
     if (z.kind === "santa_pool" || z.kind === "aftershock_bomb") {
-      // 3D Bubbling Alchemical / Hexagram Magic Pool
-      const pg = ctx.createRadialGradient(sx, sy, 4, sx, sy, z.r);
-      pg.addColorStop(0, "#ffffff");
-      pg.addColorStop(0.45, z.color);
-      pg.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = pg;
-      ctx.globalAlpha = 0.58 * Math.min(1, z.life);
+      // Zero-gradient fast Hexagram Magic Pool
+      ctx.fillStyle = z.color;
+      ctx.globalAlpha = 0.32 * Math.min(1, z.life);
       ctx.beginPath();
       ctx.arc(sx, sy, z.r, 0, Math.PI * 2);
       ctx.fill();
@@ -4921,14 +4916,13 @@ function render2D() {
       drawKanji(11, z.color);
       drawKanji(4.5, "#ffff00");
     } else if (z.kind === "sky_pillar") {
-      // 3D Cylindrical Orbital Laser Pillar with helical rings
-      const cg = ctx.createLinearGradient(sx - z.r * 0.5, sy, sx + z.r * 0.5, sy);
-      cg.addColorStop(0, z.color);
-      cg.addColorStop(0.5, "#ffffff");
-      cg.addColorStop(1, z.color);
-      ctx.fillStyle = cg;
-      ctx.globalAlpha = alpha * 0.78;
-      ctx.fillRect(sx - z.r * 0.45, sy - 300, z.r * 0.9, 300);
+      // Zero-gradient fast Cylindrical Orbital Laser Pillar
+      ctx.fillStyle = z.color;
+      ctx.globalAlpha = alpha * 0.55;
+      ctx.fillRect(sx - z.r * 0.44, sy - 280, z.r * 0.88, 280);
+      ctx.fillStyle = "#ffffff";
+      ctx.globalAlpha = alpha * 0.85;
+      ctx.fillRect(sx - z.r * 0.18, sy - 280, z.r * 0.36, 280);
       ctx.beginPath();
       ctx.ellipse(sx, sy, z.r, z.r * 0.48, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -5574,10 +5568,14 @@ function render2D() {
 }
 
 function loop(now) {
-  const dt = Math.min(0.05, (now - lastTime) / 1000);
-  lastTime = now;
-  updateRun(dt);
-  render2D();
+  try {
+    const dt = Math.min(0.05, Math.max(0.001, (now - lastTime) / 1000));
+    lastTime = now;
+    updateRun(dt);
+    render2D();
+  } catch (err) {
+    console.error("Frame recovery:", err);
+  }
   requestAnimationFrame(loop);
 }
 
