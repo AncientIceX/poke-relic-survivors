@@ -306,6 +306,67 @@ const STAGES = [
   }
 ];
 
+const DIFFICULTIES = [
+  {
+    id: "n1",
+    code: "N1",
+    name: "N1 · 新人训练家",
+    tag: "轻松爽快",
+    color: "#69f0ae",
+    hpMul: 0.56,
+    atkMul: 0.64,
+    spdMul: 0.86,
+    timeScaleMul: 0.52,
+    capMul: 0.78,
+    eliteMul: 0.65,
+    lvOffset: -1,
+    desc: "怪潮血量与伤害大幅降低，后期成长平缓，适合熟悉海克斯流派与超进化爽感！",
+    condText: "初始开放",
+    check: s => true
+  },
+  {
+    id: "n2",
+    code: "N2",
+    name: "N2 · 道馆挑战者",
+    tag: "标准进阶",
+    color: "#ffd54f",
+    hpMul: 0.82,
+    atkMul: 0.84,
+    spdMul: 0.94,
+    timeScaleMul: 0.78,
+    capMul: 0.92,
+    eliteMul: 0.88,
+    lvOffset: 0,
+    desc: "标准类幸存者数值强度，3分钟后怪潮逐步施压，考验属性克制与★超武联动！",
+    condText: "在 N1 存活满 3 分钟或击败 1 只 Boss 解锁",
+    check: s => s.maxTime >= 180 || s.bossKills >= 1
+  },
+  {
+    id: "n3",
+    code: "N3",
+    name: "N3 · 冠军大师赛",
+    tag: "硬核地狱",
+    color: "#ff5252",
+    hpMul: 1.15,
+    atkMul: 1.05,
+    spdMul: 1.02,
+    timeScaleMul: 1.08,
+    capMul: 1.05,
+    eliteMul: 1.15,
+    lvOffset: 2,
+    desc: "高压狂暴怪潮 + 高频精英与双神同屏降临，唯有极致海克斯构筑与超进化时机方能通关！",
+    condText: "累计击败 3 只 Boss 或单局达到 Lv.22 解锁",
+    check: s => s.bossKills >= 3 || s.maxLevel >= 22
+  }
+];
+
+function getActiveDiff() {
+  if (RUN && RUN.diff) return RUN.diff;
+  const sel = (SAVE && SAVE.selectedDiff) || "n1";
+  return DIFFICULTIES.find(d => d.id === sel) || DIFFICULTIES[0];
+}
+function isDiffUnlocked(df) { return SAVE.forceUnlockAll || df.check(SAVE); }
+
 const VITAMIN_DROPS = [
   { id: "hp",  name: "HP增强剂 (HP Up)",     icon: "./assets/items/hp-up.png",   color: "#66bb6a", desc: "局内拾取：当场回复22%生命，并永久提升局外【HP努力值】(上限+15%)" },
   { id: "atk", name: "攻击增强剂 (Protein)", icon: "./assets/items/protein.png", color: "#ef5350", desc: "局内拾取：本局物攻+4%，并永久提升局外【物攻努力值】(上限+15%)" },
@@ -343,6 +404,7 @@ function loadSave() {
       raw.forceUnlockAll = !!raw.forceUnlockAll;
       raw.selectedChar = raw.selectedChar || 1;
       raw.selectedStage = raw.selectedStage || "forest";
+      raw.selectedDiff = raw.selectedDiff || "n1";
       return raw;
     }
   } catch (e) {}
@@ -357,7 +419,8 @@ function loadSave() {
     totalVitamins: 0,
     forceUnlockAll: false,
     selectedChar: 1,
-    selectedStage: "forest"
+    selectedStage: "forest",
+    selectedDiff: "n1"
   };
 }
 let SAVE = loadSave();
@@ -563,13 +626,15 @@ function getStarterPrimaryElement(baseId) {
 // Vampire Survivors Style Time-Driven Enemy Level & Exponential Wave Pressure
 function getTargetEnemyLevel(isBoss = false, isElite = false) {
   if (!RUN) return 4;
+  const df = getActiveDiff();
   const pLv = RUN.level || 5;
   const timeMin = RUN.time / 60;
-  // In Vampire Survivors, enemy strength scales relentlessly with time phases (3m, 5m, 8m, 11m walls!)
-  const timeLv = timeMin * 3.4 + Math.pow(Math.max(0, timeMin - 2.0), 1.55) * 2.4;
-  const baseLv = Math.round(Math.max(pLv * 0.95, 4 + timeLv) + RUN.stage.lvOffset);
-  const offset = isBoss ? 6 : (isElite ? 3 : 0);
-  return Math.max(4, baseLv + offset);
+  // Scaled by Difficulty Tier (N1 gentle, N2 standard, N3 hardcore)
+  const tScale = df.timeScaleMul;
+  const timeLv = (timeMin * 2.8 + Math.pow(Math.max(0, timeMin - 2.5), 1.48) * 2.1) * tScale;
+  const baseLv = Math.round(Math.max(pLv * (0.85 + tScale * 0.10), 4 + timeLv) + RUN.stage.lvOffset + df.lvOffset);
+  const offset = isBoss ? (df.id === "n1" ? 3 : (df.id === "n2" ? 5 : 6)) : (isElite ? (df.id === "n1" ? 1 : 2) : 0);
+  return Math.max(3, baseLv + offset);
 }
 
 function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false, runBuffs = null) {
@@ -581,10 +646,9 @@ function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false,
   const pEvo = RUN ? RUN.evoStage : 0;
   const timeMin = RUN ? (RUN.time / 60) : 0;
 
-  // Relentless post-2.5-minute Vampire Survivors wave HP & armor scaling!
-  // At 3 min: ~2.6x HP; at 5 min: ~5.2x HP; at 8 min: ~11.5x HP; at 12 min: ~24x HP!
-  const vsWaveFortitude = 1 + Math.max(0, timeMin - 1.0) * 0.45 + Math.pow(Math.max(0, timeMin - 2.5), 1.78) * 0.72;
-  const evoScale = (1 + pEvo * 0.32 + Math.max(0, pLv - 8) * 0.04) * vsWaveFortitude;
+  const df = getActiveDiff();
+  const vsWaveFortitude = 1 + (Math.max(0, timeMin - 1.5) * 0.36 + Math.pow(Math.max(0, timeMin - 3.0), 1.65) * 0.55) * df.timeScaleMul;
+  const evoScale = (1 + pEvo * 0.28 + Math.max(0, pLv - 8) * 0.032) * vsWaveFortitude * df.hpMul;
 
   let maxHp = coreHp;
   if (isPlayer) {
@@ -593,18 +657,18 @@ function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false,
     const goliathBonus = RUN ? (RUN.goliathHpBonus || 0) : 0;
     const goliathMul = (RUN && RUN.hexes && RUN.hexes.goliath) ? 1.18 : 1.0;
     const turtwigBonus = (RUN && RUN.baseId === 387) ? 1.20 : 1.0;
-    maxHp = Math.floor(((coreHp * 2.25 + 44) * (1 + evPct + vitStacks * 0.12) * goliathMul * turtwigBonus) + goliathBonus);
+    maxHp = Math.floor(((coreHp * 2.45 + 52) * (1 + evPct + vitStacks * 0.12) * goliathMul * turtwigBonus) + goliathBonus);
   } else if (isBoss) {
-    maxHp = Math.floor((coreHp * 22.0 + 420) * evoScale);
+    maxHp = Math.floor((coreHp * 18.0 + 320) * evoScale);
   } else {
-    maxHp = Math.floor((coreHp * 1.95 + 22) * evoScale);
+    maxHp = Math.floor((coreHp * 1.55 + 16) * evoScale);
   }
 
   const statFn = (base, key) => {
     const raw = Math.floor(((2 * base + 31) * level) / 100) + 8;
     if (!isPlayer) {
-      const enemyTimeMul = 1 + pEvo * 0.18 + Math.max(0, timeMin - 2.0) * 0.22 + Math.pow(Math.max(0, timeMin - 4.0), 1.35) * 0.18;
-      return Math.floor(raw * enemyTimeMul);
+      const enemyTimeMul = (1 + pEvo * 0.14 + (Math.max(0, timeMin - 2.5) * 0.18 + Math.pow(Math.max(0, timeMin - 4.5), 1.30) * 0.14) * df.timeScaleMul) * df.atkMul;
+      return Math.max(6, Math.floor(raw * enemyTimeMul));
     }
     let bonusPct = getEvBonusPct(key) * 0.01 + ((runBuffs && runBuffs[key]) || 0) * 0.04;
     if (RUN && RUN.hexes) {
@@ -1375,6 +1439,33 @@ function renderMenu() {
     </div>
   `;
 
+  const diffList = document.getElementById("diff-list");
+  if (diffList) {
+    diffList.innerHTML = "";
+    for (const df of DIFFICULTIES) {
+      const unlocked = isDiffUnlocked(df);
+      const active = (SAVE.selectedDiff || "n1") === df.id;
+      const dCard = document.createElement("div");
+      dCard.style.cssText = `padding:7px 6px;border-radius:7px;border:2px solid ${active ? df.color : "#5e4724"};background:${active ? "#38234d" : "#1a1126"};cursor:pointer;text-align:center;opacity:${unlocked ? "1" : "0.62"};box-shadow:${active ? "0 0 10px " + df.color + "55" : "none"};`;
+      dCard.innerHTML = `
+        <div style="font-size:15px;font-weight:900;color:${df.color};">${df.code}</div>
+        <div style="font-size:10px;font-weight:900;color:#fff;margin-top:1px;">${df.name.split("·")[1] || df.name}</div>
+        <div style="font-size:9px;color:${unlocked ? "#b9f6ca" : "#ffd54f"};margin-top:2px;">${unlocked ? df.tag : "🔒未解锁"}</div>
+      `;
+      dCard.onclick = () => {
+        if (!unlocked) {
+          alert(`难度【${df.name}】未解锁！\n解锁条件：${df.condText}`);
+          return;
+        }
+        SAVE.selectedDiff = df.id;
+        writeSave();
+        sfx("gem");
+        renderMenu();
+      };
+      diffList.appendChild(dCard);
+    }
+  }
+
   const stList = document.getElementById("stage-list");
   stList.innerHTML = "";
   for (const st of STAGES) {
@@ -1737,6 +1828,7 @@ function updateUltButtonHud() {
 function startRun() {
   const charId = SAVE.selectedChar;
   const stage = STAGES.find(s => s.id === SAVE.selectedStage) || STAGES[0];
+  const diff = DIFFICULTIES.find(d => d.id === (SAVE.selectedDiff || "n1")) || DIFFICULTIES[0];
   const lsData = STARTER_LEARNSETS[charId];
   const initLv = 5;
   const initStats = computePokemonStats(charId, initLv, true, false);
@@ -1787,6 +1879,7 @@ function startRun() {
     vitaminsThisRun: 0,
     bossesKilledThisRun: 0,
     stage,
+    diff,
     wildPool,
     bossPool,
     x: 0,
@@ -3445,7 +3538,8 @@ function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite
     const minIdx = Math.min(maxIdx - 6, Math.floor(progress * 0.65 * wp.length));
     const idx = minIdx + Math.floor(Math.random() * Math.max(1, maxIdx - minIdx));
     species = wp[Math.max(0, Math.min(wp.length - 1, idx))];
-    const eliteChance = 0.10 + Math.min(0.24, Math.max(0, timeMin - 1.5) * 0.04);
+    const df = getActiveDiff();
+    const eliteChance = (0.08 + Math.min(0.22, Math.max(0, timeMin - 1.5) * 0.035)) * df.eliteMul;
     if (!isElite && pLv >= 7 && Math.random() < eliteChance) isElite = true;
   }
 
@@ -3460,10 +3554,11 @@ function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite
   const ang = customAng !== null ? customAng : Math.random() * Math.PI * 2;
   const dist = customDist !== null ? customDist : (Math.max(canvas.width, canvas.height) * 0.50 + 36);
 
-  const lateSpdBoost = Math.min(38, Math.max(0, timeMin - 2.5) * 5.2);
-  let moveSpd = isBoss
-    ? Math.min(124, 68 + eStats.spe * 0.22 + pLv * 0.55 + lateSpdBoost * 0.65)
-    : Math.min(142, 56 + eStats.spe * 0.30 + Math.min(30, pLv * 0.65) + lateSpdBoost);
+  const dfSpd = getActiveDiff().spdMul;
+  const lateSpdBoost = Math.min(34, Math.max(0, timeMin - 2.5) * 4.5 * getActiveDiff().timeScaleMul);
+  let moveSpd = (isBoss
+    ? Math.min(122, 66 + eStats.spe * 0.22 + pLv * 0.50 + lateSpdBoost * 0.60)
+    : Math.min(138, 54 + eStats.spe * 0.28 + Math.min(28, pLv * 0.60) + lateSpdBoost)) * dfSpd;
   if (affix) moveSpd *= affix.spdMul;
 
   const enemy = {
@@ -4249,9 +4344,10 @@ function updateRun(dt) {
     }
   }
 
-  // Vampire Survivors Horde Density & Scarce Field Spawns!
-  const targetEnemyCap = Math.min(168, 24 + RUN.level * 3 + Math.floor(timeMin * 10));
-  RUN.spawnAcc += dt * (2.1 + RUN.level * 0.15 + timeMin * 0.42);
+  // Vampire Survivors Horde Density Scaled by Difficulty Tier (N1 / N2 / N3)!
+  const dfCap = getActiveDiff().capMul;
+  const targetEnemyCap = Math.min(168, Math.round((20 + RUN.level * 2.8 + Math.floor(timeMin * 9)) * dfCap));
+  RUN.spawnAcc += dt * (1.85 + RUN.level * 0.14 + timeMin * 0.38) * dfCap;
   while (RUN.spawnAcc >= 1 && RUN.enemies.length < targetEnemyCap) {
     RUN.spawnAcc -= 1;
     spawnEnemy(false);
@@ -4585,7 +4681,7 @@ function updateRun(dt) {
     const mins = String(Math.floor(RUN.time / 60)).padStart(2, "0");
     const secs = String(Math.floor(RUN.time % 60)).padStart(2, "0");
     document.getElementById("hud-timer").textContent = `${mins}:${secs}`;
-    document.getElementById("hud-wave").textContent = `怪潮Lv.${getTargetEnemyLevel(false, false)}`;
+    document.getElementById("hud-wave").textContent = `${getActiveDiff().code}·怪Lv.${getTargetEnemyLevel(false, false)}`;
     document.getElementById("hud-kills").textContent = RUN.kills;
     updateUltButtonHud();
 
