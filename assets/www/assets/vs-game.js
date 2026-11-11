@@ -20,60 +20,158 @@ const TYPE_ZH = {"normal":"一般","fighting":"格斗","flying":"飞行","poison
 // 4. Pooled WebAudio SFX Bus (Single persistent GainNode, 65ms throttle)
 // 5. Player-Level-Driven Dynamic Difficulty Curve (Scales smoothly with `RUN.level`!)
 // ============================================================================
-const SAVE_KEY = "pokesurvivors.vs2d.v340";
+const SAVE_KEY = "pokesurvivors.vs2d.v410";
 
 
 // ============================================================================
 // Tier-4 Awakening System (Mega Evolution / Battle Bond / Gigantamax / Z-Crystal / Terastal)
 // Unlocked by picking up the "🌈 极巨超进化钥石" dropped by Bosses once Stage-3 Evolved!
 // ============================================================================
+// ============================================================================
+// Canonical Multi-System Awakening Relics (Mega Stone / Dynamax Band / Z-Crystal / Tera Orb / Bond Relic)
+// Any transformation that exists in Pokémon for your starter can be unlocked by finding its matching Relic in-run!
+// ============================================================================
+const AWAKENING_RELIC_META = {
+  mega:  { id: "mega",  short: "🧬超级石",   name: "🧬 超级进化石 (Mega Stone)",     icon: "./assets/items/dawn-stone.png",   color: "#00e5ff" },
+  gmax:  { id: "gmax",  short: "☁️极巨腕带", name: "☁️ 极巨腕带与极巨汤 (Dynamax)",  icon: "./assets/items/power-herb.png",   color: "#ff1744" },
+  zmove: { id: "zmove", short: "💎Z纯晶",    name: "💎 专属Z纯晶 (Z-Crystal)",       icon: "./assets/items/star-piece.png",   color: "#ffd600" },
+  bond:  { id: "bond",  short: "⚡羁绊信物", name: "⚡ 牵绊变身信物 (Battle Bond)",  icon: "./assets/items/soul-dew.png",     color: "#ffab00" },
+  tera:  { id: "tera",  short: "👑太晶珠",   name: "👑 太晶珠星冠 (Tera Orb)",       icon: "./assets/items/comet-shard.png",  color: "#e040fb" }
+};
+
 const AWAKENING_CFG = {
-  1:   [{ kind: "mega", formId: 10003, title: "Mega进化：超级妙蛙花", ability: "【厚脂肪】冰/火伤害减半，六维种族值+100，吸血藤链数量+2！", color: "#00e676", statAdd: [0,0,0,0,0,0] }],
-  4:   [
-    { kind: "mega", formId: 10006, title: "Mega进化：超级喷火龙X", ability: "【硬爪】属性变为火+龙，物攻暴涨，所有近战/冲撞招式伤害+35%！", color: "#00b0ff", statAdd: [0,0,0,0,0,0] },
-    { kind: "mega", formId: 10007, title: "Mega进化：超级喷火龙Y", ability: "【日照】特攻暴涨至159，开启晴天领域使火系招式威力+35%！", color: "#ff3d00", statAdd: [0,0,0,0,0,0] }
+  1: [
+    { relic: "mega",  kind: "mega",  formId: 10003, title: "Mega进化：超级妙蛙花",   ability: "【厚脂肪】六维+100，冰/火减伤50%，吸血藤链与花瓣风暴数量+3！", color: "#00e676", statAdd: [0,0,0,0,0,0] },
+    { relic: "gmax",  kind: "gmax",  formId: 10003, title: "超极巨化：超极巨妙蛙花", ability: "【超极巨灰飞鞭灭】体型巨化、HP翻倍，巨型世界树藤蔓横扫全屏并持续荆棘灼伤！", color: "#ff1744", statAdd: [40,20,25,30,25,0] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：绚烂缤纷花怒放", ability: "【草Z结晶】六维+100，周期性引爆全屏翠绿灵气花海，瞬间蒸发周围怪群！", color: "#ffd600", statAdd: [20,20,20,35,20,10] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶草妙蛙花",   ability: "【太晶草同调】草系本系加成突破至2.1×，所有技能命中折射3道晶化翠绿射线！", color: "#00e676", statAdd: [20,20,20,30,20,15] }
   ],
-  7:   [{ kind: "mega", formId: 10009, title: "Mega进化：超级水箭龟", ability: "【超级发射器】重炮形态种族值+100，所有波动/光束/水炮伤害+35%！", color: "#2979ff", statAdd: [0,0,0,0,0,0] }],
-  152: [{ kind: "mega_custom", title: "太古觉醒：花海大竺葵", ability: "【芳草圣域】六维总和+100，每秒额外恢复2.5%最大HP并净化减速！", color: "#f48fb1", statAdd: [15,15,25,25,20,0] }],
-  155: [{ kind: "mega_custom", title: "洗翠/烈焰觉醒：百火火暴兽", ability: "【火山喷发】六维总和+100，特攻+35，所有火系招式附带连环火柱！", color: "#ff3d00", statAdd: [10,15,15,35,10,15] }],
-  158: [{ kind: "mega_custom", title: "狂鲨觉醒：深渊大力鳄", ability: "【强行巨颚】六维总和+100，物攻+35，咬合与水系招式伤害+30%！", color: "#00e5ff", statAdd: [15,35,20,10,10,10] }],
-  252: [{ kind: "mega", formId: 10254, title: "Mega进化：超级蜥蜴王", ability: "【避雷针】属性变为草+龙，特攻与速度双145，全招式冷却加快18%！", color: "#00e676", statAdd: [0,0,0,0,0,0] }],
-  255: [{ kind: "mega", formId: 10257, title: "Mega进化：超级火焰鸡", ability: "【加速】物攻飙至160，移速与出招速度全面跃升25%！", color: "#ff1744", statAdd: [0,0,0,0,0,0] }],
-  258: [{ kind: "mega", formId: 10260, title: "Mega进化：超级巨沼怪", ability: "【悠游自如】物攻飙至150，双防110，地面与水系范围扩大30%！", color: "#00b0ff", statAdd: [0,0,0,0,0,0] }],
-  387: [{ kind: "mega_custom", title: "大陆觉醒：世界树土台龟", ability: "【岩石甲壳】六维+100，双防+30，每6秒自动触发一次全屏大地裂变！", color: "#8bc34a", statAdd: [20,25,30,10,20,-5] }],
-  390: [{ kind: "mega_custom", title: "斗战胜佛：齐天烈焰猴", ability: "【铁拳无双】六维+100，双攻+30，拳击与近战挥砍暴击率+25%！", color: "#ff9100", statAdd: [10,30,10,30,5,15] }],
-  393: [{ kind: "mega_custom", title: "皇权觉醒：波塞冬帝王拿波", ability: "【皇室钢甲】六维+100，特攻+35，受到伤害降低25%！", color: "#448aff", statAdd: [15,10,25,35,20,-5] }],
-  495: [{ kind: "mega_custom", title: "皇室觉醒：唱反调君主蛇", ability: "【唱反调】六维+100，速度+30，风暴与藤鞭伤害提升35%！", color: "#00e676", statAdd: [15,15,15,30,15,30] }],
-  498: [{ kind: "mega_custom", title: "霸王觉醒：炼狱炎武王", ability: "【舍身霸体】六维+100，HP与物攻+35，冲撞与重锤伤害+35%！", color: "#ff1744", statAdd: [30,35,15,15,10,-5] }],
-  501: [{ kind: "mega_custom", title: "洗翠剑豪：千重浪大剑鬼", ability: "【锋锐剑圣】六维+100，拔刀斩与水刃必定暴击！", color: "#00e5ff", statAdd: [15,30,15,25,10,15] }],
-  650: [{ kind: "bond", title: "羁绊变身：圣盾骑士布里卡隆", ability: "【防弹荆棘壁】全六维+110，周身永久环绕反伤尖刺风暴！", color: "#aeea00", statAdd: [20,30,35,10,15,0] }],
-  653: [{ kind: "bond", title: "羁绊变身：大魔导妖火红狐", ability: "【魔术师领域】全六维+110，超能与火系法阵双重释放！", color: "#ea80fc", statAdd: [15,10,15,40,15,15] }],
-  656: [{ kind: "bond", formId: 10658, title: "羁绊变身：小智版甲贺忍蛙", ability: "【牵绊变身】全六维暴涨+110，黄金巨型飞水手里剑伤害与体积翻倍！", color: "#ffd600", statAdd: [0,0,0,0,0,0] }],
-  722: [{ kind: "zmove", title: "专属Z觉醒：遮天蔽日暗影箭", ability: "【狙射树枭Z】六维+100，每7秒自动向全屏倾泻必中暗影箭雨！", color: "#b388ff", statAdd: [15,30,15,20,10,10] }],
-  725: [{ kind: "zmove", title: "专属Z觉醒：极恶飞跃粉碎击", ability: "【炽焰咆哮虎Z】六维+100，每7秒从高空跃下引爆全屏摔角火海！", color: "#ff6d00", statAdd: [20,35,20,10,15,0] }],
-  728: [{ kind: "zmove", title: "专属Z觉醒：海神庄严交响乐", ability: "【西狮海壬Z】六维+100，每7秒吟唱海神巨型共鸣水球轰炸全场！", color: "#ff80ab", statAdd: [20,10,15,35,20,0] }],
-  810: [{ kind: "gmax", title: "超极巨化：超极巨轰擂金刚猩", ability: "【超极巨狂雷鼓击】体型巨化、HP翻倍、全六维+100，周期性震碎全屏！", color: "#00e676", statAdd: [35,35,20,10,15,5] }],
-  813: [{ kind: "gmax", title: "超极巨化：超极巨闪焰王牌", ability: "【超极巨威能火球】体型巨化、HP翻倍、全六维+100，踢出巨型太阳火球！", color: "#ff3d00", statAdd: [30,35,15,15,10,15] }],
-  816: [{ kind: "gmax", title: "超极巨化：超极巨千面避役", ability: "【超极巨狙击神射】体型巨化、HP翻倍、全六维+100，全屏致命激光狙击！", color: "#00e5ff", statAdd: [25,15,15,40,10,15] }],
-  906: [{ kind: "tera", title: "太晶王冠：星晶魔幻假面喵", ability: "【太晶草突破】本系属性加成由1.5×突破至2.0×，六维+100，千变万花连环爆破！", color: "#00e676", statAdd: [15,30,15,15,10,20] }],
-  909: [{ kind: "tera", title: "太晶王冠：星晶骨纹巨声鳄", ability: "【太晶火突破】本系属性加成由1.5×突破至2.0×，六维+100，闪焰高歌双重火鸟！", color: "#ff5252", statAdd: [25,10,25,35,15,0] }],
-  912: [{ kind: "tera", title: "太晶王冠：星晶狂欢浪舞鸭", ability: "【太晶水突破】本系属性加成由1.5×突破至2.0×，六维+100，流水旋舞全屏水刃！", color: "#00b0ff", statAdd: [15,35,15,15,10,20] }]
+  4: [
+    { relic: "mega",  kind: "mega",  formId: 10006, title: "Mega进化：超级喷火龙X",  ability: "【硬爪黑龙】化为火+龙属性，全火系招式蜕变为苍蓝冥火，近战与龙系暴伤+50%！", color: "#00e5ff", statAdd: [0,0,0,0,0,0] },
+    { relic: "mega",  kind: "mega",  formId: 10007, title: "Mega进化：超级喷火龙Y",  ability: "【日照旱灾】特攻飙至159，开启大日照领域使远程火球与热风范围扩大60%！", color: "#ff6d00", statAdd: [0,0,0,0,0,0] },
+    { relic: "gmax",  kind: "gmax",  formId: 10007, title: "超极巨化：超极巨喷火龙", ability: "【超极巨地狱灭焰】体型巨化、HP翻倍，召唤不灭烈焰巨鸟环绕全屏焚烧一切！", color: "#ff1744", statAdd: [40,25,20,40,20,15] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：超强极限爆焰弹", ability: "【火Z结晶】六维+100，周期性从天际砸落毁灭性超巨型日冕火球！", color: "#ffd600", statAdd: [20,25,15,40,15,15] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶龙/火喷火龙", ability: "【太晶星冠】本系招式加成突破至2.1×，每次攻击折射3道赤红龙晶射线！", color: "#ff3d00", statAdd: [20,25,20,35,15,20] }
+  ],
+  7: [
+    { relic: "mega",  kind: "mega",  formId: 10009, title: "Mega进化：超级水箭龟",   ability: "【超级发射器】重炮形态六维+100，水炮与波动类光束体积翻倍、伤害+45%！", color: "#2979ff", statAdd: [0,0,0,0,0,0] },
+    { relic: "gmax",  kind: "gmax",  formId: 10009, title: "超极巨化：超极巨水箭龟", ability: "【超极巨水炮轰灭】体型巨化、HP翻倍，31门甲壳重炮360°无死角齐射轰炸！", color: "#ff1744", statAdd: [42,25,30,35,30,0] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：超级水流大漩涡", ability: "【水Z结晶】六维+100，在全场卷起深渊级巨型海啸漩涡吞噬怪潮！", color: "#00b0ff", statAdd: [25,20,25,35,25,0] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶水水箭龟",   ability: "【太晶水同调】水系本系加成突破至2.1×，所有水炮命中折射高压水刃！", color: "#00e5ff", statAdd: [25,20,25,30,25,10] }
+  ],
+  152: [
+    { relic: "mega",  kind: "mega",  title: "Mega进化：超级大竺葵",   ability: "【芳草圣域】六维+110，周身绽放治愈神圣花环，全草系招式范围+50%！", color: "#f48fb1", statAdd: [25,20,30,30,25,10] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：绚烂缤纷花怒放", ability: "【草Z结晶】六维+100，全屏降下复苏与毁灭交织的太古花岚！", color: "#ffd600", statAdd: [25,15,25,35,25,5] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶妖精/草大竺葵", ability: "【太晶星冠】本系加成突破至2.1×，攻击附带3道粉翠星晶折射！", color: "#00e676", statAdd: [25,15,25,30,25,10] }
+  ],
+  155: [
+    { relic: "bond",  kind: "bond",  title: "洗翠觉醒：百火幽灵火暴兽", ability: "【百火夜行】附带幽灵系冥火，特攻+40，释放招式自动召唤3团索命鬼火！", color: "#ea80fc", statAdd: [15,15,15,42,20,20] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：超强极限爆焰弹", ability: "【火Z结晶】六维+100，喷火化为全屏地心火山大喷发！", color: "#ff3d00", statAdd: [15,20,15,40,15,20] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶火火暴兽",   ability: "【太晶火同调】火系本系加成突破至2.1×，每次喷火折射3道熔岩星芒！", color: "#ff6d00", statAdd: [15,20,15,38,15,22] }
+  ],
+  158: [
+    { relic: "mega",  kind: "mega",  title: "Mega进化：超级大力鳄",   ability: "【强行巨颚】物攻+42，所有咬碎、水流尾与近战撕咬体积翻倍且必定暴击！", color: "#00e5ff", statAdd: [25,42,25,10,15,18] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：超级水流大漩涡", ability: "【水Z结晶】六维+100，掀起狂鲨深海漩涡绞碎周围一切敌人！", color: "#2979ff", statAdd: [25,38,25,15,15,15] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶水大力鳄",   ability: "【太晶水同调】水系本系加成突破至2.1×，每次挥砍迸发3道深海晶刺！", color: "#00b0ff", statAdd: [25,35,20,15,15,20] }
+  ],
+  252: [
+    { relic: "mega",  kind: "mega",  formId: 10254, title: "Mega进化：超级蜥蜴王", ability: "【避雷针龙魂】化为草+龙属性，特攻与速度双145，叶刃与龙息冷却缩减35%！", color: "#00e676", statAdd: [0,0,0,0,0,0] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：绚烂缤纷花怒放", ability: "【草Z结晶】六维+100，全屏高速斩出万千森林剑气风暴！", color: "#ffd600", statAdd: [15,30,15,35,15,25] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶草蜥蜴王", ability: "【太晶草同调】草系本系加成突破至2.1×，叶刃斩击折射3道翡翠刀芒！", color: "#69f0ae", statAdd: [15,28,15,35,15,25] }
+  ],
+  255: [
+    { relic: "mega",  kind: "mega",  formId: 10257, title: "Mega进化：超级火焰鸡", ability: "【加速神腿】物攻飙至160，移速与出招速度跃升35%，烈焰踢化为全屏残影！", color: "#ff1744", statAdd: [0,0,0,0,0,0] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：全力无双激烈拳", ability: "【格斗/火Z】六维+100，从天而降轰出毁天灭地的烈焰流星神拳！", color: "#ffd600", statAdd: [15,40,15,30,15,25] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶火火焰鸡", ability: "【太晶火同调】本系加成突破至2.1×，每次踢击迸发3道赤炎晶刃！", color: "#ff6d00", statAdd: [15,38,15,28,15,25] }
+  ],
+  258: [
+    { relic: "mega",  kind: "mega",  formId: 10260, title: "Mega进化：超级巨沼怪", ability: "【悠游自如】物攻飙至150、双防110，地震与浊流范围扩大50%！", color: "#00b0ff", statAdd: [0,0,0,0,0,0] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：隆隆啸天大终结", ability: "【地面/水Z】六维+100，引发板块崩裂级全屏海啸地裂！", color: "#ffd600", statAdd: [25,38,25,20,25,10] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶水巨沼怪", ability: "【太晶水同调】本系加成突破至2.1×，重拳与地震折射3道深海晶柱！", color: "#00e5ff", statAdd: [25,35,25,20,25,10] }
+  ],
+  387: [
+    { relic: "gmax",  kind: "gmax",  title: "超极巨化：大陆世界树土台龟", ability: "【超极巨大地震击】体型巨化、HP翻倍，背负远古大陆每3秒震碎全屏敌群！", color: "#8bc34a", statAdd: [40,35,35,15,25,0] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：隆隆啸天大终结", ability: "【地面/草Z】六维+100，召唤世界树根系穿刺全场！", color: "#ffd600", statAdd: [25,35,30,15,25,0] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶草/地土台龟", ability: "【太晶星冠】本系加成突破至2.1×，攻击折射3道大地翡翠棱光！", color: "#00e676", statAdd: [25,32,30,15,25,5] }
+  ],
+  390: [
+    { relic: "bond",  kind: "bond",  title: "羁绊觉醒：齐天大圣烈焰猴", ability: "【铁拳无双】双攻+38、速度+25，近身战与闪焰冲锋化为万千金箍火影！", color: "#ff9100", statAdd: [15,38,15,38,15,25] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：全力无双激烈拳", ability: "【格斗/火Z】六维+100，瞬间轰出覆盖全屏的百裂业火神拳！", color: "#ffd600", statAdd: [15,35,15,35,15,25] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶火烈焰猴", ability: "【太晶火同调】本系加成突破至2.1×，拳风折射3道赤金星芒！", color: "#ff3d00", statAdd: [15,35,15,35,15,25] }
+  ],
+  393: [
+    { relic: "gmax",  kind: "gmax",  title: "超极巨化：波塞冬帝王拿波", ability: "【超极巨皇室钢洪】体型巨化、HP翻倍，召唤钢之三叉戟风暴统治全屏！", color: "#448aff", statAdd: [38,15,30,40,30,0] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：超级水流大漩涡", ability: "【水/钢Z】六维+100，全屏降下极寒皇权怒涛与钢刃！", color: "#ffd600", statAdd: [20,15,25,38,25,10] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶水帝王拿波", ability: "【太晶水同调】本系加成突破至2.1×，加农水炮折射3道皇冠冰晶！", color: "#00e5ff", statAdd: [20,15,25,38,25,10] }
+  ],
+  495: [
+    { relic: "bond",  kind: "bond",  title: "皇室觉醒：唱反调君主蛇", ability: "【唱反调】特攻与速度+38，飞叶风暴越打越强并附带双倍翠绿龙卷！", color: "#00e676", statAdd: [18,15,20,38,20,35] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：绚烂缤纷花怒放", ability: "【草Z结晶】六维+100，皇家荆棘藤蔓瞬间绞杀全屏！", color: "#ffd600", statAdd: [18,15,20,38,20,30] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶草君主蛇", ability: "【太晶草同调】本系加成突破至2.1×，飞叶折射3道翡翠星芒！", color: "#69f0ae", statAdd: [18,15,20,35,20,32] }
+  ],
+  498: [
+    { relic: "gmax",  kind: "gmax",  title: "超极巨化：霸王炼狱炎武王", ability: "【超极巨业火重锤】体型巨化、HP翻倍，每3秒砸下崩山裂地的熔岩巨柱！", color: "#ff1744", statAdd: [42,40,20,25,15,0] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：超强极限爆焰弹", ability: "【火/格斗Z】六维+100，霸王火海冲撞瞬间夷平全场！", color: "#ffd600", statAdd: [30,38,20,20,15,5] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶火炎武王", ability: "【太晶火同调】本系加成突破至2.1×，重锤折射3道爆炎晶刺！", color: "#ff6d00", statAdd: [30,38,20,20,15,10] }
+  ],
+  501: [
+    { relic: "bond",  kind: "bond",  title: "洗翠剑豪：千重浪大剑鬼", ability: "【锋锐剑圣】双攻+35，贝壳刃与秘剑千重浪刀光体积翻倍且100%暴击！", color: "#00e5ff", statAdd: [20,36,20,32,15,22] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：超级水流大漩涡", ability: "【水Z结晶】六维+100，剑气化为漫天水刃风暴席卷全屏！", color: "#ffd600", statAdd: [20,35,20,32,15,20] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶水大剑鬼", ability: "【太晶水同调】本系加成突破至2.1×，每次拔刀折射3道苍蓝剑芒！", color: "#2979ff", statAdd: [20,35,20,30,15,22] }
+  ],
+  650: [
+    { relic: "bond",  kind: "bond",  title: "羁绊变身：圣盾骑士布里卡隆", ability: "【防弹荆棘壁】六维+115，周身环绕巨型重装飞盾，碰撞反弹3倍荆棘伤害！", color: "#aeea00", statAdd: [28,35,40,10,20,5] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：绚烂缤纷花怒放", ability: "【草/格斗Z】六维+100，圣盾重锤轰碎全屏大地！", color: "#ffd600", statAdd: [25,35,38,10,20,10] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶草布里卡隆", ability: "【太晶草同调】本系加成突破至2.1×，攻击折射3道翠金重装晶刺！", color: "#00e676", statAdd: [25,35,35,10,20,10] }
+  ],
+  653: [
+    { relic: "bond",  kind: "bond",  title: "羁绊变身：大魔导妖火红狐", ability: "【魔术师圣域】特攻+45，魔法火焰与精神强念自动生成双重炼狱星阵！", color: "#ea80fc", statAdd: [18,10,18,45,25,22] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：至高精神破坏波", ability: "【超能/火Z】六维+100，全屏降下次元级灵能爆炎矩阵！", color: "#ffd600", statAdd: [18,10,18,42,25,20] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶火妖火红狐", ability: "【太晶火同调】本系加成突破至2.1×，法杖释放3道星晶魔导射线！", color: "#ff4081", statAdd: [18,10,18,42,22,22] }
+  ],
+  656: [
+    { relic: "bond",  kind: "bond",  formId: 10658, title: "羁绊变身：小智版甲贺忍蛙", ability: "【牵绊变身】全六维+110，背后凝结黄金巨型飞水手里剑，穿透与切割范围翻倍！", color: "#ffd600", statAdd: [0,0,0,0,0,0] },
+    { relic: "zmove", kind: "zmove", formId: 10658, title: "Z招式觉醒：极巨水龙卷手里剑", ability: "【水/恶Z】召唤影分身军团向360°同时投掷漫天黄金手里剑！", color: "#00e5ff", statAdd: [15,35,15,38,15,30] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶水甲贺忍蛙", ability: "【太晶水同调】本系加成突破至2.1×，每枚手里剑命中折射3道水晶飞刃！", color: "#2979ff", statAdd: [15,32,15,35,15,30] }
+  ],
+  722: [
+    { relic: "zmove", kind: "zmove", title: "专属Z觉醒：遮天蔽日暗影箭", ability: "【狙射树枭Z】六维+110，腾空跃起向全屏倾泻百发必中幽灵暗影箭雨！", color: "#b388ff", statAdd: [18,36,18,28,18,20] },
+    { relic: "bond",  kind: "bond",  title: "洗翠觉醒：浪人武士狙射树枭", ability: "【胆量三连箭】物攻+38，叶刃与缝影附带破甲穿透气刃！", color: "#00e676", statAdd: [20,38,20,22,18,18] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶草狙射树枭", ability: "【太晶草同调】本系加成突破至2.1×，羽箭命中折射3道幽翠星芒！", color: "#69f0ae", statAdd: [18,35,18,25,18,22] }
+  ],
+  725: [
+    { relic: "zmove", kind: "zmove", title: "专属Z觉醒：极恶飞跃粉碎击", ability: "【炽焰咆哮虎Z】六维+110，高空跃下引爆全屏摔角擂台烈焰风暴！", color: "#ff6d00", statAdd: [25,40,22,15,20,12] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶火炽焰咆哮虎", ability: "【太晶火同调】本系加成突破至2.1×，DD金勾臂挥出3道赤金火刃！", color: "#ff1744", statAdd: [25,38,22,15,20,15] }
+  ],
+  728: [
+    { relic: "zmove", kind: "zmove", title: "专属Z觉醒：海神庄严交响乐", ability: "【西狮海壬Z】六维+110，吟唱超巨型海神共鸣水球轰炸全场并回复生命！", color: "#ff80ab", statAdd: [25,12,20,42,28,10] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶水西狮海壬", ability: "【太晶水同调】本系加成突破至2.1×，咏叹调声波折射3道虹彩水钻！", color: "#00e5ff", statAdd: [25,12,20,40,28,12] }
+  ],
+  810: [
+    { relic: "gmax",  kind: "gmax",  title: "超极巨化：超极巨轰擂金刚猩", ability: "【超极巨狂雷鼓击】体型巨化、HP翻倍、六维+110，森林巨鼓引发全屏地裂藤蔓！", color: "#00e676", statAdd: [42,40,25,10,20,10] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶草轰擂金刚猩", ability: "【太晶草同调】本系加成突破至2.1×，每次鼓击震出3道翡翠冲击波！", color: "#69f0ae", statAdd: [25,38,22,10,18,15] }
+  ],
+  813: [
+    { relic: "gmax",  kind: "gmax",  title: "超极巨化：超极巨闪焰王牌", ability: "【超极巨威能火球】体型巨化、HP翻倍、六维+110，脚踏巨型日冕火球碾碎全屏！", color: "#ff3d00", statAdd: [38,40,18,15,15,24] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶火闪焰王牌", ability: "【太晶火同调】本系加成突破至2.1×，火焰球弹射折射3道赤焰流星！", color: "#ff9100", statAdd: [20,38,18,15,15,25] }
+  ],
+  816: [
+    { relic: "gmax",  kind: "gmax",  title: "超极巨化：超极巨千面避役", ability: "【超极巨狙击神射】体型巨化、HP翻倍、六维+110，高空狙击塔发射贯穿全屏激光！", color: "#00e5ff", statAdd: [35,15,18,45,18,22] },
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶水千面避役", ability: "【太晶水同调】本系加成突破至2.1×，狙击水束命中折射3道棱镜激光！", color: "#2979ff", statAdd: [18,15,18,42,18,25] }
+  ],
+  906: [
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶草魔幻假面喵", ability: "【太晶草突破】本系加成突破至2.1×，千变万花化为漫天暴击星晶花炸弹！", color: "#00e676", statAdd: [20,38,18,20,18,28] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：魔术星辰千花乱舞", ability: "【草/恶Z】六维+110，瞬间在全屏所有敌人脚下引爆幻影花束！", color: "#ffd600", statAdd: [20,38,18,20,18,25] }
+  ],
+  909: [
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶火骨纹巨声鳄", ability: "【太晶火突破】本系加成突破至2.1×，闪焰高歌召唤双倍烈焰火鸟环绕轰炸！", color: "#ff5252", statAdd: [30,12,28,42,22,10] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：冥界百鸟炼狱交响", ability: "【火/幽灵Z】六维+110，吟唱席卷全屏的冥火音浪风暴！", color: "#ea80fc", statAdd: [30,12,28,42,22,10] }
+  ],
+  912: [
+    { relic: "tera",  kind: "tera",  title: "太晶王冠：太晶水狂欢浪舞鸭", ability: "【太晶水突破】本系加成突破至2.1×，流水旋舞化为全屏高速旋转孔雀水刃轮！", color: "#00b0ff", statAdd: [20,40,20,18,18,26] },
+    { relic: "zmove", kind: "zmove", title: "Z招式觉醒：狂欢孔雀激流乱舞", ability: "【水/格斗Z】六维+110，全屏绽放华丽孔雀水刃风暴！", color: "#00e5ff", statAdd: [20,40,20,18,18,25] }
+  ]
 };
-
-const BOSS_PRIMAL_MAP = {
-  150: { formId: 10151, name: "超级超梦Y", color: "#ea80fc" },
-  382: { formId: 10382, name: "原始盖欧卡", color: "#00b0ff" },
-  383: { formId: 10383, name: "原始固拉多", color: "#ff3d00" },
-  384: { formId: 10384, name: "超级烈空坐", color: "#00e676" },
-  800: { formId: 10800, name: "究极奈克洛兹玛", color: "#ffd600" },
-  3:   { formId: 10003, name: "超级妙蛙花", color: "#00e676" },
-  6:   { formId: 10006, name: "超级喷火龙X", color: "#00b0ff" },
-  9:   { formId: 10009, name: "超级水箭龟", color: "#2979ff" },
-  254: { formId: 10254, name: "超级蜥蜴王", color: "#00e676" },
-  257: { formId: 10257, name: "超级火焰鸡", color: "#ff1744" },
-  260: { formId: 10260, name: "超级巨沼怪", color: "#00b0ff" }
-};
-
 const BGM_TRACKS = [
   { file: "./assets/music/hgss-kanto-trainer.ogg", name: "心金魂银·关都训练家战" },
   { file: "./assets/music/hgss-johto-trainer.ogg", name: "心金魂银·城都训练家战" },
@@ -630,12 +728,12 @@ function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, d
 }
 
 // ============================================================================
-// Underlying Engine Optimization #1: O(1) Spatial Hash Grid (Zero GC Allocations!)
+// Underlying Engine Optimization #1: Re-Entrant Safe Spatial Hash Grid
+// Fixes the nested `queryEnemiesInRadius` shared-array corruption & freeze bug!
 // ============================================================================
 const GRID_CELL = 96;
 const GRID_BUCKETS = new Map();
 const GRID_POOL = [];
-const QUERY_RESULTS = [];
 
 function clearSpatialGrid() {
   for (const arr of GRID_BUCKETS.values()) {
@@ -657,10 +755,10 @@ function insertEnemyToGrid(e) {
   bucket.push(e);
 }
 
-// Query all living enemies within [x - r, x + r] x [y - r, y + r] in O(1) cell lookups!
+// Returns a fresh array per query so nested calls (e.g. executeUnitMove -> hitEnemyWithMove -> bounce) NEVER overwrite an outer loop's array!
 function queryEnemiesInRadius(x, y, r) {
-  QUERY_RESULTS.length = 0;
-  const pad = r + 38; // +38 accounts for max boss radius
+  const results = [];
+  const pad = r + 38;
   const minCx = Math.floor((x - pad) / GRID_CELL);
   const maxCx = Math.floor((x + pad) / GRID_CELL);
   const minCy = Math.floor((y - pad) / GRID_CELL);
@@ -679,24 +777,22 @@ function queryEnemiesInRadius(x, y, r) {
             const dy = e.y - y;
             const lim = r + e.radius;
             if (dx * dx + dy * dy <= lim * lim) {
-              QUERY_RESULTS.push(e);
+              results.push(e);
             }
           }
         }
       }
     }
   }
-  return QUERY_RESULTS;
+  return results;
 }
 
-// Fast O(1) Swap-and-Pop removal from array (Zero array shifting overhead!)
 function swapRemove(arr, idx) {
   const last = arr.length - 1;
   if (idx < last) arr[idx] = arr[last];
   arr.pop();
 }
 
-// Monotonic Hit-Mask ID generator so projectiles track pierced enemies via integer comparison, not `new Set()`!
 let NEXT_ATTACK_UID = 1;
 function allocAttackUid() {
   NEXT_ATTACK_UID = (NEXT_ATTACK_UID + 1) & 0x3fffffff;
@@ -704,11 +800,14 @@ function allocAttackUid() {
 }
 
 // ============================================================================
-// Underlying Engine Optimization #2: Offscreen White-Silhouette Sprite Cache
-// & Pre-Baked 1024x1024 Map Chunk (Eliminates `ctx.filter` & 180x tile draws!)
+// Underlying Engine Optimization #2: Offscreen Sprite Cache + 3D Skill Model Bakery
+// Pre-renders rich 2.5D/3D composite weapon & elemental models onto offscreen
+// 64x64 canvases so projectiles, orbitals, shurikens, boulders, fists, and
+// meteors look like sculpted 3D game models with zero per-frame shader lag!
 // ============================================================================
 const IMG_CACHE = new Map();
 const SILHOUETTE_CACHE = new Map();
+const SKILL_MODEL_CACHE = new Map();
 
 function getImg(src) {
   let img = IMG_CACHE.get(src);
@@ -732,6 +831,205 @@ function getWhiteSilhouette(src, img) {
   cctx.fillStyle = "#ffffff";
   cctx.fillRect(0, 0, c.width, c.height);
   SILHOUETTE_CACHE.set(src, c);
+  return c;
+}
+
+// Pre-bake 3D Composite Skill Models (64x64 offscreen canvas per modelKey)
+function getSkillModelCanvas(modelKey, primaryColor = "#00e5ff") {
+  const cacheKey = `${modelKey}_${primaryColor}`;
+  let c = SKILL_MODEL_CACHE.get(cacheKey);
+  if (c) return c;
+
+  c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 64;
+  const g = c.getContext("2d");
+  const cx = 32, cy = 32;
+
+  if (modelKey === "leaf_blade") {
+    // 3D Sculpted Emerald Razor Leaf with central glowing vein, serrated edges & wind aura
+    const grad = g.createLinearGradient(8, 32, 56, 32);
+    grad.addColorStop(0, "#1b5e20");
+    grad.addColorStop(0.45, "#00e676");
+    grad.addColorStop(0.8, "#b9f6ca");
+    grad.addColorStop(1, "#ffffff");
+    g.fillStyle = grad;
+    g.strokeStyle = "#e8f5e9";
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(58, 32);
+    g.quadraticCurveTo(36, 10, 8, 32);
+    g.quadraticCurveTo(36, 54, 58, 32);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    // 3D bevel highlight on upper half
+    g.fillStyle = "rgba(255,255,255,0.32)";
+    g.beginPath();
+    g.moveTo(56, 32);
+    g.quadraticCurveTo(36, 14, 12, 32);
+    g.closePath();
+    g.fill();
+    // Central glowing vein & side ribs
+    g.strokeStyle = "#ffffff";
+    g.lineWidth = 2.2;
+    g.beginPath();
+    g.moveTo(10, 32); g.lineTo(54, 32);
+    g.moveTo(26, 32); g.lineTo(34, 21);
+    g.moveTo(26, 32); g.lineTo(34, 43);
+    g.moveTo(38, 32); g.lineTo(45, 24);
+    g.moveTo(38, 32); g.lineTo(45, 40);
+    g.stroke();
+  } else if (modelKey === "fire_dragon_orb") {
+    // 3D Multi-Layered Magma Fireball with white-hot core, swirling flame tongues & corona
+    const radG = g.createRadialGradient(cx + 4, cy, 3, cx, cy, 28);
+    radG.addColorStop(0, "#ffffff");
+    radG.addColorStop(0.28, "#ffff00");
+    radG.addColorStop(0.62, primaryColor === "#00e5ff" ? "#00b0ff" : "#ff3d00");
+    radG.addColorStop(1, "rgba(183, 28, 28, 0)");
+    g.fillStyle = radG;
+    g.beginPath();
+    g.arc(cx, cy, 28, 0, Math.PI * 2);
+    g.fill();
+    // Sculpted flame crest fins
+    g.fillStyle = primaryColor === "#00e5ff" ? "#00e5ff" : "#ff9100";
+    g.beginPath();
+    g.moveTo(56, 32);
+    g.quadraticCurveTo(38, 12, 6, 18);
+    g.quadraticCurveTo(22, 32, 6, 46);
+    g.quadraticCurveTo(38, 52, 56, 32);
+    g.fill();
+    // Inner white-gold core
+    g.fillStyle = "#fffde7";
+    g.beginPath();
+    g.arc(38, 32, 10, 0, Math.PI * 2);
+    g.fill();
+  } else if (modelKey === "water_shuriken") {
+    // 3D Faceted Crystal Water/Golden Shuriken with metallic core & specular bevels
+    const isGold = primaryColor === "#ffd600";
+    for (let k = 0; k < 4; k++) {
+      g.save();
+      g.translate(cx, cy);
+      g.rotate((k * Math.PI) / 2);
+      // Left facet (bright)
+      g.fillStyle = isGold ? "#fff59d" : "#80d8ff";
+      g.beginPath();
+      g.moveTo(0, -29);
+      g.lineTo(-9, -7);
+      g.lineTo(0, 0);
+      g.closePath();
+      g.fill();
+      // Right facet (deep 3D shade)
+      g.fillStyle = isGold ? "#ff8f00" : "#0277bd";
+      g.beginPath();
+      g.moveTo(0, -29);
+      g.lineTo(9, -7);
+      g.lineTo(0, 0);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = "#ffffff";
+      g.lineWidth = 1.5;
+      g.beginPath();
+      g.moveTo(0, -29); g.lineTo(-9, -7); g.lineTo(0, 0); g.lineTo(9, -7); g.closePath();
+      g.stroke();
+      g.restore();
+    }
+    // Central jewel ring
+    g.fillStyle = "#ffffff";
+    g.beginPath();
+    g.arc(cx, cy, 5, 0, Math.PI * 2);
+    g.fill();
+  } else if (modelKey === "rock_polyhedron") {
+    // 3D Faceted Obsidian/Crag Boulder with magma cracks & top-left 3D lighting
+    g.save();
+    g.translate(cx, cy);
+    // Top-left lit facet
+    g.fillStyle = "#bcaaa4";
+    g.beginPath();
+    g.moveTo(-22, -8); g.lineTo(-6, -24); g.lineTo(14, -18); g.lineTo(0, 0); g.closePath();
+    g.fill();
+    // Right mid facet
+    g.fillStyle = "#8d6e63";
+    g.beginPath();
+    g.moveTo(14, -18); g.lineTo(24, 4); g.lineTo(8, 22); g.lineTo(0, 0); g.closePath();
+    g.fill();
+    // Bottom-left shadow facet
+    g.fillStyle = "#4e342e";
+    g.beginPath();
+    g.moveTo(-22, -8); g.lineTo(0, 0); g.lineTo(8, 22); g.lineTo(-14, 18); g.closePath();
+    g.fill();
+    // Glowing lava/energy seams
+    g.strokeStyle = primaryColor;
+    g.lineWidth = 2.5;
+    g.beginPath();
+    g.moveTo(-6, -24); g.lineTo(0, 0); g.lineTo(24, 4);
+    g.moveTo(0, 0); g.lineTo(-14, 18);
+    g.stroke();
+    // Outer outline
+    g.strokeStyle = "#d7ccc8";
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(-22, -8); g.lineTo(-6, -24); g.lineTo(14, -18); g.lineTo(24, 4); g.lineTo(8, 22); g.lineTo(-14, 18); g.closePath();
+    g.stroke();
+    g.restore();
+  } else if (modelKey === "fist_knuckle") {
+    // 3D Sculpted Martial Aura Fist with shockwave rings & knuckle plates
+    g.save();
+    g.translate(cx, cy);
+    const fg = g.createLinearGradient(-18, 0, 22, 0);
+    fg.addColorStop(0, "rgba(255, 87, 34, 0.2)");
+    fg.addColorStop(0.5, primaryColor);
+    fg.addColorStop(1, "#fff59d");
+    g.fillStyle = fg;
+    g.strokeStyle = "#ffffff";
+    g.lineWidth = 2;
+    // Main armored gauntlet block
+    g.beginPath();
+    g.roundRect(-12, -16, 26, 32, 7);
+    g.fill();
+    g.stroke();
+    // 4 3D Knuckle ridges on front
+    g.fillStyle = "#ffffff";
+    for (let k = -11; k <= 11; k += 7) {
+      g.beginPath();
+      g.arc(14, k, 4.5, 0, Math.PI * 2);
+      g.fill();
+    }
+    // Sonic Mach Cone in front of fist
+    g.strokeStyle = "#ffeb3b";
+    g.lineWidth = 2.5;
+    g.beginPath();
+    g.arc(10, 0, 22, -0.95, 0.95);
+    g.stroke();
+    g.restore();
+  } else {
+    // "astral_plasma_bolt": 3D Star-Core Energy Missile with dual intersecting rings & comet tail
+    const rg = g.createRadialGradient(cx + 4, cy, 2, cx, cy, 24);
+    rg.addColorStop(0, "#ffffff");
+    rg.addColorStop(0.35, primaryColor);
+    rg.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = rg;
+    g.beginPath();
+    g.arc(cx, cy, 24, 0, Math.PI * 2);
+    g.fill();
+    // 3D Tilted Orbital Rings
+    g.strokeStyle = "#ffffff";
+    g.lineWidth = 2;
+    g.beginPath();
+    g.ellipse(cx, cy, 20, 7, 0.55, 0, Math.PI * 2);
+    g.stroke();
+    g.strokeStyle = primaryColor;
+    g.beginPath();
+    g.ellipse(cx, cy, 20, 7, -0.55, 0, Math.PI * 2);
+    g.stroke();
+    // 4-point star diamond core
+    g.fillStyle = "#ffffff";
+    g.beginPath();
+    g.moveTo(cx + 14, cy); g.lineTo(cx, cy - 8); g.lineTo(cx - 14, cy); g.lineTo(cx, cy + 8); g.closePath();
+    g.fill();
+  }
+
+  SKILL_MODEL_CACHE.set(cacheKey, c);
   return c;
 }
 
@@ -787,7 +1085,6 @@ function drawPokemonSprite(ctx, pid, x, y, vx, vy, animTime, scale = 1.6, flashW
   const dx = (x - dw * 0.5) | 0;
   const dy = (y - dh * 0.5 - hopY) | 0;
 
-  // Fast shadow & optional boss/elite ring
   ctx.fillStyle = "rgba(0, 0, 0, 0.34)";
   ctx.fillRect((x - dw * 0.28) | 0, (y + dh * 0.28) | 0, (dw * 0.56) | 0, (dh * 0.14) | 0);
 
@@ -800,7 +1097,6 @@ function drawPokemonSprite(ctx, pid, x, y, vx, vy, animTime, scale = 1.6, flashW
   }
 
   ctx.drawImage(img, sx, sy, fw, fh, dx, dy, dw, dh);
-  // Zero-`ctx.filter` hit flash using pre-baked white silhouette!
   if (flashWhite) {
     const sil = getWhiteSilhouette(src, img);
     if (sil) {
@@ -984,9 +1280,9 @@ function renderMenu() {
       <span style="font-size:10px;color:#cbb98b;">进化链：</span>
       <div style="display:flex;align-items:center;gap:6px;">${evoChainHtml}</div>
     </div>
-    <div style="background:#211230;border:1px solid ${(AWAKENING_CFG[curId] && AWAKENING_CFG[curId][0].color) || '#ffd600'};padding:4px 8px;border-radius:5px;font-size:10px;color:#ffe066;">
-      🌈 四阶突破：<b>${(AWAKENING_CFG[curId] || []).map(a => a.title).join(' / ')}</b>
-      <div style="color:#d1c4e9;font-size:9px;margin-top:1px;">${(AWAKENING_CFG[curId] && AWAKENING_CFG[curId][0].ability) || ''}</div>
+    <div style="background:#211230;border:1px solid ${(AWAKENING_CFG[curId] && AWAKENING_CFG[curId][0].color) || '#ffd600'};padding:5px 8px;border-radius:5px;font-size:10px;color:#ffe066;">
+      🌈 本作可触发超进化（局内拾取对应信物解锁充能大招）：<br/>
+      <b style="color:#00e5ff;">${(AWAKENING_CFG[curId] || []).map(a => `[${AWAKENING_RELIC_META[a.relic]?.short || '信物'}]${a.title.split('：')[1] || a.title}`).join(' · ')}</b>
     </div>
   `;
 
@@ -1724,7 +2020,7 @@ function applyHexChoice(c) {
       if (c.hexId === "silver_dice") {
         RUN.rerolls = (RUN.rerolls || 0) + 4;
       } else if (c.hexId === "keystone_radar") {
-        spawnKeystoneItem(RUN.x + 36, RUN.y);
+        spawnAwakeningRelicItem(RUN.x + 36, RUN.y);
       }
       addPopup(RUN.x, RUN.y - 48, `✨ 激活海克斯：【${c.title}】！`, c.tier === "prismatic" ? "#00e5ff" : "#ffe066", 1.35);
     }
@@ -1818,34 +2114,59 @@ function triggerHexAugmentDraft(sourceTitle = "⚡ 升级！选择你的海克�
 }
 
 // ============================================================================
-// Rare Field Key-Stone Spawning & Awakening Choice Modal
+// Canonical Multi-System Awakening Relic Spawning & Matching Transformation Unlock!
+// Each starter has multiple canonical evolutions (Mega, Gmax, Z-Move, Bond, Terastal).
+// The field spawns a specific Relic (e.g., 🧬超级石, ☁️极巨腕带, 💎Z纯晶, 👑太晶珠, ⚡羁绊信物).
+// Whichever Relic you pick up unlocks that exact transformation!
 // ============================================================================
-function spawnKeystoneItem(customX = null, customY = null) {
-  if (!RUN) return;
+function spawnAwakeningRelicItem(customX = null, customY = null, forcedRelicType = null) {
+  if (!RUN || RUN.fieldItems.length >= 9) return;
+  const branches = AWAKENING_CFG[RUN.baseId] || [];
+  if (branches.length === 0) return;
+
+  // Pick one of the canonical relic types that this Pokémon actually supports in the franchise!
+  const validRelicTypes = Array.from(new Set(branches.map(b => b.relic)));
+  const relicType = (forcedRelicType && validRelicTypes.includes(forcedRelicType))
+    ? forcedRelicType
+    : validRelicTypes[Math.floor(Math.random() * validRelicTypes.length)];
+  const rMeta = AWAKENING_RELIC_META[relicType] || AWAKENING_RELIC_META.mega;
+
   const ang = Math.random() * Math.PI * 2;
-  const dist = 140 + Math.random() * 90;
+  const dist = 135 + Math.random() * 85;
   const x = customX !== null ? customX : RUN.x + Math.cos(ang) * dist;
   const y = customY !== null ? customY : RUN.y + Math.sin(ang) * dist;
+
   RUN.fieldItems.push({
     x, y,
     cat: "keystone",
+    relicType,
     def: {
-      id: "keystone",
-      name: RUN.awakening ? "🌈 超进化充能核心" : "🌈 超进化/极巨钥石",
-      icon: "./assets/items/dawn-stone.png"
+      id: `relic_${relicType}`,
+      name: rMeta.name,
+      short: rMeta.short,
+      color: rMeta.color,
+      icon: rMeta.icon
     }
   });
-  addPopup(x, y - 28, "🌈 稀有【超进化钥石】刷新在战场上！", "#00e5ff", 1.38);
+  addPopup(x, y - 28, `${rMeta.short} 稀有信物【${rMeta.name.split(" ")[1] || rMeta.short}】刷新在战场上！`, rMeta.color, 1.38);
 }
 
-function triggerAwakeningModal() {
+function triggerAwakeningModal(pickedRelicType = null) {
   if (!RUN) return;
-  const branches = AWAKENING_CFG[RUN.baseId];
-  if (!branches || branches.length === 0) return;
+  const allBranches = AWAKENING_CFG[RUN.baseId] || [];
+  if (allBranches.length === 0) return;
   sfx("chest");
 
-  if (!RUN.awakening) {
-    // First Key Stone picked up: Choose Mega X / Mega Y / Ash-Greninja / Gmax / Z / Tera branch!
+  const matching = pickedRelicType
+    ? allBranches.filter(b => b.relic === pickedRelicType)
+    : allBranches;
+  const branches = matching.length > 0 ? matching : allBranches;
+  const rMeta = AWAKENING_RELIC_META[branches[0].relic] || AWAKENING_RELIC_META.mega;
+
+  // If the player hasn't unlocked an awakening OR picked up a DIFFERENT relic type that unlocks a new form:
+  const isNewRelicType = !RUN.awakening || (pickedRelicType && RUN.awakening.relic !== pickedRelicType);
+
+  if (isNewRelicType) {
     enqueueModal(() => {
       const ov = document.getElementById("modal-ov");
       const box = document.getElementById("modal-box");
@@ -1854,57 +2175,80 @@ function triggerAwakeningModal() {
       let html = "";
       branches.forEach((b, idx) => {
         const iconPid = b.formId || RUN.speciesId;
+        const rm = AWAKENING_RELIC_META[b.relic] || rMeta;
         html += `
           <button class="choice-btn hex-prismatic" data-awk="${idx}">
-            <div class="choice-ic"><img src="./assets/portraits/${iconPid}.png" /></div>
+            <div class="choice-ic" style="border-color:${b.color};"><img src="./assets/portraits/${iconPid}.png" /></div>
             <div style="flex:1;">
               <div>
                 <b style="font-size:14px;color:${b.color};">${b.title}</b>
-                <span class="choice-tag" style="background:${b.color};color:#12081c;">充能大招</span>
+                <span class="choice-tag" style="background:${b.color};color:#12081c;">${rm.short}·充能大招</span>
               </div>
               <div style="font-size:11px;color:#fff;font-weight:900;margin-top:2px;">${b.ability}</div>
-              <div style="font-size:10px;color:#b3e5fc;margin-top:2px;">${b.desc}（开启后持续18秒超载爆发，结束退回常态重新充能！）</div>
+              <div style="font-size:10px;color:#b3e5fc;margin-top:2px;">开启后持续 ${18 + (RUN.ultUpgrades || 0) * 4} 秒顶级超载爆发，结束退回常态重新充能！</div>
             </div>
           </button>
         `;
       });
 
+      const switchHint = RUN.awakening
+        ? `<button id="btn-keep-awk" class="vs-btn blue" style="width:100%;margin-top:8px;">保留当前【${RUN.awakening.title}】，将该信物转化为 100% 满充能 & 持续+4秒</button>`
+        : "";
+
       box.innerHTML = `
         <div style="text-align:center;margin-bottom:8px;">
-          <div style="font-size:19px;font-weight:900;color:#ffe066;text-shadow:0 0 10px #ff9100;">
-            🌈 拾取稀有钥石 · 解锁【终极超进化大招】！
+          <div style="font-size:18px;font-weight:900;color:${rMeta.color};text-shadow:0 0 10px rgba(0,229,255,0.5);">
+            ${rMeta.short} 拾取【${rMeta.name}】！
           </div>
           <div style="font-size:11px;color:#e0d4b8;margin-top:3px;">
-            选择你的超进化形态！解锁后立即满 100% 充能，可随时点击右下角按钮开启限时毁天灭地爆发！
+            你在战场中找到了该信物，可立即激活对应的【${rMeta.short}】终极超进化大招并获赠 100% 满充能：
           </div>
         </div>
         <div>${html}</div>
+        ${switchHint}
       `;
 
       box.querySelectorAll("[data-awk]").forEach(btn => {
         btn.onclick = () => {
           const b = branches[parseInt(btn.getAttribute("data-awk"), 10)];
+          if (RUN.awakening) {
+            RUN.ultUpgrades = (RUN.ultUpgrades || 0) + 1;
+          }
           RUN.awakening = b;
-          RUN.ultCharge = 100; // First unlock grants immediate 100% full charge ready to cast!
-          RUN.ultUpgrades = 0;
+          RUN.ultCharge = 100;
           sfx("chest");
           updateUltButtonHud();
           updateHudSlots();
-          addPopup(RUN.x, RUN.y - 58, `🌈 已解锁【${b.title}】！点击右下角按钮即可释放超进化！`, b.color, 1.48);
+          addPopup(RUN.x, RUN.y - 58, `🌈 已装备【${b.title}】！点击右下角按钮即可释放顶级大招！`, b.color, 1.48);
           closeCurrentModal();
         };
       });
+
+      const keepBtn = box.querySelector("#btn-keep-awk");
+      if (keepBtn) {
+        keepBtn.onclick = () => {
+          RUN.ultUpgrades = (RUN.ultUpgrades || 0) + 1;
+          RUN.ultCharge = 100;
+          if (RUN.ultActive) {
+            RUN.ultTimer += 8;
+            RUN.ultMaxTimer += 4;
+          }
+          updateUltButtonHud();
+          addPopup(RUN.x, RUN.y - 56, `🌈 吸收信物能量！【${RUN.awakening.title}】充能100% & 持续时间+4秒！`, "#00e5ff", 1.45);
+          closeCurrentModal();
+        };
+      }
     });
   } else {
-    // Subsequent Key Stones picked up: Upgrade duration (+4s), charge rate (+25%), & instantly refill 100% charge!
+    // Picked up the same relic type again: instantly refill 100% charge & upgrade duration!
     RUN.ultUpgrades = (RUN.ultUpgrades || 0) + 1;
     if (RUN.ultActive) {
       RUN.ultTimer = Math.min(RUN.ultMaxTimer + 6, RUN.ultTimer + 8);
       RUN.ultMaxTimer += 4;
-      addPopup(RUN.x, RUN.y - 56, `🌈 再次拾取钥石！超进化延长 +8秒 且永久升至 Lv.${1 + RUN.ultUpgrades}！`, "#00e5ff", 1.48);
+      addPopup(RUN.x, RUN.y - 56, `🌈 再次拾取【${rMeta.short}】！超进化延长 +8秒 且升至 Lv.${1 + RUN.ultUpgrades}！`, rMeta.color, 1.48);
     } else {
       RUN.ultCharge = 100;
-      addPopup(RUN.x, RUN.y - 56, `🌈 再次拾取钥石！充能瞬间 100% 满格 & 持续时间永久 +4秒！`, "#00e5ff", 1.48);
+      addPopup(RUN.x, RUN.y - 56, `🌈 再次拾取【${rMeta.short}】！充能瞬间 100% 满格 & 持续永久 +4秒！`, rMeta.color, 1.48);
     }
     updateUltButtonHud();
   }
@@ -1946,7 +2290,7 @@ function spawnFieldItem(nearPlayer = false, forceCategory = null, customX = null
 
   // Low rare chance (~5.5%) for a regular item spawn after Lv.12 to be a Key Stone!
   if (!forceCategory && RUN.level >= 12 && Math.random() < 0.055) {
-    spawnKeystoneItem(x, y);
+    spawnAwakeningRelicItem(x, y);
     return;
   }
 
@@ -1965,7 +2309,7 @@ function pickupFieldItem(item) {
   sfx("chest");
   const d = item.def;
   if (item.cat === "keystone") {
-    triggerAwakeningModal();
+    triggerAwakeningModal(item.relicType);
     return;
   }
   if (item.cat === "vitamin") {
@@ -1998,7 +2342,8 @@ function pickupFieldItem(item) {
       addPopup(RUN.x, RUN.y - 38, "🧲 磁铁脉冲！全屏经验糖果吸附！", "#80d8ff", 1.28);
     } else if (d.id === "poke_flute") {
       RUN.hp = RUN.maxHp;
-      triggerPlayerLevelUp();
+      RUN.xp += RUN.xpNeed;
+      RUN.pendingLevelUp = true;
       for (const c of RUN.companions) gainCompanionXp(c, c.xpNeed);
       addPopup(RUN.x, RUN.y - 45, "🪈 宝可梦之笛！全队升级 & 满血恢复！", "#69f0ae", 1.32);
     }
@@ -2325,6 +2670,11 @@ function triggerPlayerLevelUp() {
 // Execute 23 Move Archetypes — Enhanced with Socketed Hex Modifiers & Super-Weapons!
 // ============================================================================
 function executeUnitMove(unit, moveId, isBonusCast = false, mSlotOverride = null) {
+  if (!RUN) return;
+  if (RUN.projectiles.length > 140) RUN.projectiles.length = 140;
+  if (RUN.slashes.length > 85) RUN.slashes.length = 85;
+  if (RUN.zones.length > 55) RUN.zones.length = 55;
+  if (RUN.lightnings.length > 45) RUN.lightnings.length = 45;
   const m = MOVES_DB[moveId];
   if (!m) return;
   const isComp = !unit.isPlayerUnit;
@@ -2795,8 +3145,11 @@ function executeUnitMove(unit, moveId, isBonusCast = false, mSlotOverride = null
   }
 }
 
+let _hitDepth = 0;
 function hitEnemyWithMove(e, attackerLv, attackerStats, moveId, aoeScale = 1.0, mSlot = null) {
-  if (!e || e.hp <= 0) return;
+  if (!e || e.hp <= 0 || !RUN || _hitDepth > 3) return;
+  _hitDepth++;
+  try {
   const res = calculatePokemonDamage(attackerLv, attackerStats, moveId, e.level, e.stats, aoeScale, RUN.heldItems, mSlot);
   let totalDmg = res.dmg;
 
@@ -2886,8 +3239,12 @@ function hitEnemyWithMove(e, attackerLv, attackerStats, moveId, aoeScale = 1.0, 
     }
   }
 
-  if (e.hp <= 0) {
+  if (e.hp <= 0 && !e._dead) {
+    e._dead = true;
     killEnemy(e, mSlot);
+  }
+  } finally {
+    _hitDepth--;
   }
 }
 
@@ -3008,7 +3365,7 @@ function checkClimaxWaveEvents() {
     // Climax 2: Twin Apex Boss Invasion + Rare Key Stone Drop!
     spawnEnemy(true);
     spawnEnemy(true);
-    spawnKeystoneItem(RUN.x + 85, RUN.y - 65);
+    spawnAwakeningRelicItem(RUN.x + 85, RUN.y - 65);
     addPopup(RUN.x, RUN.y - 68, "🌋 高潮事件：【时空双神同屏降临】+ 战场刷新超进化钥石！", "#ffd600", 1.50);
   } else {
     // Climax 3: Berserk Stampede + Free Hex Chest!
@@ -3067,7 +3424,7 @@ function killEnemy(e, mSlot = null) {
 
     // Bosses have a 38% chance (or 100% if player hasn't unlocked Awakening yet after Lv.14) to drop a Key Stone!
     if ((!RUN.awakening && RUN.level >= 14) || Math.random() < 0.38) {
-      spawnKeystoneItem(e.x, e.y - 24);
+      spawnAwakeningRelicItem(e.x, e.y - 24);
     }
 
     RUN.gems.push({ x: e.x, y: e.y + 18, xp: baseXp * 6, tier: 3, kind: "xp" });
@@ -3075,7 +3432,7 @@ function killEnemy(e, mSlot = null) {
   } else {
     const roll = Math.random();
     if (e.isElite && roll < 0.032 && RUN.level >= 12) {
-      spawnKeystoneItem(e.x, e.y);
+      spawnAwakeningRelicItem(e.x, e.y);
     } else if (roll < 0.022) {
       RUN.gems.push({ x: e.x, y: e.y, heal: Math.round(RUN.maxHp * 0.20), kind: "berry" });
     } else if (e.isElite && roll < 0.35) {
@@ -3715,7 +4072,7 @@ function updateRun(dt) {
   if (RUN.keystoneSpawnAcc <= 0) {
     RUN.keystoneSpawnAcc = 55 + Math.random() * 25;
     if (RUN.level >= 12 && Math.random() < (RUN.awakening ? 0.45 : 0.72)) {
-      spawnKeystoneItem();
+      spawnAwakeningRelicItem();
     }
   }
 
@@ -3991,7 +4348,7 @@ function updateRun(dt) {
           gainCompanionXp(RUN.companions[k], Math.max(1, Math.round(g.xp * 0.85)));
         }
         if (RUN.xp >= RUN.xpNeed) {
-          triggerPlayerLevelUp();
+          RUN.pendingLevelUp = true;
         }
         updateHudSlots();
       }
@@ -4003,6 +4360,11 @@ function updateRun(dt) {
     p.life -= dt;
     p.y -= 26 * dt;
     if (p.life <= 0) swapRemove(RUN.popups, i);
+  }
+
+  if ((RUN.pendingLevelUp || RUN.xp >= RUN.xpNeed) && !RUN.modalOpen) {
+    RUN.pendingLevelUp = false;
+    triggerPlayerLevelUp();
   }
 
   // Throttle DOM HUD text updates to 5Hz (every 0.2s)
@@ -4031,7 +4393,10 @@ function updateRun(dt) {
 }
 
 // ============================================================================
-// High-Performance 2D Renderer (Pre-Baked Map Chunk + Y-Bucket Sort!)
+// High-Performance 2.5D / 3D Composite Skill & Battlefield Renderer
+// Replaces plain flat circles (`ctx.arc`) with sculpted multi-layered 3D skill
+// models, rotating runic magic circles, 3D crystal spikes, dragon-fang jaws,
+// plasma core lasers, and pre-baked 3D elemental projectiles!
 // ============================================================================
 const Y_BUCKETS = Array.from({ length: 36 }, () => []);
 
@@ -4043,7 +4408,6 @@ function render2D() {
   const camX = (RUN ? RUN.x - w * 0.5 : performance.now() * 0.025) | 0;
   const camY = (RUN ? RUN.y - h * 0.5 : performance.now() * 0.015) | 0;
 
-  // Fast Pre-Baked 1024x1024 Map Chunk Blit (4 drawImages instead of 180!)
   const chunk = getStageChunkCanvas(st);
   if (chunk) {
     const cw = 1024;
@@ -4061,16 +4425,17 @@ function render2D() {
 
   if (!RUN) return;
 
-  // 1. Draw Ground Zones, Earthquake Fissures, and Swirling Vortexes
+  // 1. 3D Tectonic Earthquake Fissures & Crystal Rock Spikes
   for (let i = 0; i < RUN.fissures.length; i++) {
     const f = RUN.fissures[i];
-    const alpha = f.life / f.maxLife;
+    const alpha = Math.max(0, f.life / f.maxLife);
     ctx.save();
-    ctx.strokeStyle = "#3e2723";
-    ctx.lineWidth = 10;
+    ctx.globalAlpha = alpha;
+    // Deep chasm abyss shadow
+    ctx.strokeStyle = "#1b0c07";
+    ctx.lineWidth = 14;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.globalAlpha = alpha;
     ctx.beginPath();
     for (let idx = 0; idx < f.pts.length; idx++) {
       const pt = f.pts[idx];
@@ -4078,121 +4443,237 @@ function render2D() {
       else ctx.lineTo(pt.x - camX, pt.y - camY);
     }
     ctx.stroke();
+    // Glowing magma/emerald tectonic core
     ctx.strokeStyle = f.color;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 5;
     ctx.stroke();
-    ctx.fillStyle = f.color;
+    // 3D 2-Faceted Rock/Crystal Spikes erupting along the fault line!
     for (let idx = 1; idx < f.pts.length; idx++) {
       const px = f.pts[idx].x - camX;
       const py = f.pts[idx].y - camY;
+      const spikeH = (24 + (idx % 2) * 8) * alpha;
+      // Left lit 3D facet
+      ctx.fillStyle = f.color;
       ctx.beginPath();
-      ctx.moveTo(px - 8, py + 4);
-      ctx.lineTo(px + 8, py + 4);
-      ctx.lineTo(px, py - 18 * alpha);
+      ctx.moveTo(px - 10, py + 4);
+      ctx.lineTo(px, py + 6);
+      ctx.lineTo(px, py - spikeH);
       ctx.closePath();
       ctx.fill();
+      // Right shaded 3D facet
+      ctx.fillStyle = "#4e342e";
+      ctx.beginPath();
+      ctx.moveTo(px + 10, py + 4);
+      ctx.lineTo(px, py + 6);
+      ctx.lineTo(px, py - spikeH);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(px, py - spikeH); ctx.lineTo(px, py + 6);
+      ctx.stroke();
     }
     ctx.restore();
   }
 
+  // 2. 3D Multi-Ring Swirling Maelstrom Vortexes & Psychic Singularity Black Holes
   for (let i = 0; i < RUN.vortexes.length; i++) {
     const vx = RUN.vortexes[i];
     const sx = vx.x - camX;
     const sy = vx.y - camY;
+    if (sx < -vx.r - 20 || sx > w + vx.r + 20 || sy < -vx.r - 20 || sy > h + vx.r + 20) continue;
     const alpha = Math.min(1, vx.life * 1.5);
     ctx.save();
     ctx.translate(sx, sy);
-    ctx.rotate(RUN.time * (vx.isBlackHole ? -7 : 6));
-    ctx.globalAlpha = alpha * 0.45;
-    ctx.fillStyle = vx.isBlackHole ? "#120524" : vx.color;
+    // Perspective 2.5D tilt + rotation
+    const rot = RUN.time * (vx.isBlackHole ? -7.5 : 6.5);
+    const rg = ctx.createRadialGradient(0, 0, 4, 0, 0, vx.r);
+    if (vx.isBlackHole) {
+      rg.addColorStop(0, "#000000");
+      rg.addColorStop(0.45, "#4a148c");
+      rg.addColorStop(0.82, "#ea80fc");
+      rg.addColorStop(1, "rgba(0,0,0,0)");
+    } else {
+      rg.addColorStop(0, "#ffffff");
+      rg.addColorStop(0.35, vx.color);
+      rg.addColorStop(0.80, "#01579b");
+      rg.addColorStop(1, "rgba(0,0,0,0)");
+    }
+    ctx.globalAlpha = alpha * 0.78;
+    ctx.fillStyle = rg;
     ctx.beginPath();
     ctx.arc(0, 0, vx.r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.globalAlpha = alpha * 0.9;
-    ctx.strokeStyle = vx.isBlackHole ? "#ea80fc" : "#ffffff";
-    ctx.lineWidth = 3;
-    for (let arm = 0; arm < 3; arm++) {
-      ctx.rotate((Math.PI * 2) / 3);
+
+    // 4 Sculpted Spiral Turbine Blades + Foam/Starlight Crest
+    ctx.rotate(rot);
+    ctx.globalAlpha = alpha * 0.95;
+    for (let arm = 0; arm < 4; arm++) {
+      ctx.rotate(Math.PI / 2);
+      ctx.strokeStyle = vx.isBlackHole ? "#00e5ff" : "#e1f5fe";
+      ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.arc(vx.r * 0.25, 0, vx.r * 0.55, 0, Math.PI * 1.3);
+      ctx.arc(vx.r * 0.24, 0, vx.r * 0.56, 0.1, Math.PI * 1.25);
       ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(vx.r * 0.65, vx.r * 0.18, 3.5, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }
 
+  // 3. 3D Composite Ground Zones (Runic Magic Circles, Daimonji Fire Kanji, 3D Dragon Fangs, Orbital Sky Pillars)
   for (let i = 0; i < RUN.zones.length; i++) {
     const z = RUN.zones[i];
     const sx = z.x - camX;
     const sy = z.y - camY;
-    const alpha = Math.min(1, z.life / z.maxLife);
+    if (sx < -z.r - 40 || sx > w + z.r + 40 || sy < -z.r - 280 || sy > h + z.r + 40) continue;
+    const alpha = Math.max(0, Math.min(1, z.life / z.maxLife));
     ctx.save();
-    if (z.kind === "santa_pool") {
-      ctx.fillStyle = z.color;
-      ctx.globalAlpha = 0.36 * Math.min(1, z.life);
+    if (z.kind === "santa_pool" || z.kind === "aftershock_bomb") {
+      // 3D Bubbling Alchemical / Hexagram Magic Pool
+      const pg = ctx.createRadialGradient(sx, sy, 4, sx, sy, z.r);
+      pg.addColorStop(0, "#ffffff");
+      pg.addColorStop(0.45, z.color);
+      pg.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = pg;
+      ctx.globalAlpha = 0.58 * Math.min(1, z.life);
       ctx.beginPath();
       ctx.arc(sx, sy, z.r, 0, Math.PI * 2);
       ctx.fill();
+      // Rotating Hexagram Ring
+      ctx.translate(sx, sy);
+      ctx.rotate(RUN.time * 2.5);
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 2;
-      ctx.globalAlpha = 0.7 * Math.min(1, z.life);
+      ctx.globalAlpha = 0.82 * Math.min(1, z.life);
+      ctx.beginPath();
+      for (let v = 0; v < 6; v++) {
+        const a = (v * Math.PI) / 3;
+        const px = Math.cos(a) * z.r * 0.78;
+        const py = Math.sin(a) * z.r * 0.78;
+        if (v === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
       ctx.stroke();
     } else if (z.kind === "blizzard_field") {
-      ctx.fillStyle = "rgba(128, 222, 234, 0.22)";
+      // 3D Giant Rotating 6-Point Ice Snowflake Crest
+      ctx.translate(sx, sy);
+      ctx.rotate(RUN.time * 1.8);
+      ctx.fillStyle = "rgba(128, 222, 234, 0.26)";
       ctx.strokeStyle = "#e0f7fa";
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 3;
       ctx.globalAlpha = alpha;
       ctx.beginPath();
-      ctx.arc(sx, sy, z.r, 0, Math.PI * 2);
+      ctx.arc(0, 0, z.r, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      for (let b = 0; b < 6; b++) {
+        ctx.rotate(Math.PI / 3);
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(0, -z.r * 0.92);
+        ctx.moveTo(0, -z.r * 0.55); ctx.lineTo(-14, -z.r * 0.72);
+        ctx.moveTo(0, -z.r * 0.55); ctx.lineTo(14, -z.r * 0.72);
+        ctx.stroke();
+      }
     } else if (z.kind === "garlic_ring") {
+      const expR = z.r * (1.15 - alpha * 0.35);
       ctx.strokeStyle = z.color;
-      ctx.lineWidth = 3.5;
-      ctx.globalAlpha = alpha * 0.85;
+      ctx.lineWidth = 6 * alpha;
+      ctx.globalAlpha = alpha * 0.9;
       ctx.beginPath();
-      ctx.arc(sx, sy, z.r * (1 - alpha * 0.25), 0, Math.PI * 2);
+      ctx.arc(sx, sy, expR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(sx, sy, expR * 0.82, 0, Math.PI * 2);
       ctx.stroke();
     } else if (z.kind === "daimonji") {
-      ctx.strokeStyle = "#ff3d00";
-      ctx.lineWidth = 12;
-      ctx.lineCap = "round";
+      // 3D Sculpted Fire Blast "大" Seal with outer magma ring & multi-layer core
       ctx.globalAlpha = alpha;
-      const r = z.r * 0.85;
+      ctx.strokeStyle = z.color;
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(sx - r, sy - r * 0.25); ctx.lineTo(sx + r, sy - r * 0.25);
-      ctx.moveTo(sx, sy - r); ctx.lineTo(sx - r * 0.85, sy + r * 0.9);
-      ctx.moveTo(sx, sy - r * 0.1); ctx.lineTo(sx + r * 0.85, sy + r * 0.9);
+      ctx.arc(sx, sy, z.r * 0.95, 0, Math.PI * 2);
       ctx.stroke();
-      ctx.strokeStyle = "#ffea00";
-      ctx.lineWidth = 4;
-      ctx.stroke();
+
+      const drawKanji = (lw, col) => {
+        ctx.strokeStyle = col;
+        ctx.lineWidth = lw;
+        ctx.lineCap = "round";
+        const r = z.r * 0.85;
+        ctx.beginPath();
+        ctx.moveTo(sx - r, sy - r * 0.25); ctx.lineTo(sx + r, sy - r * 0.25);
+        ctx.moveTo(sx, sy - r); ctx.lineTo(sx - r * 0.85, sy + r * 0.9);
+        ctx.moveTo(sx, sy - r * 0.1); ctx.lineTo(sx + r * 0.85, sy + r * 0.9);
+        ctx.stroke();
+      };
+      drawKanji(18, "#b71c1c");
+      drawKanji(11, z.color);
+      drawKanji(4.5, "#ffff00");
     } else if (z.kind === "sky_pillar") {
-      ctx.fillStyle = z.color;
-      ctx.globalAlpha = alpha * 0.65;
-      ctx.fillRect(sx - z.r * 0.45, sy - 280, z.r * 0.9, 280);
+      // 3D Cylindrical Orbital Laser Pillar with helical rings
+      const cg = ctx.createLinearGradient(sx - z.r * 0.5, sy, sx + z.r * 0.5, sy);
+      cg.addColorStop(0, z.color);
+      cg.addColorStop(0.5, "#ffffff");
+      cg.addColorStop(1, z.color);
+      ctx.fillStyle = cg;
+      ctx.globalAlpha = alpha * 0.78;
+      ctx.fillRect(sx - z.r * 0.45, sy - 300, z.r * 0.9, 300);
       ctx.beginPath();
-      ctx.arc(sx, sy, z.r, 0, Math.PI * 2);
+      ctx.ellipse(sx, sy, z.r, z.r * 0.48, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 3;
+      ctx.stroke();
     } else if (z.kind === "fangs") {
-      ctx.fillStyle = z.color;
-      ctx.globalAlpha = alpha * 0.92;
+      // 3D Upper & Lower Beveled Dragon/Dark Jaws snapping shut!
+      ctx.globalAlpha = alpha * 0.96;
+      const biteOffset = Math.max(2, 26 * alpha);
       for (let t = -2; t <= 2; t++) {
+        const tx = sx + t * 15;
+        // Upper tooth (3D two-tone)
+        ctx.fillStyle = "#ffffff";
         ctx.beginPath();
-        ctx.moveTo(sx + t * 14 - 6, sy - 24 * alpha);
-        ctx.lineTo(sx + t * 14 + 6, sy - 24 * alpha);
-        ctx.lineTo(sx + t * 14, sy - 2);
+        ctx.moveTo(tx - 7, sy - biteOffset - 18);
+        ctx.lineTo(tx, sy - biteOffset - 18);
+        ctx.lineTo(tx, sy - biteOffset + 4);
+        ctx.closePath();
         ctx.fill();
+        ctx.fillStyle = z.color;
         ctx.beginPath();
-        ctx.moveTo(sx + t * 14 - 6, sy + 24 * alpha);
-        ctx.lineTo(sx + t * 14 + 6, sy + 24 * alpha);
-        ctx.lineTo(sx + t * 14, sy + 2);
+        ctx.moveTo(tx + 7, sy - biteOffset - 18);
+        ctx.lineTo(tx, sy - biteOffset - 18);
+        ctx.lineTo(tx, sy - biteOffset + 4);
+        ctx.closePath();
+        ctx.fill();
+
+        // Lower tooth
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(tx - 7, sy + biteOffset + 18);
+        ctx.lineTo(tx, sy + biteOffset + 18);
+        ctx.lineTo(tx, sy + biteOffset - 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = z.color;
+        ctx.beginPath();
+        ctx.moveTo(tx + 7, sy + biteOffset + 18);
+        ctx.lineTo(tx, sy + biteOffset + 18);
+        ctx.lineTo(tx, sy + biteOffset - 4);
+        ctx.closePath();
         ctx.fill();
       }
     }
     ctx.restore();
   }
 
-  // 2. Draw Vine Drain Tethers
+  // 4. 3D Thorned Vine Tethers with Sprouting Leaves & Life-Orbs
+  const leafModel = getSkillModelCanvas("leaf_blade", "#00e676");
   for (let i = 0; i < RUN.tethers.length; i++) {
     const th = RUN.tethers[i];
     if (!th.owner || !th.target) continue;
@@ -4201,26 +4682,30 @@ function render2D() {
     const x2 = th.target.x - camX;
     const y2 = th.target.y - camY;
     const u = 1 - th.life / th.maxLife;
+    const mx = (x1 + x2) * 0.5;
+    const my = (y1 + y2) * 0.5 - 24 * Math.sin(u * Math.PI * 2);
     ctx.save();
-    ctx.strokeStyle = "#2e7d32";
-    ctx.lineWidth = 5;
+    ctx.strokeStyle = "#1b5e20";
+    ctx.lineWidth = 7;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
-    ctx.quadraticCurveTo((x1 + x2) * 0.5, (y1 + y2) * 0.5 - 22 * Math.sin(u * Math.PI * 2), x2, y2);
+    ctx.quadraticCurveTo(mx, my, x2, y2);
     ctx.stroke();
     ctx.strokeStyle = "#00e676";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.stroke();
+    // Draw 3D leaf model along the vine
+    ctx.drawImage(leafModel, mx - 12, my - 12, 24, 24);
     const ox = x2 + (x1 - x2) * u;
     const oy = y2 + (y1 - y2) * u;
-    ctx.fillStyle = "#69f0ae";
+    ctx.fillStyle = "#b9f6ca";
     ctx.beginPath();
-    ctx.arc(ox, oy, 6, 0, Math.PI * 2);
+    ctx.arc(ox, oy, 7, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 
-  // 3. Draw Field Pickups
+  // 5. Draw Field Pickups (TMs, Companion Balls, and Canonical Awakening Relics!)
   const tmDiscImg = getImg("./assets/items/tm-normal.png");
   for (let i = 0; i < RUN.fieldTMs.length; i++) {
     const tm = RUN.fieldTMs[i];
@@ -4263,26 +4748,25 @@ function render2D() {
     const it = RUN.fieldItems[i];
     const sx = it.x - camX;
     const sy = it.y - camY;
-    if (it.cat === "keystone" && (sx < 15 || sx > w - 15 || sy < 35 || sy > h - 25)) {
-      // Draw off-screen radar pointer for rare Key Stone!
-      const px = Math.max(24, Math.min(w - 24, sx));
-      const py = Math.max(46, Math.min(h - 32, sy));
+    const d = it.def;
+    if (it.cat === "keystone" && (sx < 18 || sx > w - 18 || sy < 38 || sy > h - 28)) {
+      const px = Math.max(32, Math.min(w - 32, sx));
+      const py = Math.max(48, Math.min(h - 34, sy));
       ctx.save();
-      ctx.fillStyle = "#00e5ff";
+      ctx.fillStyle = d.color || "#00e5ff";
       ctx.font = "900 11px monospace, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("🌈钥石▶", px, py);
+      ctx.fillText(`${d.short || "🌈信物"}▶`, px, py);
       ctx.restore();
     }
     if (sx < -40 || sx > w + 40 || sy < -40 || sy > h + 40) continue;
-    const d = it.def;
     if (it.cat === "keystone") {
       ctx.save();
-      ctx.strokeStyle = "#00e5ff";
+      ctx.strokeStyle = d.color || "#00e5ff";
       ctx.fillStyle = "rgba(224, 64, 251, 0.35)";
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(sx, sy, 20 + Math.sin(RUN.time * 8) * 4, 0, Math.PI * 2);
+      ctx.arc(sx, sy, 21 + Math.sin(RUN.time * 8) * 4, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
       ctx.restore();
@@ -4291,8 +4775,8 @@ function render2D() {
     if (ic.complete) ctx.drawImage(ic, sx - 13, sy - 13, 26, 26);
     ctx.font = "900 10px monospace, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillStyle = it.cat === "keystone" ? "#00e5ff" : (it.cat === "vitamin" ? "#69f0ae" : "#ffd54f");
-    ctx.fillText(it.cat === "keystone" ? "🌈超进化钥石" : d.name.split(" ")[0], sx, sy - 17);
+    ctx.fillStyle = it.cat === "keystone" ? (d.color || "#00e5ff") : (it.cat === "vitamin" ? "#69f0ae" : "#ffd54f");
+    ctx.fillText(it.cat === "keystone" ? (d.short || "🌈超进化信物") : d.name.split(" ")[0], sx, sy - 17);
   }
 
   const dollImg = getImg("./assets/items/poke-doll.png");
@@ -4307,9 +4791,9 @@ function render2D() {
     ctx.fillText(`🪆替身 ${dc.life.toFixed(1)}s`, sx, sy - 24);
   }
 
-  // Fast Batched XP Gems Rendering!
+  // Fast 3D Faceted Diamond XP Crystals!
   const berryImg = getImg("./assets/items/sitrus-berry.png");
-  const gemColors = ["#29b6f6", "#66bb6a", "#ff5252", "#e040fb"];
+  const gemColors = ["#29b6f6", "#00e676", "#ff5252", "#e040fb"];
   for (let i = 0; i < RUN.gems.length; i++) {
     const g = RUN.gems[i];
     const sx = (g.x - camX) | 0;
@@ -4319,9 +4803,15 @@ function render2D() {
       ctx.drawImage(berryImg, sx - 12, sy - 12, 24, 24);
     } else {
       ctx.fillStyle = gemColors[g.tier || 0];
-      ctx.fillRect(sx - 4, sy - 4, 8, 8);
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - 6);
+      ctx.lineTo(sx + 5, sy);
+      ctx.lineTo(sx, sy + 6);
+      ctx.lineTo(sx - 5, sy);
+      ctx.closePath();
+      ctx.fill();
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(sx - 2, sy - 2, 3, 3);
+      ctx.fillRect(sx - 2, sy - 3, 2, 2);
     }
   }
 
@@ -4329,12 +4819,12 @@ function render2D() {
     const ph = RUN.phantoms[i];
     const sx = ph.x - camX;
     const sy = ph.y - camY;
-    ctx.globalAlpha = 0.72;
+    ctx.globalAlpha = 0.76;
     drawPokemonSprite(ctx, ph.pid, sx, sy, ph.vx, ph.vy, RUN.time * 2, ph.scale, true, ph.color, 4);
     ctx.globalAlpha = 1.0;
   }
 
-  // 4. O(N) Y-Bucket Counting Sort for Enemies, Companions, and Player (Zero `.sort()` allocation!)
+  // 6. O(N) Y-Bucket Counting Sort for Enemies, Companions, and Player
   for (let b = 0; b < 36; b++) Y_BUCKETS[b].length = 0;
 
   for (let i = 0; i < RUN.enemies.length; i++) {
@@ -4365,7 +4855,6 @@ function render2D() {
         const e = unit;
         const ringCol = e.isBoss ? (e.affix ? e.affix.color : "#ff4444") : (e.isElite ? "#ffab00" : null);
         drawPokemonSprite(ctx, e.species, e._sx, e._sy, e.vx || 0, e.vy || 1, RUN.time + e.animOffset, e.scale, e.flashT > 0, ringCol, 0);
-        // Only draw HP bars for damaged wilds, elites, or bosses to save 500+ fillRect/fillText calls per frame!
         if (e.isBoss || e.isElite || e.hp < e.maxHp) {
           const bw = e.isBoss ? 66 : (e.isElite ? 40 : 28);
           const bh = e.isBoss ? 5 : 3;
@@ -4392,38 +4881,35 @@ function render2D() {
       } else {
         const hop = (Math.abs(RUN.vx) > 0.01 || Math.abs(RUN.vy) > 0.01) ? Math.abs(Math.sin(RUN.time * 10)) * 3.5 : 0;
         const goliathBonusScale = Math.min(0.65, (RUN.goliathStacks || 0) * 0.025);
-        const pScale = 1.80 + RUN.evoStage * 0.22 + goliathBonusScale + (RUN.ultActive && RUN.awakening && RUN.awakening.kind === "gmax" ? 0.48 : 0);
+        const pScale = 1.80 + RUN.evoStage * 0.22 + goliathBonusScale + (RUN.ultActive && RUN.awakening && RUN.awakening.kind === "gmax" ? 0.52 : 0);
         const pRing = (RUN.ultActive && RUN.awakening) ? RUN.awakening.color : "#ffe066";
         drawPokemonSprite(ctx, RUN.speciesId, RUN._sx, RUN._sy, RUN.vx, RUN.vy, RUN.time * 1.25, pScale, RUN.invulnT > 0.18, pRing, hop);
         if (RUN.ultActive && RUN.awakening) {
           ctx.save();
           if (RUN.awakening.kind === "gmax") {
-            // Swirling red Dynamax clouds above head!
             ctx.fillStyle = "#ff1744";
             for (let c = 0; c < 3; c++) {
-              const ca = RUN.time * 3 + c * 2.09;
+              const ca = RUN.time * 3.5 + c * 2.09;
               ctx.beginPath();
-              ctx.arc(RUN._sx + Math.cos(ca) * 20, RUN._sy - 38 - hop + Math.sin(ca) * 5, 6, 0, Math.PI * 2);
+              ctx.arc(RUN._sx + Math.cos(ca) * 22, RUN._sy - 40 - hop + Math.sin(ca) * 5, 7, 0, Math.PI * 2);
               ctx.fill();
             }
           } else if (RUN.awakening.kind === "tera") {
-            // Sparkling Terastal Crystal Crown above head!
             ctx.fillStyle = RUN.awakening.color;
             ctx.strokeStyle = "#ffffff";
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 1.8;
             ctx.beginPath();
-            ctx.moveTo(RUN._sx, RUN._sy - 46 - hop);
-            ctx.lineTo(RUN._sx + 10, RUN._sy - 34 - hop);
-            ctx.lineTo(RUN._sx, RUN._sy - 28 - hop);
-            ctx.lineTo(RUN._sx - 10, RUN._sy - 34 - hop);
+            ctx.moveTo(RUN._sx, RUN._sy - 48 - hop);
+            ctx.lineTo(RUN._sx + 12, RUN._sy - 34 - hop);
+            ctx.lineTo(RUN._sx, RUN._sy - 27 - hop);
+            ctx.lineTo(RUN._sx - 12, RUN._sy - 34 - hop);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
           } else {
-            // Mega / Bond / Z-Power DNA Crest!
             ctx.fillStyle = RUN.awakening.color;
             ctx.font = "900 10px monospace, sans-serif";
-            ctx.fillText("🧬MEGA", RUN._sx | 0, (RUN._sy - 34 - hop) | 0);
+            ctx.fillText(`🔥${RUN.awakening.title.split("：")[0]}`, RUN._sx | 0, (RUN._sy - 35 - hop) | 0);
           }
           ctx.restore();
         }
@@ -4439,24 +4925,35 @@ function render2D() {
     }
   }
 
-  // 5. Draw Flamethrower & Blizzard Particles
+  // 7. 3D Volumetric Flamethrower Fire Tongues & Ice Crystal Shards
   for (let i = 0; i < RUN.particles.length; i++) {
     const pt = RUN.particles[i];
     const sx = (pt.x - camX) | 0;
     const sy = (pt.y - camY) | 0;
-    const u = pt.life / pt.maxLife;
+    const u = Math.max(0, pt.life / pt.maxLife);
     if (pt.kind === "flame") {
-      ctx.fillStyle = u > 0.65 ? "#fff59d" : (u > 0.35 ? "#ff9800" : "#e53935");
+      const ang = Math.atan2(pt.vy, pt.vx);
+      const r = pt.r * (1.3 - u * 0.3);
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(ang);
+      ctx.fillStyle = u > 0.62 ? "#ffffff" : (u > 0.34 ? "#ffab00" : "#dd2c00");
       ctx.beginPath();
-      ctx.arc(sx, sy, pt.r * (1.2 - u * 0.3), 0, Math.PI * 2);
+      ctx.moveTo(r * 1.4, 0);
+      ctx.quadraticCurveTo(0, -r * 0.9, -r * 1.3, 0);
+      ctx.quadraticCurveTo(0, r * 0.9, r * 1.4, 0);
       ctx.fill();
+      ctx.restore();
     } else {
       ctx.fillStyle = "#e0f7fa";
-      ctx.fillRect(sx - 3, sy - 3, 6, 6);
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - 6); ctx.lineTo(sx + 4, sy); ctx.lineTo(sx, sy + 6); ctx.lineTo(sx - 4, sy);
+      ctx.fill();
     }
   }
 
-  // 6. Draw Meteors
+  // 8. 3D Sculpted Meteors & Draco Comets with Runic Target Reticles
+  const meteorModel = getSkillModelCanvas("fire_dragon_orb", "#ff3d00");
   for (let i = 0; i < RUN.meteors.length; i++) {
     const mt = RUN.meteors[i];
     const tx = mt.tx - camX;
@@ -4464,133 +4961,141 @@ function render2D() {
     const mx = (mt.curX || mt.x) - camX;
     const my = (mt.curY || mt.y) - camY;
     ctx.save();
+    // Target locking magic reticle on ground
     ctx.strokeStyle = mt.color;
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 2.2;
+    ctx.globalAlpha = 0.72;
     ctx.beginPath();
     ctx.arc(tx, ty, mt.r, 0, Math.PI * 2);
+    ctx.moveTo(tx - mt.r, ty); ctx.lineTo(tx + mt.r, ty);
+    ctx.moveTo(tx, ty - mt.r); ctx.lineTo(tx, ty + mt.r);
     ctx.stroke();
-    ctx.globalAlpha = 0.95;
-    ctx.strokeStyle = "#ffab00";
-    ctx.lineWidth = 10;
+
+    // Glowing plasma wake tail + 3D Meteor Head
+    ctx.globalAlpha = 0.96;
+    ctx.strokeStyle = mt.color;
+    ctx.lineWidth = 16;
     ctx.lineCap = "round";
     ctx.beginPath();
     ctx.moveTo(mx, my);
-    ctx.lineTo(mx + 28, my - 52);
+    ctx.lineTo(mx + 38, my - 68);
     ctx.stroke();
-    ctx.fillStyle = mt.color;
-    ctx.beginPath();
-    ctx.arc(mx, my, 18, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 6;
+    ctx.stroke();
+    ctx.drawImage(meteorModel, mx - 26, my - 26, 52, 52);
     ctx.restore();
   }
 
-  // 7. Draw Slashes, Fist Flurry & Sonic Waves
+  // 9. 3D Crescent Sword-Ki Slashes, Sculpted Gauntlet Fists & Sonic Rings
+  const fistModel = getSkillModelCanvas("fist_knuckle", "#ff6d00");
   for (let i = 0; i < RUN.slashes.length; i++) {
     const sl = RUN.slashes[i];
     const sx = sl.x - camX;
     const sy = sl.y - camY;
-    const alpha = sl.life / sl.maxLife;
+    const alpha = Math.max(0, sl.life / sl.maxLife);
     ctx.save();
     if (sl.kind === "cross_slash") {
+      // Twin 3D Crescent Sword-Wave Blades intersecting in X-formation!
       ctx.translate(sx, sy);
       ctx.rotate(sl.ang);
-      ctx.strokeStyle = sl.color;
-      ctx.lineWidth = 9;
-      ctx.lineCap = "round";
       ctx.globalAlpha = alpha;
+      for (let b = -1; b <= 1; b += 2) {
+        ctx.save();
+        ctx.rotate(b * 0.48);
+        ctx.fillStyle = sl.color;
+        ctx.beginPath();
+        ctx.moveTo(-sl.r, 0);
+        ctx.quadraticCurveTo(0, -sl.r * 0.45, sl.r, 0);
+        ctx.quadraticCurveTo(0, -sl.r * 0.12, -sl.r, 0);
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.restore();
+      }
+    } else if (sl.kind === "fist") {
+      // Pre-baked 3D Armored Martial Gauntlet Fist!
+      ctx.translate(sx, sy);
+      ctx.rotate(sl.ang);
+      ctx.globalAlpha = alpha;
+      const sz = sl.r * 2.4;
+      ctx.drawImage(fistModel, -sz * 0.5, -sz * 0.5, sz, sz);
+    } else if (sl.kind === "sonic") {
+      const curR = sl.r * (1.18 - alpha * 0.38);
+      ctx.strokeStyle = sl.color;
+      ctx.lineWidth = 5 * alpha;
+      ctx.globalAlpha = alpha * 0.9;
       ctx.beginPath();
-      ctx.moveTo(-sl.r, -sl.r * 0.45); ctx.lineTo(sl.r, sl.r * 0.45);
-      ctx.moveTo(-sl.r, sl.r * 0.45);  ctx.lineTo(sl.r, -sl.r * 0.45);
+      ctx.arc(sx, sy, curR, 0, Math.PI * 2);
       ctx.stroke();
       ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    } else if (sl.kind === "fist") {
-      ctx.translate(sx, sy);
-      ctx.rotate(sl.ang);
-      ctx.fillStyle = sl.color;
-      ctx.globalAlpha = alpha;
-      ctx.beginPath();
-      ctx.arc(0, 0, sl.r, -1.2, 1.2);
-      ctx.fill();
-    } else if (sl.kind === "sonic") {
-      ctx.strokeStyle = sl.color;
-      ctx.lineWidth = 3.5;
-      ctx.globalAlpha = alpha * 0.85;
-      ctx.beginPath();
-      ctx.arc(sx, sy, sl.r * (1.15 - alpha * 0.4), 0, Math.PI * 2);
+      ctx.lineWidth = 1.8;
       ctx.stroke();
     }
     ctx.restore();
   }
 
-  // 8. Draw Chain Lightning
+  // 10. Twin-Layer High-Voltage Lightning Arcs & Spark Nodes
   for (let i = 0; i < RUN.lightnings.length; i++) {
     const lt = RUN.lightnings[i];
     ctx.save();
-    ctx.strokeStyle = "#ffee58";
-    ctx.lineWidth = 5;
-    ctx.globalAlpha = lt.life / lt.maxLife;
+    ctx.globalAlpha = Math.max(0, lt.life / lt.maxLife);
     for (let k = 0; k < lt.segs.length; k++) {
       const seg = lt.segs[k];
       const x1 = seg.x1 - camX;
       const y1 = seg.y1 - camY;
       const x2 = seg.x2 - camX;
       const y2 = seg.y2 - camY;
+      const jx = (x1 + x2) * 0.5 + (Math.random() - 0.5) * 22;
+      const jy = (y1 + y2) * 0.5 + (Math.random() - 0.5) * 22;
+      ctx.strokeStyle = lt.color || "#ffd600";
+      ctx.lineWidth = 7;
       ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo((x1 + x2) * 0.5 + (Math.random() - 0.5) * 20, (y1 + y2) * 0.5 + (Math.random() - 0.5) * 20);
-      ctx.lineTo(x2, y2);
+      ctx.moveTo(x1, y1); ctx.lineTo(jx, jy); ctx.lineTo(x2, y2);
       ctx.stroke();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(x2, y2, 5, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }
 
-  // 9. Draw Orbitals, Boomerangs, Melee Swings & Lasers
+  // 11. 3D Orbitals (Sculpted Razor Leaves / Fire Dragon Orbs / Water Blades)
   for (let i = 0; i < RUN.orbitals.length; i++) {
     const o = RUN.orbitals[i];
     const sx = (o.x || RUN.x) - camX;
     const sy = (o.y || RUN.y) - camY;
+    const m = MOVES_DB[o.moveId];
+    const modelType = (m && m.t === "grass") ? "leaf_blade" : ((m && m.t === "fire") ? "fire_dragon_orb" : "water_shuriken");
+    const modelCanvas = getSkillModelCanvas(modelType, o.color);
+    const sz = o.r * 2.5;
     ctx.save();
     ctx.translate(sx, sy);
-    ctx.rotate(o.ang + RUN.time * 8);
-    ctx.fillStyle = o.color;
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, -o.r * 1.25);
-    ctx.quadraticCurveTo(o.r * 0.9, 0, 0, o.r * 1.25);
-    ctx.quadraticCurveTo(-o.r * 0.9, 0, 0, -o.r * 1.25);
-    ctx.fill();
-    ctx.stroke();
+    ctx.rotate(o.ang + Math.PI * 0.5);
+    ctx.drawImage(modelCanvas, -sz * 0.5, -sz * 0.5, sz, sz);
     ctx.restore();
   }
 
+  // 12. 3D Faceted Shuriken / Feather Blades (Boomerangs)
   for (let i = 0; i < RUN.boomerangs.length; i++) {
     const b = RUN.boomerangs[i];
     const sx = b.x - camX;
     const sy = b.y - camY;
+    const shurikenCanvas = getSkillModelCanvas("water_shuriken", b.color);
+    const sz = b.r * 2.4;
     ctx.save();
     ctx.translate(sx, sy);
-    ctx.rotate(RUN.time * 16);
-    ctx.fillStyle = b.color;
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
-    for (let k = 0; k < 4; k++) {
-      ctx.rotate(Math.PI / 2);
-      ctx.beginPath();
-      ctx.moveTo(0, -b.r * 1.35);
-      ctx.lineTo(b.r * 0.38, -b.r * 0.25);
-      ctx.lineTo(0, 0);
-      ctx.lineTo(-b.r * 0.38, -b.r * 0.25);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-    }
+    ctx.rotate(RUN.time * 18);
+    ctx.drawImage(shurikenCanvas, -sz * 0.5, -sz * 0.5, sz, sz);
     ctx.restore();
   }
 
+  // 13. 3D Segmented Thorn Whips & Metallic Halberd Spear Thrusts
   for (let i = 0; i < RUN.meleeSwings.length; i++) {
     const sw = RUN.meleeSwings[i];
     if (sw.x1 === undefined) continue;
@@ -4600,39 +5105,45 @@ function render2D() {
     const y2 = sw.y2 - camY;
     ctx.save();
     if (sw.kind === "whip") {
-      ctx.strokeStyle = sw.color;
-      ctx.lineWidth = 8;
+      const cx = (x1 + x2) * 0.5;
+      const cy = (y1 + y2) * 0.5 - 34 * Math.sin((1 - sw.life / sw.maxLife) * Math.PI * 2);
+      ctx.strokeStyle = "#1b5e20";
+      ctx.lineWidth = 11;
       ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(x1, y1);
-      const cx = (x1 + x2) * 0.5;
-      const cy = (y1 + y2) * 0.5 - 32 * Math.sin((1 - sw.life / sw.maxLife) * Math.PI * 2);
       ctx.quadraticCurveTo(cx, cy, x2, y2);
       ctx.stroke();
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-    } else {
-      ctx.strokeStyle = "#d7ccc8";
+      ctx.strokeStyle = sw.color;
       ctx.lineWidth = 5;
+      ctx.stroke();
+      // 3D Leaf tip at end of whip
+      ctx.drawImage(leafModel, x2 - 14, y2 - 14, 28, 28);
+    } else {
+      // 3D Metallic Spear Shaft + Twin-Beveled Halberd Tip
+      ctx.strokeStyle = "#cfd8dc";
+      ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.stroke();
       ctx.translate(x2, y2);
       ctx.rotate(sw.curAng || sw.ang);
+      // Left lit blade facet
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.moveTo(24, 0); ctx.lineTo(-14, -14); ctx.lineTo(-6, 0); ctx.closePath();
+      ctx.fill();
+      // Right shaded blade facet
       ctx.fillStyle = sw.color;
       ctx.beginPath();
-      ctx.moveTo(16, 0);
-      ctx.lineTo(-14, -12);
-      ctx.lineTo(-8, 0);
-      ctx.lineTo(-14, 12);
-      ctx.closePath();
+      ctx.moveTo(24, 0); ctx.lineTo(-14, 14); ctx.lineTo(-6, 0); ctx.closePath();
       ctx.fill();
     }
     ctx.restore();
   }
 
+  // 14. 3D Hydro Cannon / Solar Beam / Hyper Beam with Muzzle Rings & Helical Core
   for (let i = 0; i < RUN.lasers.length; i++) {
     const ls = RUN.lasers[i];
     if (ls.x1 === undefined) continue;
@@ -4641,38 +5152,66 @@ function render2D() {
     const x2 = ls.x2 - camX;
     const y2 = ls.y2 - camY;
     ctx.save();
+    // Outer energy sheath
     ctx.strokeStyle = ls.color;
-    ctx.lineWidth = ls.wid;
+    ctx.lineWidth = ls.wid * 1.25;
     ctx.lineCap = "round";
-    ctx.globalAlpha = 0.68;
+    ctx.globalAlpha = 0.55;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
+    // Inner white-hot plasma core
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = ls.wid * 0.45;
+    ctx.lineWidth = ls.wid * 0.52;
     ctx.globalAlpha = 0.98;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
+    // 3D Muzzle Energy Rings along the beam!
+    const ux = Math.cos(ls.ang);
+    const uy = Math.sin(ls.ang);
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2.2;
+    for (let d = 35; d < ls.len; d += 75) {
+      const rx = x1 + ux * d;
+      const ry = y1 + uy * d;
+      ctx.save();
+      ctx.translate(rx, ry);
+      ctx.rotate(ls.ang);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 6, ls.wid * 0.72, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
     ctx.restore();
   }
 
-  // 10. Draw Projectiles & Enemy Bullets
+  // 15. 3D Composite Projectiles (Polyhedral Rock Boulders, Leaf Blades, Star Bolts, Alchemical Flasks)
   for (let i = 0; i < RUN.projectiles.length; i++) {
     const p = RUN.projectiles[i];
     const sx = (p.x - camX) | 0;
     const sy = (p.y - camY) | 0;
-    ctx.fillStyle = p.color;
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(sx, sy, p.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    if (sx < -40 || sx > w + 40 || sy < -40 || sy > h + 40) continue;
+    const m = MOVES_DB[p.moveId];
+    let modelKey = "astral_plasma_bolt";
+    if (p.kind === "gravity_axe") modelKey = "rock_polyhedron";
+    else if (m && m.t === "grass") modelKey = "leaf_blade";
+    else if (m && m.t === "fire") modelKey = "fire_dragon_orb";
+    else if (m && m.t === "water") modelKey = "water_shuriken";
+
+    const modCanvas = getSkillModelCanvas(modelKey, p.color);
+    const sz = Math.max(24, p.r * 2.35);
+    const ang = p.rot !== undefined ? p.rot : Math.atan2(p.vy || 0, p.vx || 1);
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(ang);
+    ctx.drawImage(modCanvas, -sz * 0.5, -sz * 0.5, sz, sz);
+    ctx.restore();
   }
 
+  // Enemy plasma bullets with dark core & warning rim
   for (let i = 0; i < RUN.enemyBullets.length; i++) {
     const eb = RUN.enemyBullets[i];
     const sx = (eb.x - camX) | 0;
@@ -4684,9 +5223,13 @@ function render2D() {
     ctx.arc(sx, sy, eb.r, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+    ctx.fillStyle = "#12051c";
+    ctx.beginPath();
+    ctx.arc(sx, sy, eb.r * 0.45, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  // 11. Draw Popups & Floating Joystick
+  // 16. Draw Popups & Floating Joystick
   ctx.textAlign = "center";
   ctx.font = "900 12px monospace, sans-serif";
   for (let i = 0; i < RUN.popups.length; i++) {
