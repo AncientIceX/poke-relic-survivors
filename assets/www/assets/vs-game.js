@@ -289,18 +289,192 @@ function getTypeEffectiveness(moveType, defTypes) {
 }
 
 // ============================================================================
-// Player-Level-Driven Dynamic Difficulty Curve & Stat Computation!
-// Enemy Level & Stats are anchored directly to Player Level (`RUN.level`) & Evolution Tier,
-// with a slight time pressure factor so you cannot idle, ensuring fair & tight pacing at all levels!
+// PokéSurvivors v4.0.0 Core Systems:
+// 1. Evolution-Bound Signature Moves & 3-Socket Move Hex Super-Weapons
+// 2. LoL Arena (Hextech Mayhem) Silver / Gold / Prismatic Augment Draft + Per-Card Rerolls
+// 3. Rare Field Key-Stone Drop -> Chargeable & Timed Ultimate Mega/Gmax/Z/Tera Awakening
+// 4. High-Intensity Escalating Horde Curve (5~15 min Hardcore Climax Waves!)
+// ============================================================================
+
+// Every starter's Slot-0 Signature Move automatically evolves when the Pokémon evolves!
+const SIGNATURE_EVO_MOVES = {
+  1:   [75,  438, 338], // 妙蛙种子: 飞叶快刀 -> 强力鞭打 -> 疯狂植物
+  4:   [52,  53,  307], // 小火龙: 火花 -> 喷射火焰 -> 爆炸烈焰
+  7:   [55,  56,  308], // 杰尼龟: 水枪 -> 水炮 -> 加农水炮
+  152: [75,  572, 338], // 菊草叶: 飞叶快刀 -> 落英缤纷 -> 疯狂植物
+  155: [52,  436, 284], // 火球鼠: 火花 -> 喷烟 -> 喷火
+  158: [55,  401, 308], // 小锯鳄: 水枪 -> 水流尾 -> 加农水炮
+  252: [670, 348, 437], // 木守宫: 树叶 -> 叶刃 -> 飞叶风暴
+  255: [52,  299, 394], // 火稚鸡: 火花 -> 火焰踢 -> 闪焰冲锋
+  258: [55,  330, 308], // 水跃鱼: 水枪 -> 浊流 -> 加农水炮
+  387: [75,  452, 838], // 草苗龟: 飞叶快刀 -> 木槌 -> 突飞猛扑
+  390: [52,  370, 833], // 小火焰猴: 火花 -> 近身战 -> 大愤慨
+  393: [55,  362, 834], // 波加曼: 水枪 -> 盐水 -> 波动冲
+  495: [22,  348, 437], // 藤藤蛇: 藤鞭 -> 叶刃 -> 飞叶风暴
+  498: [52,  53,  457], // 暖暖猪: 火花 -> 喷射火焰 -> 双刃头锤
+  501: [55,  534, 308], // 水水獭: 水枪 -> 贝壳刃 -> 加农水炮
+  650: [22,  402, 452], // 哈力栗: 藤鞭 -> 种子炸弹 -> 木槌
+  653: [52,  595, 126], // 火狐狸: 火花 -> 魔法火焰 -> 大字爆炎
+  656: [55,  352, 594], // 呱呱泡蛙: 水枪 -> 水之波动 -> 飞水手里剑
+  722: [670, 348, 662], // 木木枭: 树叶 -> 叶刃 -> 缝影
+  725: [52,  424, 663], // 火斑喵: 火花 -> 火焰牙 -> DD金勾臂
+  728: [55,  585, 664], // 球球海狮: 水枪 -> 月亮之力 -> 泡影的咏叹调
+  810: [785, 452, 778], // 敲音猴: 木枝突刺 -> 木槌 -> 鼓击
+  813: [52,  340, 780], // 炎兔儿: 火花 -> 弹跳 -> 火焰球
+  816: [55,  710, 745], // 泪眼蜥: 水枪 -> 水流裂破 -> 狙击
+  906: [670, 402, 870], // 新叶喵: 树叶 -> 种子炸弹 -> 千变万花
+  909: [52,  53,  871], // 呆火鳄: 火花 -> 喷射火焰 -> 闪焰高歌
+  912: [55,  895, 872]  // 润水鸭: 水枪 -> 水波刀 -> 流水旋舞
+};
+
+// Legendary Moves for Prismatic "Pandora's TM" Augment
+const LEGENDARY_MOVES_POOL = [307, 308, 338, 284, 437, 838, 833, 834, 594, 780, 745, 870, 871, 872, 126, 59, 89, 416];
+
+// Move-Specific Hex Modifiers (Can be socketed into any of the 4 moves, up to 3 sockets per move!)
+const MOVE_HEX_MODS = [
+  {
+    id: "multishot", tier: "silver", tag: "分裂", icon: "💠",
+    name: "海克斯分裂弹道",
+    desc: "该招式的投射物/挥砍/陨石/光束数量额外 +2，覆盖面大幅扩张！"
+  },
+  {
+    id: "colossal", tier: "silver", tag: "巨化", icon: "🔮",
+    name: "海克斯巨型化",
+    desc: "该招式的判定体积与爆炸半径扩大 +48%，伤害提升 +18%！"
+  },
+  {
+    id: "overclock", tier: "silver", tag: "疾速", icon: "⚡",
+    name: "海克斯极速充能",
+    desc: "该招式的冷却时间缩减 -26%，弹道与挥砍速度提升 +35%！"
+  },
+  {
+    id: "bounce", tier: "gold", tag: "弹跳", icon: "🐝",
+    name: "弹跳蜜蜂连携",
+    desc: "该招式命中敌人后自动向附近另一名敌人弹射/连锁，并附加 +25% 穿透伤害！"
+  },
+  {
+    id: "aftershock", tier: "gold", tag: "余震", icon: "💥",
+    name: "海克斯回响余震",
+    desc: "该招式施放 0.45 秒后，在目标位置引发二次海克斯能量爆破（造成 75% 范围伤害）！"
+  },
+  {
+    id: "singularity", tier: "gold", tag: "引力", icon: "🌀",
+    name: "星界黑洞引力",
+    desc: "该招式命中时产生强力引力场，将周围怪群拖拽聚拢至中心并减速 50%！"
+  },
+  {
+    id: "gatling", tier: "prismatic", tag: "加特林", icon: "🔥",
+    name: "棱彩·加特林机枪化",
+    desc: "【棱彩魔改】该招式冷却时间暴降 -52%，且每次施放额外连射一波，化为金属风暴！"
+  },
+  {
+    id: "supernova", tier: "prismatic", tag: "星爆", icon: "🌟",
+    name: "棱彩·超新星裂变",
+    desc: "【棱彩魔改】该招式每次释放向四周 360° 额外迸射 6 枚追踪星界飞弹，全屏开花！"
+  },
+  {
+    id: "reaper", tier: "prismatic", tag: "收割", icon: "⚔️",
+    name: "棱彩·致命收割刷新",
+    desc: "【棱彩魔改】该招式伤害提升 +35%，且每次击败敌人立即缩减所有招式冷却并加速超进化充能！"
+  }
+];
+
+// Global Hextech Mayhem Augments (Silver / Gold / Prismatic)
+const GLOBAL_HEX_POOL = [
+  {
+    id: "double_cast", tier: "prismatic", icon: "♊",
+    name: "棱彩·双重施法 (Double Cast)",
+    desc: "你释放任何招式时，有 65% 概率（叠满 100%）在 0.22 秒后原地免费再释放一次！"
+  },
+  {
+    id: "three_hit", tier: "prismatic", icon: "⚡",
+    name: "棱彩·伤不过三 (True Damage)",
+    desc: "对同一敌人每第 3 次命中触发海克斯圣雷，额外造成 10% 目标最大生命值的真实伤害！"
+  },
+  {
+    id: "goliath", tier: "prismatic", icon: "🦖",
+    name: "棱彩·泰坦心之钢 (Goliath)",
+    desc: "立即提升 +25% 生命上限；每击败 18 只怪永久体型变大 +2%、生命上限 +12，且所有技能范围随体型等比放大！"
+  },
+  {
+    id: "jeweled_gauntlet", tier: "prismatic", icon: "💎",
+    name: "棱彩·珠光护手 (Jeweled)",
+    desc: "你的所有招式暴击率提升 +30%，暴击伤害从 150% 暴涨至 215%！"
+  },
+  {
+    id: "combo_symphony", tier: "prismatic", icon: "🎵",
+    name: "棱彩·连锁交响曲 (Combo Link)",
+    desc: "每当你释放第 1 槽位【本命招式】时，立即无视冷却自动触发一次第 2 槽位招式！"
+  },
+  {
+    id: "trainer_resonance", tier: "prismatic", icon: "🤝",
+    name: "棱彩·训练家羁绊共振",
+    desc: "每当你释放本命招式时，场上所有同行同伴宝可梦立即同步齐射一次招式，且同伴伤害 +40%！"
+  },
+  {
+    id: "pandora_tm", tier: "prismatic", icon: "🎲",
+    name: "棱彩·潘多拉的技能机",
+    desc: "将你第 2~4 槽位的招式全部重随为【传说神兽禁术】，且全部招式立即赠送 1 个随机海克斯词条！"
+  },
+  {
+    id: "elem_overload", tier: "gold", icon: "⚛️",
+    name: "黄金·元素反应炉 (蒸发/超导/烈绽放)",
+    desc: "不同属性招式交替命中敌人时触发【元素剧爆】，造成 1.8 倍范围爆炸并削减敌人 25% 双防！"
+  },
+  {
+    id: "apex_collector", tier: "gold", icon: "🧲",
+    name: "黄金·海克斯磁暴线圈",
+    desc: "拾取范围扩大 +120%，经验获取提升 +28%，且每拾取 15 颗经验糖果向周围发射一道连锁闪电！"
+  },
+  {
+    id: "vampiric_siphon", tier: "gold", icon: "🩸",
+    name: "黄金·全能吸血契约",
+    desc: "所有招式获得 12% 生命偷取；满血时溢出的治疗量转化为护体雷环轰击近身敌人！"
+  },
+  {
+    id: "berserker_drive", tier: "gold", icon: "🔥",
+    name: "黄金·狂战过载引擎",
+    desc: "移动速度提升 +25%，全体招式冷却缩减 -18%，且每损失 10% 生命值伤害提升 +8%！"
+  },
+  {
+    id: "keystone_radar", tier: "gold", icon: "🌈",
+    name: "黄金·超进化共鸣雷达",
+    desc: "超进化充能速度提升 +45%，超进化持续时间延长 +5 秒，且立即在身边召唤 1 颗【🌈超进化钥石】！"
+  },
+  {
+    id: "transmute_prismatic", tier: "gold", icon: "✨",
+    name: "黄金·质变：棱彩阶！",
+    desc: "赌狗狂喜！立即将此卡质变为 1 个随机【💎棱彩阶】顶级海克斯强化，并赠送 +2 颗刷新骰子！"
+  },
+  {
+    id: "silver_haste", tier: "silver", icon: "🪽",
+    name: "白银·顺风羽翼",
+    desc: "移动速度提升 +18%，所有招式冷却速度加快 +14%！"
+  },
+  {
+    id: "silver_might", tier: "silver", icon: "⚔️",
+    name: "白银·双刀流武道",
+    desc: "物攻与特攻双双提升 +18%，击退距离提升 +25%！"
+  },
+  {
+    id: "silver_dice", tier: "silver", icon: "🎲",
+    name: "白银·幸运骰子福袋",
+    desc: "立即获得 +4 颗海克斯刷新骰子，且全属性提升 +8%！"
+  }
+];
+
+// ============================================================================
+// Escalating Hardcore Difficulty & Wave Climax Curve (No More 5-Min Easy Mode!)
 // ============================================================================
 function getTargetEnemyLevel(isBoss = false, isElite = false) {
   if (!RUN) return 4;
   const pLv = RUN.level || 5;
   const timeMin = RUN.time / 60;
-  // Base enemy level tracks player level closely (+timeMin*0.9 keeps gentle anti-stall pressure)
-  const baseLv = Math.round((pLv - 1) * 0.92 + timeMin * 0.95 + RUN.stage.lvOffset);
-  const offset = isBoss ? 3 : (isElite ? 1 : 0);
-  return Math.max(3, baseLv + offset);
+  // After 3 minutes, time pressure accelerates sharply so monsters out-scale passive play!
+  const lateSurge = Math.max(0, timeMin - 3.0) * 2.2 + Math.pow(Math.max(0, timeMin - 5.0), 1.45) * 2.6;
+  const baseLv = Math.round(pLv * 1.02 + timeMin * 1.65 + lateSurge + RUN.stage.lvOffset);
+  const offset = isBoss ? 5 : (isElite ? 2 : 0);
+  return Math.max(4, baseLv + offset);
 }
 
 function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false, runBuffs = null) {
@@ -308,36 +482,47 @@ function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false,
   const [bHp, bAtk, bDef, bSpa, bSpd, bSpe] = entry.s;
 
   const coreHp = Math.floor(((2 * bHp + 31) * level) / 100) + level + 10;
-  // Scale enemy durability smoothly with Player's current evolution stage & level
   const pLv = RUN ? RUN.level : 5;
   const pEvo = RUN ? RUN.evoStage : 0;
-  const evoScale = 1 + pEvo * 0.28 + Math.max(0, pLv - 10) * 0.025;
+  const timeMin = RUN ? (RUN.time / 60) : 0;
+
+  // Exponential post-4-minute monster fortitude so 5~12 min requires real Hex Super-Weapons & Mega Bursts!
+  const timeFortitude = 1 + Math.max(0, timeMin - 2.0) * 0.28 + Math.pow(Math.max(0, timeMin - 4.5), 1.65) * 0.42;
+  const evoScale = (1 + pEvo * 0.34 + Math.max(0, pLv - 10) * 0.035) * timeFortitude;
 
   let maxHp = coreHp;
   if (isPlayer) {
     const evPct = getEvBonusPct("hp") * 0.01;
-    maxHp = Math.floor((coreHp * 2.25 + 42) * (1 + evPct));
+    const goliathBonus = RUN ? (RUN.goliathHpBonus || 0) : 0;
+    const goliathMul = (RUN && RUN.hexes && RUN.hexes.goliath) ? 1.25 : 1.0;
+    maxHp = Math.floor(((coreHp * 2.35 + 48) * (1 + evPct) * goliathMul) + goliathBonus);
   } else if (isBoss) {
-    maxHp = Math.floor((coreHp * 14.5 + 200) * evoScale);
+    maxHp = Math.floor((coreHp * 18.5 + 320) * evoScale);
   } else {
-    maxHp = Math.floor((coreHp * 1.25 + 8) * evoScale);
+    maxHp = Math.floor((coreHp * 1.65 + 16) * evoScale);
   }
 
   const statFn = (base, key) => {
     const raw = Math.floor(((2 * base + 31) * level) / 100) + 8;
-    if (!isPlayer) return Math.floor(raw * (1 + pEvo * 0.12));
-    const evMul = 1 + getEvBonusPct(key) * 0.01 + ((runBuffs && runBuffs[key]) || 0) * 0.04;
+    if (!isPlayer) {
+      const enemyTimeMul = 1 + pEvo * 0.16 + Math.max(0, timeMin - 3.0) * 0.14;
+      return Math.floor(raw * enemyTimeMul);
+    }
+    const hexMight = (RUN && RUN.hexes && RUN.hexes.silver_might && (key === "atk" || key === "spa")) ? 0.18 * RUN.hexes.silver_might : 0;
+    const diceBonus = (RUN && RUN.hexes && RUN.hexes.silver_dice) ? 0.08 * RUN.hexes.silver_dice : 0;
+    const evMul = 1 + getEvBonusPct(key) * 0.01 + ((runBuffs && runBuffs[key]) || 0) * 0.05 + hexMight + diceBonus;
     return Math.floor(raw * evMul);
   };
 
   let add = [0, 0, 0, 0, 0, 0];
-  if (isPlayer && RUN && RUN.awakening && RUN.awakening.statAdd) {
+  // Stat bonus ONLY applies while Ultimate Awakening Burst is actively running!
+  if (isPlayer && RUN && RUN.ultActive && RUN.awakening && RUN.awakening.statAdd) {
     add = RUN.awakening.statAdd;
   }
   return {
     types: entry.t,
-    bst: entry.bst + (isPlayer && RUN && RUN.awakening && !RUN.awakening.formId ? 100 : 0),
-    maxHp: maxHp + Math.floor(add[0] * 3.2),
+    bst: entry.bst + (isPlayer && RUN && RUN.ultActive && RUN.awakening ? 110 : 0),
+    maxHp: maxHp + Math.floor(add[0] * 3.5),
     atk: statFn(bAtk + add[1], "atk"),
     def: statFn(bDef + add[2], "def"),
     spa: statFn(bSpa + add[3], "spa"),
@@ -346,21 +531,57 @@ function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false,
   };
 }
 
-function computeMoveCooldown(moveId, attackerStats, heldItems = null) {
-  const m = MOVES_DB[moveId];
-  if (!m) return 1.2;
-  const effPower = m.p * (m.h > 1 ? (m.h > 2 ? 2.4 : 1.7) : 1.0);
-  let baseCd = 0.70 + Math.pow(effPower / 40, 0.70) * 0.44;
-  if (m.pat === "bible_orbit") baseCd = 2.6;
-  else if (m.pat === "santa_hazard" || m.pat === "gravity_well") baseCd = 2.2;
-  else if (m.pat === "sonic_boom") baseCd = 1.02;
-  else if (m.pat === "fist_flurry" || m.pat === "spear_thrust") baseCd *= 0.85;
-  const speFactor = Math.max(0.64, Math.min(1.15, 110 / (85 + attackerStats.spe * 0.45)));
-  const clawBonus = heldItems && heldItems.quick_claw ? Math.pow(0.90, heldItems.quick_claw) : 1.0;
-  return Math.max(0.45, baseCd * speFactor * clawBonus);
+function getMoveSlotById(moveId) {
+  if (!RUN || !RUN.moves) return null;
+  for (let i = 0; i < RUN.moves.length; i++) {
+    if (RUN.moves[i].id === moveId) return RUN.moves[i];
+  }
+  return null;
 }
 
-function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, defenderStats, aoeScale = 1.0, heldItems = null) {
+function hasMoveMod(mSlot, modId) {
+  if (!mSlot || !mSlot.mods) return 0;
+  let cnt = 0;
+  for (let i = 0; i < mSlot.mods.length; i++) {
+    if (mSlot.mods[i] === modId) cnt++;
+  }
+  return cnt;
+}
+
+function isMoveSuperWeapon(mSlot) {
+  return !!(mSlot && mSlot.mods && mSlot.mods.length >= 3);
+}
+
+function computeMoveCooldown(moveId, attackerStats, heldItems = null, mSlot = null) {
+  const m = MOVES_DB[moveId];
+  if (!m) return 1.1;
+  const effPower = m.p * (m.h > 1 ? (m.h > 2 ? 2.2 : 1.6) : 1.0);
+  let baseCd = 0.68 + Math.pow(effPower / 42, 0.68) * 0.42;
+  if (m.pat === "bible_orbit") baseCd = 2.4;
+  else if (m.pat === "santa_hazard" || m.pat === "gravity_well") baseCd = 2.0;
+  else if (m.pat === "sonic_boom") baseCd = 0.98;
+  else if (m.pat === "fist_flurry" || m.pat === "spear_thrust") baseCd *= 0.84;
+
+  const speFactor = Math.max(0.60, Math.min(1.12, 110 / (85 + attackerStats.spe * 0.45)));
+  const clawBonus = heldItems && heldItems.quick_claw ? Math.pow(0.90, heldItems.quick_claw) : 1.0;
+
+  let hexCdMul = 1.0;
+  if (mSlot) {
+    const oc = hasMoveMod(mSlot, "overclock");
+    if (oc > 0) hexCdMul *= Math.pow(0.74, oc);
+    const gat = hasMoveMod(mSlot, "gatling");
+    if (gat > 0) hexCdMul *= Math.pow(0.48, gat);
+    if (isMoveSuperWeapon(mSlot)) hexCdMul *= 0.82;
+  }
+  if (RUN && attackerStats === RUN.stats) {
+    if (RUN.hexes && RUN.hexes.berserker_drive) hexCdMul *= Math.pow(0.82, RUN.hexes.berserker_drive);
+    if (RUN.hexes && RUN.hexes.silver_haste) hexCdMul *= Math.pow(0.86, RUN.hexes.silver_haste);
+    if (RUN.ultActive) hexCdMul *= 0.65; // Ultimate Awakening Burst gives +35% faster skill fire rate!
+  }
+  return Math.max(0.24, baseCd * speFactor * clawBonus * hexCdMul);
+}
+
+function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, defenderStats, aoeScale = 1.0, heldItems = null, mSlot = null) {
   const m = MOVES_DB[moveId];
   if (!m) return { dmg: 5, eff: 1.0, isCrit: false, stab: 1.0 };
 
@@ -368,20 +589,43 @@ function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, d
   const A = isPhys ? attackerStats.atk : attackerStats.spa;
   const D = Math.max(1, isPhys ? defenderStats.def : defenderStats.spd);
 
-  const isTera = (RUN && RUN.awakening && RUN.awakening.kind === "tera" && attackerStats === RUN.stats);
-  const stab = attackerStats.types.includes(m.t) ? (isTera ? 2.0 : 1.5) : 1.0;
-  const awkMul = (RUN && RUN.awakening && attackerStats === RUN.stats) ? 1.28 : 1.0;
+  const isPlayerAtk = (RUN && attackerStats === RUN.stats);
+  const isTera = isPlayerAtk && RUN.ultActive && RUN.awakening && RUN.awakening.kind === "tera";
+  const stab = attackerStats.types.includes(m.t) ? (isTera ? 2.1 : 1.5) : 1.0;
+  const awkMul = (isPlayerAtk && RUN.ultActive) ? 1.45 : 1.0;
+
   let eff = getTypeEffectiveness(m.t, defenderStats.types);
   if (eff >= 1.9 && heldItems && heldItems.expert_belt) {
     eff *= (1 + 0.25 * heldItems.expert_belt);
   }
-  const extraCrit = heldItems && heldItems.scope_lens ? heldItems.scope_lens * 12 : 0;
-  const isCrit = Math.random() * 100 < ((m.cr || 6) + extraCrit);
-  const critMul = isCrit ? 1.5 : 1.0;
-  const randVar = 0.90 + Math.random() * 0.15;
 
+  let extraCrit = heldItems && heldItems.scope_lens ? heldItems.scope_lens * 12 : 0;
+  let critDmgMul = 1.5;
+  if (isPlayerAtk && RUN.hexes && RUN.hexes.jeweled_gauntlet) {
+    extraCrit += 30 * RUN.hexes.jeweled_gauntlet;
+    critDmgMul = 2.15;
+  }
+  const isCrit = Math.random() * 100 < ((m.cr || 8) + extraCrit);
+  const critMul = isCrit ? critDmgMul : 1.0;
+
+  let modDmgMul = 1.0;
+  if (mSlot) {
+    modDmgMul *= (1 + mSlot.mods.length * 0.14);
+    if (hasMoveMod(mSlot, "colossal") > 0) modDmgMul *= 1.18;
+    if (hasMoveMod(mSlot, "reaper") > 0) modDmgMul *= 1.35;
+    if (isMoveSuperWeapon(mSlot)) modDmgMul *= 1.32; // ★ Super Weapon 3-socket completion spike!
+  }
+  if (isPlayerAtk && RUN.hexes && RUN.hexes.berserker_drive) {
+    const missingPct = Math.max(0, (1 - RUN.hp / Math.max(1, RUN.maxHp)) * 10);
+    modDmgMul *= (1 + missingPct * 0.08 * RUN.hexes.berserker_drive);
+  }
+  if (!isPlayerAtk && RUN && RUN.hexes && RUN.hexes.trainer_resonance) {
+    modDmgMul *= (1 + 0.40 * RUN.hexes.trainer_resonance);
+  }
+
+  const randVar = 0.92 + Math.random() * 0.14;
   const baseDmg = (((2 * attackerLv / 5 + 2) * m.p * (A / D)) / 50 + 2);
-  const finalDmg = Math.max(1, Math.round(baseDmg * stab * eff * critMul * aoeScale * awkMul * randVar));
+  const finalDmg = Math.max(1, Math.round(baseDmg * stab * eff * critMul * aoeScale * awkMul * modDmgMul * randVar));
   return { dmg: finalDmg, eff, isCrit, stab };
 }
 
@@ -816,44 +1060,51 @@ function showLearnsetModal() {
   ov.style.display = "flex";
   const curId = SAVE.selectedChar;
   const lsData = STARTER_LEARNSETS[curId];
+  const sigChain = SIGNATURE_EVO_MOVES[curId] || [33, 36, 63];
 
-  const lvHtml = lsData.levelMoves.map(([mid, lv]) => {
+  const sigHtml = sigChain.map((mid, idx) => {
     const m = MOVES_DB[mid];
     const tm = TYPE_META[m.t];
+    const stageLabel = idx === 0 ? "一阶本命技" : (idx === 1 ? "二阶进化蜕变" : "三阶完全体奥义");
     return `
-      <div style="background:#1a1126;border:1px solid ${tm.color};border-radius:5px;padding:5px 7px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="background:#241438;border:1.5px solid ${tm.color};border-radius:6px;padding:6px 8px;display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <div style="display:flex;align-items:center;gap:4px;">
-            <img src="${tm.icon}" style="width:16px;height:16px;image-rendering:pixelated;" />
-            <b style="color:#ffe066;font-size:11px;">Lv.${lv} ${m.n}</b>
-            <span style="background:${tm.color};color:#fff;font-size:9px;padding:0px 4px;border-radius:3px;">${TYPE_ZH[m.t]}</span>
-          </div>
-          <div style="font-size:9px;color:#81d4fa;margin-top:1px;">${m.mn}</div>
+          <span style="font-size:10px;color:#00e5ff;font-weight:900;">[${stageLabel}]</span>
+          <b style="color:#ffe066;font-size:12px;margin-left:4px;">${m.n}</b>
+          <span style="background:${tm.color};color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:4px;">${TYPE_ZH[m.t]}</span>
+          <div style="font-size:9px;color:#b3e5fc;margin-top:2px;">${m.mn} · 嵌满3个海克斯合成为【★超武形态】</div>
         </div>
-        <span style="font-size:11px;color:#fff;font-weight:900;">P:${m.p}${m.h > 1 ? "×" + m.h : ""}</span>
+        <span style="font-size:11px;color:#fff;font-weight:900;">P:${m.p}</span>
       </div>
     `;
   }).join("");
 
-  const itemHtml = TACTICAL_ITEMS.map(it => `
-    <div style="background:#1c1229;border:1px solid #785c28;border-radius:5px;padding:5px 7px;display:flex;align-items:center;gap:7px;">
-      <img src="${it.icon}" style="width:24px;height:24px;image-rendering:pixelated;" />
-      <div>
-        <b style="font-size:11px;color:#ffe066;">${it.name}</b>
-        <div style="font-size:9px;color:#ccc;">${it.desc}</div>
+  const hexHtml = GLOBAL_HEX_POOL.map(h => {
+    const badgeCol = h.tier === "prismatic" ? "#00e5ff" : (h.tier === "gold" ? "#ffd54f" : "#b0bec5");
+    const tierName = h.tier === "prismatic" ? "💎棱彩" : (h.tier === "gold" ? "🥇黄金" : "🥈白银");
+    return `
+      <div style="background:#1a1126;border:1.5px solid ${badgeCol};border-radius:5px;padding:5px 7px;display:flex;align-items:center;gap:7px;">
+        <div style="font-size:18px;width:28px;text-align:center;">${h.icon}</div>
+        <div style="flex:1;">
+          <div>
+            <span style="color:${badgeCol};font-size:10px;font-weight:900;">[${tierName}]</span>
+            <b style="font-size:11px;color:#fff;margin-left:3px;">${h.name}</b>
+          </div>
+          <div style="font-size:9px;color:#ccc;margin-top:1px;">${h.desc}</div>
+        </div>
       </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 
   box.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <b style="font-size:15px;color:#ffe066;">📖 【${POKEMON_ZH[curId]}】23种特效招式 & 道具图鉴</b>
+      <b style="font-size:15px;color:#ffe066;">📖 【${POKEMON_ZH[curId]}】进化本命技 & 海克斯符文图鉴</b>
       <button id="close-evo" class="vs-btn" style="padding:4px 10px;font-size:12px;">关闭</button>
     </div>
-    <div style="font-weight:900;font-size:12px;color:#ffd54f;margin-bottom:4px;">🎒 局内刷新的携带物与战术道具（10种）：</div>
-    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px;">${itemHtml}</div>
-    <div style="font-weight:900;font-size:12px;color:#81d4fa;margin-bottom:4px;">▲ 【${POKEMON_ZH[curId]}】升级自动领悟招式：</div>
-    <div style="display:flex;flex-direction:column;gap:4px;">${lvHtml}</div>
+    <div style="font-weight:900;font-size:12px;color:#00e5ff;margin-bottom:4px;">🔥 形态进化自动蜕变本命招式（第 1 槽位）：</div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px;">${sigHtml}</div>
+    <div style="font-weight:900;font-size:12px;color:#ffd54f;margin-bottom:4px;">⚡ 海克斯大乱斗强化符文池（升级三选一 & 骰子刷新）：</div>
+    <div style="display:flex;flex-direction:column;gap:4px;">${hexHtml}</div>
   `;
   box.querySelector("#close-evo").onclick = () => { ov.style.display = "none"; };
 }
@@ -983,218 +1234,692 @@ window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
 // ============================================================================
-// Start Run & HUD Updates
+// Start Run, HUD, Hex Augment Draft, Evolution Binding & Timed Ultimate Awakening
 // ============================================================================
 const ALL_BOSS_POOL = Object.values(GEN_BOSSES).flat();
 
-function startRun() {
-  const charDef = CHARACTERS.find(c => c.id === SAVE.selectedChar) || CHARACTERS[0];
-  const stageDef = STAGES.find(s => s.id === SAVE.selectedStage) || STAGES[0];
-  const lsData = STARTER_LEARNSETS[charDef.id];
+function getMaxHexSocketsForStage(evoStage) {
+  // Stage 0 (Lv.1-15): 1 socket; Stage 1 (Lv.16-31): 2 sockets; Stage 2 (Lv.32+): 3 sockets (unlocks ★Super-Weapon!)
+  return Math.min(3, (evoStage || 0) + 1);
+}
 
-  let wildPool = [];
-  let bossPool = [];
-  for (const g of stageDef.gens) {
-    wildPool = wildPool.concat(GEN_WILDS[g] || []);
-    bossPool = bossPool.concat(GEN_BOSSES[g] || []);
+function addUltimateCharge(amount) {
+  if (!RUN || !RUN.awakening || RUN.ultActive) return;
+  const rateMul = (1 + (RUN.ultUpgrades || 0) * 0.25) * ((RUN.hexes && RUN.hexes.keystone_radar) ? 1.45 : 1.0);
+  const oldCharge = RUN.ultCharge;
+  RUN.ultCharge = Math.min(100, RUN.ultCharge + amount * rateMul);
+  if (oldCharge < 100 && RUN.ultCharge >= 100) {
+    sfx("chest");
+    addPopup(RUN.x, RUN.y - 54, `🌈 【${RUN.awakening.title}】充能 100% 就绪！点击右下角释放大招！`, "#00e5ff", 1.42);
+    updateUltButtonHud();
+  }
+}
+
+function activateUltimateAwakening() {
+  if (!RUN || !RUN.awakening || RUN.ultActive || RUN.ultCharge < 100) return;
+  const awk = RUN.awakening;
+  RUN.ultActive = true;
+  RUN.ultCharge = 0;
+  const extraDur = (RUN.ultUpgrades || 0) * 4 + ((RUN.hexes && RUN.hexes.keystone_radar) ? 5 : 0);
+  RUN.ultMaxTimer = 18 + extraDur;
+  RUN.ultTimer = RUN.ultMaxTimer;
+  RUN.preUltSpeciesId = RUN.speciesId;
+  if (awk.formId) {
+    RUN.speciesId = awk.formId;
   }
 
+  const oldMax = RUN.maxHp;
+  RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
+  RUN.maxHp = RUN.stats.maxHp;
+  RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(35, RUN.maxHp - oldMax + Math.round(RUN.maxHp * 0.35)));
+  RUN.invulnT = 2.0;
+
+  sfx("chest");
+  playCry(RUN.speciesId);
+
+  // Massive Ultimate Entry Shockwave!
+  RUN.zones.push({ x: RUN.x, y: RUN.y, r: 220, life: 0.65, maxLife: 0.65, color: awk.color, kind: "sky_pillar" });
+  const near = queryEnemiesInRadius(RUN.x, RUN.y, 230);
+  for (let i = 0; i < near.length; i++) {
+    const e = near[i];
+    hitEnemyWithMove(e, RUN.level, RUN.stats, RUN.moves[0].id, 2.2, RUN.moves[0]);
+    if (!e.isBoss) {
+      const a = Math.atan2(e.y - RUN.y, e.x - RUN.x);
+      e.x += Math.cos(a) * 140;
+      e.y += Math.sin(a) * 140;
+    }
+  }
+
+  addPopup(RUN.x, RUN.y - 68, `🌈 终极觉醒爆发：【${awk.title}】(${RUN.ultMaxTimer}秒超载)！`, awk.color, 1.55);
+  updateHudSlots();
+  updateUltButtonHud();
+}
+
+function deactivateUltimateAwakening() {
+  if (!RUN || !RUN.ultActive) return;
+  RUN.ultActive = false;
+  RUN.ultTimer = 0;
+  const lsData = STARTER_LEARNSETS[RUN.baseId];
+  RUN.speciesId = lsData.chain[Math.min(2, RUN.evoStage)];
+  RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
+  RUN.maxHp = RUN.stats.maxHp;
+  RUN.hp = Math.min(RUN.hp, RUN.maxHp);
+  addPopup(RUN.x, RUN.y - 46, "⚡ 超进化爆发结束，能量进入重新充能！", "#80d8ff", 1.25);
+  updateHudSlots();
+  updateUltButtonHud();
+}
+
+function updateUltButtonHud() {
+  const wrap = document.getElementById("ult-btn-wrap");
+  if (!wrap) return;
+  if (!RUN || !RUN.awakening) {
+    wrap.style.display = "none";
+    return;
+  }
+  wrap.style.display = "flex";
+  const btn = document.getElementById("ult-btn");
+  const fill = document.getElementById("ult-fill-overlay");
+  const pctEl = document.getElementById("ult-pct");
+  const lblEl = document.getElementById("ult-label");
+  const iconEl = document.getElementById("ult-icon");
+
+  const awk = RUN.awakening;
+  iconEl.textContent = awk.kind === "gmax" ? "☁️" : (awk.kind === "tera" ? "💎" : (awk.kind === "zmove" ? "⚡" : "🧬"));
+
+  if (RUN.ultActive) {
+    btn.className = "active-burst";
+    const pct = Math.max(0, Math.min(100, (RUN.ultTimer / Math.max(1, RUN.ultMaxTimer)) * 100));
+    fill.style.height = `${pct}%`;
+    pctEl.textContent = `${RUN.ultTimer.toFixed(1)}s`;
+    lblEl.textContent = `🔥 爆发中 (Lv.${1 + (RUN.ultUpgrades || 0)})`;
+    lblEl.style.color = "#ffd600";
+  } else {
+    const pct = Math.floor(RUN.ultCharge);
+    fill.style.height = `${pct}%`;
+    pctEl.textContent = `${pct}%`;
+    if (pct >= 100) {
+      btn.className = "ready";
+      lblEl.textContent = `▶ 点击释放超进化！`;
+      lblEl.style.color = "#00e5ff";
+    } else {
+      btn.className = "";
+      lblEl.textContent = `${awk.title.split("：")[1] || awk.title} 充能`;
+      lblEl.style.color = "#ffe066";
+    }
+  }
+}
+
+function startRun() {
+  const charId = SAVE.selectedChar;
+  const stage = STAGES.find(s => s.id === SAVE.selectedStage) || STAGES[0];
+  const lsData = STARTER_LEARNSETS[charId];
   const initLv = 5;
-  const runBuffs = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
-  const pStats = computePokemonStats(charDef.id, initLv, true, false, runBuffs);
-  const startMoveIds = getStartingMoves(charDef.id);
+  const initStats = computePokemonStats(charId, initLv, true, false);
+  const sigChain = SIGNATURE_EVO_MOVES[charId] || [33, 36, 63];
+  const startMoveIds = getStartingMoves(charId);
+  if (!startMoveIds.includes(sigChain[0])) {
+    startMoveIds[0] = sigChain[0];
+  }
+
+  const wildPool = [];
+  const bossPool = [];
+  for (const g of stage.gens) {
+    if (GEN_WILDS[g]) wildPool.push(...GEN_WILDS[g]);
+    if (GEN_BOSSES[g]) bossPool.push(...GEN_BOSSES[g]);
+  }
 
   RUN = {
     isPlayerUnit: true,
-    baseId: charDef.id,
-    speciesId: lsData.chain[0],
+    baseId: charId,
+    speciesId: charId,
     evoStage: 0,
-    stage: stageDef,
-    wildPool,
-    bossPool,
+    awakening: null,
+    ultCharge: 0,
+    ultActive: false,
+    ultTimer: 0,
+    ultMaxTimer: 18,
+    ultUpgrades: 0,
+    awkBurstTimer: 3.5,
+    rerolls: 3,
+    hexes: {},
+    goliathStacks: 0,
+    goliathHpBonus: 0,
+    gemPulseCount: 0,
+    waveEventIdx: 0,
     level: initLv,
     xp: 0,
-    xpNeed: 22,
-    runBuffs,
+    xpNeed: 36,
+    hp: initStats.maxHp,
+    maxHp: initStats.maxHp,
+    stats: initStats,
+    runBuffs: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
     heldItems: {},
-    stats: pStats,
-    hp: pStats.maxHp,
-    maxHp: pStats.maxHp,
+    vitaminsThisRun: 0,
+    bossesKilledThisRun: 0,
+    stage,
+    wildPool,
+    bossPool,
     x: 0,
     y: 0,
     vx: 0,
     vy: 1,
     facingX: 1,
     facingY: 0,
-    invulnT: 0,
+    invulnT: 1.5,
     regenAcc: 0,
     hudTimer: 0,
-    kills: 0,
-    bossesKilledThisRun: 0,
-    vitaminsThisRun: 0,
     time: 0,
+    kills: 0,
     paused: false,
-    modalOpen: false,
     over: false,
-    moves: startMoveIds.map(mid => ({ id: mid, timer: 0.2 })),
+    modalOpen: false,
+    modalQueue: [],
+    moves: startMoveIds.map((id, idx) => ({
+      id,
+      timer: 0.25,
+      isSignature: idx === 0,
+      mods: []
+    })),
     learnedHistory: new Set(startMoveIds),
     companions: [],
+    enemies: [],
+    projectiles: [],
+    boomerangs: [],
+    orbitals: [],
+    meleeSwings: [],
+    lasers: [],
+    vortexes: [],
+    meteors: [],
+    fissures: [],
+    slashes: [],
+    lightnings: [],
+    tethers: [],
+    phantoms: [],
+    decoys: [],
+    particles: [],
+    zones: [],
+    enemyBullets: [],
+    gems: [],
     fieldTMs: [],
     fieldBalls: [],
     fieldItems: [],
-    awakening: null,
-    awkBurstTimer: 7.0,
-    keyStoneDropped: false,
-    decoys: [],
-    gems: [],
-    enemies: [],
-    enemyBullets: [],
-    particles: [],
-    tethers: [],
-    vortexes: [],
-    fissures: [],
-    meteors: [],
-    slashes: [],
-    lightnings: [],
-    orbitals: [],
-    boomerangs: [],
-    meleeSwings: [],
-    phantoms: [],
-    lasers: [],
-    projectiles: [],
-    zones: [],
     popups: [],
-    modalQueue: [],
     spawnAcc: 0,
-    swarmTimer: 34,
-    tmSpawnAcc: 14,
-    ballSpawnAcc: 18,
-    itemSpawnAcc: 12,
-    bossAcc: 38,
+    swarmTimer: 26,
+    tmSpawnAcc: 18,
+    ballSpawnAcc: 22,
+    itemSpawnAcc: 15,
+    keystoneSpawnAcc: 52, // Rare field spawn timer for Mega/Gmax Key Stone!
+    bossAcc: 30,
     activeBoss: null
   };
 
-  // Pre-warm current stage sprite sheets in GPU texture cache so spawning new species never hitches!
-  for (let i = 0; i < wildPool.length; i++) getImg(`./assets/pmd/${wildPool[i]}.png`);
-  for (let i = 0; i < bossPool.length; i++) getImg(`./assets/pmd/${bossPool[i]}.png`);
-
   document.getElementById("scr-menu").style.display = "none";
   document.getElementById("hud").style.display = "block";
+  updateHudSlots();
+  updateUltButtonHud();
+  playCry(charId);
   nextStageBgm();
-  playCry(RUN.speciesId);
+
+  // Pre-warm initial wild & starter sprites
+  for (let i = 0; i < Math.min(28, wildPool.length); i++) {
+    getImg(`./assets/pmd/${wildPool[i]}.png`);
+  }
+  for (const cid of lsData.chain) {
+    getImg(`./assets/pmd/${cid}.png`);
+  }
+
+  for (let i = 0; i < 9; i++) spawnEnemy(false);
   spawnFieldTM(true);
   spawnCompanionBall(true);
-  spawnFieldItem(true, "vitamin");
-  updateHudSlots();
 }
 
-function enqueueModal(fn) {
+function updateHudSlots() {
   if (!RUN) return;
-  JOY.active = false; JOY.dx = 0; JOY.dy = 0;
-  RUN.modalQueue.push(fn);
-  processNextModal();
+  const maxSockets = getMaxHexSocketsForStage(RUN.evoStage);
+  const moveWrap = document.getElementById("hud-moves");
+  moveWrap.innerHTML = "";
+  for (let i = 0; i < 4; i++) {
+    const slot = RUN.moves[i];
+    const cell = document.createElement("div");
+    const isSuper = isMoveSuperWeapon(slot);
+    cell.className = "slot-cell" + (isSuper ? " super-move" : "");
+    if (slot) {
+      const m = MOVES_DB[slot.id];
+      const tm = TYPE_META[m.t] || TYPE_META.normal;
+      let pipsHtml = "";
+      for (let s = 0; s < 3; s++) {
+        const modId = slot.mods[s];
+        let bg = "#2a1f38";
+        if (modId) {
+          const def = MOVE_HEX_MODS.find(x => x.id === modId);
+          bg = def?.tier === "prismatic" ? "#00e5ff" : (def?.tier === "gold" ? "#ffd54f" : "#cfd8dc");
+        } else if (s >= maxSockets) {
+          bg = "#12091a";
+        }
+        pipsHtml += `<span class="hex-pip" style="background:${bg};"></span>`;
+      }
+      cell.innerHTML = `
+        <span class="sname" style="color:${isSuper ? '#00e5ff' : '#90caf9'};">${isSuper ? '★' : ''}${m.n.slice(0, 4)}</span>
+        <img src="${tm.icon}" alt="" />
+        <div class="hex-pips">${pipsHtml}</div>
+        <span class="slv">${slot.mods.length}/${maxSockets}</span>
+      `;
+    } else {
+      cell.innerHTML = `<span style="font-size:9px;color:#555;">空</span>`;
+    }
+    moveWrap.appendChild(cell);
+  }
+
+  const compWrap = document.getElementById("hud-comps");
+  compWrap.innerHTML = "";
+  for (let i = 0; i < 5; i++) {
+    const comp = RUN.companions[i];
+    const cell = document.createElement("div");
+    cell.className = "slot-cell";
+    if (comp) {
+      const m = MOVES_DB[comp.moveId];
+      cell.innerHTML = `
+        <span class="sname">${m ? m.n.slice(0, 3) : ""}</span>
+        <img src="./assets/icons/${comp.speciesId}.png" alt="" />
+        <span class="slv">L${comp.level}</span>
+      `;
+    } else {
+      cell.innerHTML = `<span style="font-size:9px;color:#555;">球</span>`;
+    }
+    compWrap.appendChild(cell);
+  }
+
+  const hexBar = document.getElementById("hud-hex-bar");
+  if (hexBar) {
+    let badges = "";
+    for (const [hid, cnt] of Object.entries(RUN.hexes)) {
+      const def = GLOBAL_HEX_POOL.find(x => x.id === hid);
+      if (!def) continue;
+      const cls = def.tier === "prismatic" ? "hex-badge prismatic" : "hex-badge";
+      const extra = (hid === "goliath" && RUN.goliathStacks > 0) ? `(${RUN.goliathStacks}层)` : (cnt > 1 ? `×${cnt}` : "");
+      badges += `<span class="${cls}">${def.icon}${def.name.split("·")[1]?.split(" ")[0] || def.name}${extra}</span>`;
+    }
+    hexBar.innerHTML = badges;
+  }
+
+  document.getElementById("hud-hp").textContent = `${Math.ceil(RUN.hp)}/${RUN.maxHp}`;
+  const rrEl = document.getElementById("hud-rerolls");
+  if (rrEl) rrEl.textContent = RUN.rerolls || 0;
 }
 
-function processNextModal() {
-  if (!RUN || RUN.over || RUN.modalOpen) return;
+function enqueueModal(renderFn) {
+  if (!RUN || RUN.over) return;
+  RUN.modalQueue.push(renderFn);
+  if (!RUN.modalOpen) {
+    popNextModal();
+  }
+}
+
+function popNextModal() {
+  if (!RUN || RUN.over) return;
   if (RUN.modalQueue.length === 0) {
+    RUN.modalOpen = false;
     RUN.paused = false;
+    document.getElementById("modal-ov").style.display = "none";
     return;
   }
-  const nextFn = RUN.modalQueue.shift();
-  RUN.paused = true;
   RUN.modalOpen = true;
+  RUN.paused = true;
+  const nextFn = RUN.modalQueue.shift();
   nextFn();
 }
 
 function closeCurrentModal() {
   document.getElementById("modal-ov").style.display = "none";
-  if (!RUN) return;
-  RUN.modalOpen = false;
-  processNextModal();
+  popNextModal();
 }
 
-function updateHudSlots() {
-  if (!RUN) return;
-  const wepEl = document.getElementById("wep-slots");
-  const pasEl = document.getElementById("pas-slots");
-  wepEl.innerHTML = "";
-  pasEl.innerHTML = "";
-
-  for (let i = 0; i < 4; i++) {
-    const mSlot = RUN.moves[i];
-    const div = document.createElement("div");
-    if (mSlot) {
-      const m = MOVES_DB[mSlot.id];
-      const tm = TYPE_META[m.t];
-      const mechShort = m.mn.split("】")[0].replace("【", "");
-      div.className = "move-slot";
-      div.style.borderColor = tm.color;
-      div.innerHTML = `
-        <img src="${tm.icon}" />
-        <div style="line-height:1.1;overflow:hidden;">
-          <div style="font-size:10px;font-weight:900;color:#fff;white-space:nowrap;">${m.n}</div>
-          <div style="font-size:8px;color:#ffd54f;white-space:nowrap;">${mechShort}</div>
-        </div>
-      `;
-    } else {
-      div.className = "move-slot empty";
-      div.textContent = `招式 ${i + 1}`;
-    }
-    wepEl.appendChild(div);
-  }
-
-  for (let i = 0; i < 5; i++) {
-    const comp = RUN.companions[i];
-    const div = document.createElement("div");
-    if (comp) {
-      const m = MOVES_DB[comp.moveId];
-      const tm = TYPE_META[m.t];
-      div.className = "comp-slot";
-      div.style.borderColor = tm.color;
-      div.innerHTML = `
-        <img src="./assets/icons/${comp.speciesId}.png" />
-        <div style="line-height:1.1;overflow:hidden;">
-          <div style="font-size:9px;font-weight:900;color:#81d4fa;white-space:nowrap;">L${comp.level} ${POKEMON_ZH[comp.speciesId]}</div>
-          <div style="font-size:8px;color:#ffe066;white-space:nowrap;">${m.n}</div>
-        </div>
-      `;
-    } else {
-      div.className = "comp-slot empty";
-      div.textContent = `同伴 ${i + 1}`;
-    }
-    pasEl.appendChild(div);
-  }
-
-  const stEl = document.getElementById("hud-stats");
-  if (stEl) {
-    stEl.textContent = `HP ${Math.ceil(RUN.hp)}/${RUN.maxHp}`;
-  }
-  const heldEl = document.getElementById("hud-held");
-  if (heldEl) {
-    const heldCount = Object.values(RUN.heldItems).reduce((a, b) => a + b, 0);
-    heldEl.textContent = `🧪${RUN.vitaminsThisRun} 🎒${heldCount}`;
+// ============================================================================
+// LoL Arena (Hextech Mayhem) Augment Generator & Draft Modal with Reroll Dice!
+// ============================================================================
+function rollHexTier() {
+  const r = Math.random();
+  if (!RUN || RUN.evoStage === 0) {
+    return r < 0.08 ? "prismatic" : (r < 0.38 ? "gold" : "silver");
+  } else if (RUN.evoStage === 1) {
+    return r < 0.20 ? "prismatic" : (r < 0.65 ? "gold" : "silver");
+  } else {
+    return r < 0.36 ? "prismatic" : (r < 0.82 ? "gold" : "silver");
   }
 }
 
-function spawnFieldTM(near = false) {
+function generateSingleHexChoice(excludeKeys = new Set()) {
+  if (!RUN) return null;
+  const tier = rollHexTier();
+  const maxSockets = getMaxHexSocketsForStage(RUN.evoStage);
+  const candidates = [];
+
+  // 1. Move-Specific Socket Augments (Strongly bound to your 4 active moves!)
+  for (let sIdx = 0; sIdx < RUN.moves.length; sIdx++) {
+    const mSlot = RUN.moves[sIdx];
+    if (!mSlot || mSlot.mods.length >= maxSockets) continue;
+    const m = MOVES_DB[mSlot.id];
+    const modPool = MOVE_HEX_MODS.filter(mod => mod.tier === tier || (tier === "prismatic" && mod.tier === "gold"));
+    for (const mod of modPool) {
+      const key = `move_${sIdx}_${mod.id}`;
+      if (excludeKeys.has(key)) continue;
+      const willBeSuper = (mSlot.mods.length + 1 >= 3);
+      candidates.push({
+        key,
+        kind: "move_hex",
+        tier: mod.tier,
+        slotIdx: sIdx,
+        modId: mod.id,
+        icon: mod.icon,
+        title: `${willBeSuper ? '★合成超武 · ' : ''}【${m.n}】嵌槽：${mod.name}`,
+        subTag: `${sIdx === 0 ? '本命技' : '槽位' + (sIdx + 1)} (${mSlot.mods.length + 1}/${maxSockets}槽)`,
+        desc: mod.desc + (willBeSuper ? " 【★嵌满3槽：该招式将觉醒为超武形态，伤害与规模暴涨！】" : "")
+      });
+    }
+  }
+
+  // 2. New Legitimate Move Unlocks (If player has < 4 moves, allow drafting a new move + free Hex!)
+  if (RUN.moves.length < 4) {
+    const lsData = STARTER_LEARNSETS[RUN.baseId];
+    const ownedIds = new Set(RUN.moves.map(x => x.id));
+    const pool = [...lsData.levelMoves.map(x => x[0]), ...lsData.tmMoves].filter(id => !ownedIds.has(id) && MOVES_DB[id]);
+    if (pool.length > 0) {
+      const pickMid = pool[Math.floor(Math.random() * pool.length)];
+      const m = MOVES_DB[pickMid];
+      const key = `learn_${pickMid}`;
+      if (!excludeKeys.has(key)) {
+        candidates.push({
+          key,
+          kind: "learn_move",
+          tier: "gold",
+          moveId: pickMid,
+          icon: "💿",
+          title: `领悟新招式：【${m.n}】(第 ${RUN.moves.length + 1}/4 槽)`,
+          subTag: `${TYPE_ZH[m.t]}·威力${m.p}`,
+          desc: `${m.mn} — 立即习得该招式并自动附赠 1 个初始海克斯词条！`
+        });
+      }
+    }
+  }
+
+  // 3. Global Hextech Mayhem Rules
+  const globalPool = GLOBAL_HEX_POOL.filter(g => g.tier === tier || (candidates.length === 0));
+  for (const g of globalPool) {
+    const key = `global_${g.id}`;
+    if (excludeKeys.has(key)) continue;
+    const curStacks = (RUN.hexes && RUN.hexes[g.id]) || 0;
+    if ((g.id === "pandora_tm" || g.id === "transmute_prismatic") && curStacks >= 1) continue;
+    if (curStacks >= 3) continue;
+    candidates.push({
+      key,
+      kind: "global_hex",
+      tier: g.tier,
+      hexId: g.id,
+      icon: g.icon,
+      title: g.name,
+      subTag: curStacks > 0 ? `可叠加 (当前${curStacks}层)` : "全局海克斯法则",
+      desc: g.desc
+    });
+  }
+
+  if (candidates.length === 0) {
+    const fb = GLOBAL_HEX_POOL[Math.floor(Math.random() * GLOBAL_HEX_POOL.length)];
+    return {
+      key: `global_${fb.id}_${Math.random()}`,
+      kind: "global_hex",
+      tier: fb.tier,
+      hexId: fb.id,
+      icon: fb.icon,
+      title: fb.name,
+      subTag: "全局海克斯法则",
+      desc: fb.desc
+    };
+  }
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+function applyHexChoice(c) {
+  if (!RUN || !c) return;
+  sfx("chest");
+
+  if (c.kind === "move_hex") {
+    const slot = RUN.moves[c.slotIdx];
+    if (slot) {
+      slot.mods.push(c.modId);
+      const m = MOVES_DB[slot.id];
+      const modDef = MOVE_HEX_MODS.find(x => x.id === c.modId);
+      if (isMoveSuperWeapon(slot)) {
+        addPopup(RUN.x, RUN.y - 58, `★ 超武合成！【${m.n}】嵌满 3 海克斯觉醒为终极超武！`, "#00e5ff", 1.50);
+      } else {
+        addPopup(RUN.x, RUN.y - 45, `⚡ 【${m.n}】嵌入海克斯：${modDef ? modDef.name : c.modId}！`, "#ffe066", 1.28);
+      }
+    }
+  } else if (c.kind === "learn_move") {
+    const starterMod = MOVE_HEX_MODS[Math.floor(Math.random() * 3)].id;
+    RUN.moves.push({ id: c.moveId, timer: 0.15, isSignature: false, mods: [starterMod] });
+    RUN.learnedHistory.add(c.moveId);
+    addPopup(RUN.x, RUN.y - 45, `💿 习得【${MOVES_DB[c.moveId].n}】并激活初始海克斯！`, "#00e5ff", 1.32);
+  } else if (c.kind === "global_hex") {
+    if (c.hexId === "transmute_prismatic") {
+      const prisPool = GLOBAL_HEX_POOL.filter(x => x.tier === "prismatic" && x.id !== "pandora_tm");
+      const pick = prisPool[Math.floor(Math.random() * prisPool.length)];
+      RUN.hexes[pick.id] = (RUN.hexes[pick.id] || 0) + 1;
+      RUN.rerolls = (RUN.rerolls || 0) + 2;
+      addPopup(RUN.x, RUN.y - 56, `💎 质变成功！获得棱彩【${pick.name}】+2骰子！`, "#00e5ff", 1.48);
+    } else if (c.hexId === "pandora_tm") {
+      RUN.hexes.pandora_tm = 1;
+      const maxSockets = getMaxHexSocketsForStage(RUN.evoStage);
+      for (let i = 1; i < RUN.moves.length; i++) {
+        const randLeg = LEGENDARY_MOVES_POOL[Math.floor(Math.random() * LEGENDARY_MOVES_POOL.length)];
+        RUN.moves[i].id = randLeg;
+        if (RUN.moves[i].mods.length < maxSockets) {
+          const rMod = MOVE_HEX_MODS[Math.floor(Math.random() * MOVE_HEX_MODS.length)].id;
+          RUN.moves[i].mods.push(rMod);
+        }
+      }
+      addPopup(RUN.x, RUN.y - 56, `🎲 潘多拉技能机触发！全身招式蜕变为神兽禁术！`, "#e040fb", 1.50);
+    } else {
+      RUN.hexes[c.hexId] = (RUN.hexes[c.hexId] || 0) + 1;
+      if (c.hexId === "silver_dice") {
+        RUN.rerolls = (RUN.rerolls || 0) + 4;
+      } else if (c.hexId === "keystone_radar") {
+        spawnKeystoneItem(RUN.x + 36, RUN.y);
+      }
+      addPopup(RUN.x, RUN.y - 48, `✨ 激活海克斯：【${c.title}】！`, c.tier === "prismatic" ? "#00e5ff" : "#ffe066", 1.35);
+    }
+  }
+
+  const oldMax = RUN.maxHp;
+  RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
+  RUN.maxHp = RUN.stats.maxHp;
+  if (RUN.maxHp > oldMax) RUN.hp += (RUN.maxHp - oldMax);
+  updateHudSlots();
+  updateUltButtonHud();
+}
+
+function triggerHexAugmentDraft(sourceTitle = "⚡ 升级！选择你的海克斯强化") {
+  if (!RUN) return;
+  enqueueModal(() => {
+    const ov = document.getElementById("modal-ov");
+    const box = document.getElementById("modal-box");
+    ov.style.display = "flex";
+
+    const usedKeys = new Set();
+    const cards = [];
+    for (let i = 0; i < 3; i++) {
+      const c = generateSingleHexChoice(usedKeys);
+      usedKeys.add(c.key);
+      cards.push(c);
+    }
+
+    function renderDraftCards() {
+      const maxSockets = getMaxHexSocketsForStage(RUN.evoStage);
+      let cardsHtml = "";
+      cards.forEach((c, idx) => {
+        const tierClass = c.tier === "prismatic" ? "hex-prismatic" : (c.tier === "gold" ? "hex-gold" : "hex-silver");
+        const tierBadge = c.tier === "prismatic" ? "💎棱彩阶" : (c.tier === "gold" ? "🥇黄金阶" : "🥈白银阶");
+        const tierCol = c.tier === "prismatic" ? "#00e5ff" : (c.tier === "gold" ? "#ffd54f" : "#cfd8dc");
+        cardsHtml += `
+          <div style="display:flex;gap:6px;align-items:stretch;margin-top:7px;">
+            <button class="choice-btn ${tierClass}" data-pick="${idx}" style="margin-top:0;flex:1;">
+              <div class="choice-ic" style="border-color:${tierCol};">${c.icon}</div>
+              <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;">
+                  <b style="font-size:13px;color:${tierCol};">${c.title}</b>
+                  <span class="choice-tag" style="background:rgba(0,0,0,0.55);border:1px solid ${tierCol};color:${tierCol};">${tierBadge} · ${c.subTag}</span>
+                </div>
+                <div style="font-size:10px;color:#e8eaf6;margin-top:3px;line-height:1.35;">${c.desc}</div>
+              </div>
+            </button>
+            <button class="reroll-mini-btn" data-reroll="${idx}" ${RUN.rerolls <= 0 ? 'disabled style="opacity:0.4;"' : ''}>
+              🎲<br/>重随
+            </button>
+          </div>
+        `;
+      });
+
+      box.innerHTML = `
+        <div style="text-align:center;margin-bottom:6px;">
+          <div style="font-size:17px;font-weight:900;color:#00e5ff;text-shadow:0 0 8px rgba(0,229,255,0.5);">${sourceTitle}</div>
+          <div style="font-size:10px;color:#cbb98b;margin-top:2px;">
+            当前形态：<b>${POKEMON_ZH[RUN.speciesId]}</b> (单招式上限 <b>${maxSockets}</b> 嵌槽 · 3槽合成★超武) · 剩余骰子：<b style="color:#80d8ff;">🎲${RUN.rerolls}</b>
+          </div>
+        </div>
+        <div>${cardsHtml}</div>
+      `;
+
+      box.querySelectorAll("[data-pick]").forEach(btn => {
+        btn.onclick = () => {
+          const idx = parseInt(btn.getAttribute("data-pick"), 10);
+          applyHexChoice(cards[idx]);
+          closeCurrentModal();
+        };
+      });
+
+      box.querySelectorAll("[data-reroll]").forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          if (RUN.rerolls <= 0) return;
+          const idx = parseInt(btn.getAttribute("data-reroll"), 10);
+          RUN.rerolls--;
+          sfx("gem");
+          const newCard = generateSingleHexChoice(usedKeys);
+          usedKeys.add(newCard.key);
+          cards[idx] = newCard;
+          updateHudSlots();
+          renderDraftCards();
+        };
+      });
+    }
+
+    renderDraftCards();
+  });
+}
+
+// ============================================================================
+// Rare Field Key-Stone Spawning & Awakening Choice Modal
+// ============================================================================
+function spawnKeystoneItem(customX = null, customY = null) {
+  if (!RUN) return;
+  const ang = Math.random() * Math.PI * 2;
+  const dist = 140 + Math.random() * 90;
+  const x = customX !== null ? customX : RUN.x + Math.cos(ang) * dist;
+  const y = customY !== null ? customY : RUN.y + Math.sin(ang) * dist;
+  RUN.fieldItems.push({
+    x, y,
+    cat: "keystone",
+    def: {
+      id: "keystone",
+      name: RUN.awakening ? "🌈 超进化充能核心" : "🌈 超进化/极巨钥石",
+      icon: "./assets/items/dawn-stone.png"
+    }
+  });
+  addPopup(x, y - 28, "🌈 稀有【超进化钥石】刷新在战场上！", "#00e5ff", 1.38);
+}
+
+function triggerAwakeningModal() {
+  if (!RUN) return;
+  const branches = AWAKENING_CFG[RUN.baseId];
+  if (!branches || branches.length === 0) return;
+  sfx("chest");
+
+  if (!RUN.awakening) {
+    // First Key Stone picked up: Choose Mega X / Mega Y / Ash-Greninja / Gmax / Z / Tera branch!
+    enqueueModal(() => {
+      const ov = document.getElementById("modal-ov");
+      const box = document.getElementById("modal-box");
+      ov.style.display = "flex";
+
+      let html = "";
+      branches.forEach((b, idx) => {
+        const iconPid = b.formId || RUN.speciesId;
+        html += `
+          <button class="choice-btn hex-prismatic" data-awk="${idx}">
+            <div class="choice-ic"><img src="./assets/portraits/${iconPid}.png" /></div>
+            <div style="flex:1;">
+              <div>
+                <b style="font-size:14px;color:${b.color};">${b.title}</b>
+                <span class="choice-tag" style="background:${b.color};color:#12081c;">充能大招</span>
+              </div>
+              <div style="font-size:11px;color:#fff;font-weight:900;margin-top:2px;">${b.ability}</div>
+              <div style="font-size:10px;color:#b3e5fc;margin-top:2px;">${b.desc}（开启后持续18秒超载爆发，结束退回常态重新充能！）</div>
+            </div>
+          </button>
+        `;
+      });
+
+      box.innerHTML = `
+        <div style="text-align:center;margin-bottom:8px;">
+          <div style="font-size:19px;font-weight:900;color:#ffe066;text-shadow:0 0 10px #ff9100;">
+            🌈 拾取稀有钥石 · 解锁【终极超进化大招】！
+          </div>
+          <div style="font-size:11px;color:#e0d4b8;margin-top:3px;">
+            选择你的超进化形态！解锁后立即满 100% 充能，可随时点击右下角按钮开启限时毁天灭地爆发！
+          </div>
+        </div>
+        <div>${html}</div>
+      `;
+
+      box.querySelectorAll("[data-awk]").forEach(btn => {
+        btn.onclick = () => {
+          const b = branches[parseInt(btn.getAttribute("data-awk"), 10)];
+          RUN.awakening = b;
+          RUN.ultCharge = 100; // First unlock grants immediate 100% full charge ready to cast!
+          RUN.ultUpgrades = 0;
+          sfx("chest");
+          updateUltButtonHud();
+          updateHudSlots();
+          addPopup(RUN.x, RUN.y - 58, `🌈 已解锁【${b.title}】！点击右下角按钮即可释放超进化！`, b.color, 1.48);
+          closeCurrentModal();
+        };
+      });
+    });
+  } else {
+    // Subsequent Key Stones picked up: Upgrade duration (+4s), charge rate (+25%), & instantly refill 100% charge!
+    RUN.ultUpgrades = (RUN.ultUpgrades || 0) + 1;
+    if (RUN.ultActive) {
+      RUN.ultTimer = Math.min(RUN.ultMaxTimer + 6, RUN.ultTimer + 8);
+      RUN.ultMaxTimer += 4;
+      addPopup(RUN.x, RUN.y - 56, `🌈 再次拾取钥石！超进化延长 +8秒 且永久升至 Lv.${1 + RUN.ultUpgrades}！`, "#00e5ff", 1.48);
+    } else {
+      RUN.ultCharge = 100;
+      addPopup(RUN.x, RUN.y - 56, `🌈 再次拾取钥石！充能瞬间 100% 满格 & 持续时间永久 +4秒！`, "#00e5ff", 1.48);
+    }
+    updateUltButtonHud();
+  }
+}
+
+function spawnFieldTM(nearPlayer = false) {
   if (!RUN || RUN.fieldTMs.length >= 5) return;
   const lsData = STARTER_LEARNSETS[RUN.baseId];
-  const equippedIds = new Set(RUN.moves.map(m => m.id));
-  const maxPowerAllowed = RUN.level < 12 ? 65 : (RUN.level < 22 ? 90 : (RUN.level < 32 ? 115 : 999));
-  let candidates = lsData.tmMoves.filter(mid => !equippedIds.has(mid) && MOVES_DB[mid] && MOVES_DB[mid].p <= maxPowerAllowed);
-  if (candidates.length === 0) {
-    candidates = lsData.tmMoves.filter(mid => !equippedIds.has(mid) && MOVES_DB[mid]);
-  }
-  if (candidates.length === 0) return;
-
-  const currentPats = new Set(RUN.moves.map(m => MOVES_DB[m.id]?.pat));
-  const diffPatCandidates = candidates.filter(mid => !currentPats.has(MOVES_DB[mid].pat));
-  const pool = (diffPatCandidates.length > 0 && Math.random() < 0.85) ? diffPatCandidates : candidates;
-
-  const moveId = pool[Math.floor(Math.random() * pool.length)];
+  const ownedIds = new Set(RUN.moves.map(m => m.id));
+  const groundIds = new Set(RUN.fieldTMs.map(t => t.moveId));
+  const avail = lsData.tmMoves.filter(id => !ownedIds.has(id) && !groundIds.has(id));
+  if (avail.length === 0) return;
+  const moveId = avail[Math.floor(Math.random() * avail.length)];
   const ang = Math.random() * Math.PI * 2;
-  const dist = near ? 105 : (180 + Math.random() * 160);
+  const dist = nearPlayer ? 115 : (175 + Math.random() * 130);
   RUN.fieldTMs.push({
     x: RUN.x + Math.cos(ang) * dist,
     y: RUN.y + Math.sin(ang) * dist,
@@ -1202,175 +1927,135 @@ function spawnFieldTM(near = false) {
   });
 }
 
-function spawnCompanionBall(near = false, x = null, y = null) {
+function spawnCompanionBall(nearPlayer = false, customX = null, customY = null) {
   if (!RUN || RUN.fieldBalls.length >= 4) return;
   const ang = Math.random() * Math.PI * 2;
-  const dist = near ? 95 : (175 + Math.random() * 160);
+  const dist = nearPlayer ? 125 : (185 + Math.random() * 140);
   RUN.fieldBalls.push({
-    x: x !== null ? x : RUN.x + Math.cos(ang) * dist,
-    y: y !== null ? y : RUN.y + Math.sin(ang) * dist
+    x: customX !== null ? customX : RUN.x + Math.cos(ang) * dist,
+    y: customY !== null ? customY : RUN.y + Math.sin(ang) * dist
   });
 }
 
-function spawnFieldItem(near = false, forceCategory = null, x = null, y = null) {
+function spawnFieldItem(nearPlayer = false, forceCategory = null, customX = null, customY = null) {
   if (!RUN || RUN.fieldItems.length >= 8) return;
-  const isVitamin = forceCategory === "vitamin" || (!forceCategory && Math.random() < 0.52);
   const ang = Math.random() * Math.PI * 2;
-  const dist = near ? 85 : (160 + Math.random() * 170);
-  const ix = x !== null ? x : RUN.x + Math.cos(ang) * dist;
-  const iy = y !== null ? y : RUN.y + Math.sin(ang) * dist;
+  const dist = nearPlayer ? 105 : (155 + Math.random() * 130);
+  const x = customX !== null ? customX : RUN.x + Math.cos(ang) * dist;
+  const y = customY !== null ? customY : RUN.y + Math.sin(ang) * dist;
 
-  if (isVitamin) {
+  // Low rare chance (~5.5%) for a regular item spawn after Lv.12 to be a Key Stone!
+  if (!forceCategory && RUN.level >= 12 && Math.random() < 0.055) {
+    spawnKeystoneItem(x, y);
+    return;
+  }
+
+  const cat = forceCategory || (Math.random() < 0.42 ? "vitamin" : "tactical");
+  if (cat === "vitamin") {
     const v = VITAMIN_DROPS[Math.floor(Math.random() * VITAMIN_DROPS.length)];
-    RUN.fieldItems.push({ x: ix, y: iy, cat: "vitamin", def: v });
+    RUN.fieldItems.push({ x, y, cat: "vitamin", def: v });
   } else {
     const t = TACTICAL_ITEMS[Math.floor(Math.random() * TACTICAL_ITEMS.length)];
-    RUN.fieldItems.push({ x: ix, y: iy, cat: "tactical", def: t });
+    RUN.fieldItems.push({ x, y, cat: "tactical", def: t });
   }
 }
 
-function triggerAwakeningModal() {
-  if (!RUN || RUN.awakening) return;
-  const opts = AWAKENING_CFG[RUN.baseId] || AWAKENING_CFG[1];
-  enqueueModal(() => {
-    const ov = document.getElementById("modal-ov");
-    const box = document.getElementById("modal-box");
-    ov.style.display = "flex";
-    let html = "";
-    opts.forEach((opt, idx) => {
-      const iconId = opt.formId || STARTER_LEARNSETS[RUN.baseId].chain[2];
-      html += `
-        <button class="choice-btn evo-choice" data-awk="${idx}" style="border-color:${opt.color};">
-          <div class="choice-ic"><img src="./assets/portraits/${iconId}.png" /></div>
-          <div style="flex:1;">
-            <div>
-              <b style="font-size:15px;color:${opt.color};">🌈 ${opt.title}</b>
-              <span class="choice-tag" style="background:${opt.color};color:#000;">四阶突破</span>
-            </div>
-            <div style="font-size:11px;color:#fff;margin-top:3px;">${opt.ability}</div>
-          </div>
-        </button>
-      `;
-    });
-    box.innerHTML = `
-      <div style="text-align:center;margin-bottom:8px;">
-        <div style="font-size:20px;font-weight:900;color:#ffd600;">🌈 超进化 / 极巨 / 太晶突破！</div>
-        <div style="font-size:11px;color:#cbb98b;">与钥石产生强烈羁绊共鸣，选择你的终极觉醒形态：</div>
-      </div>
-      <div>${html}</div>
-    `;
-    box.querySelectorAll("[data-awk]").forEach(btn => {
-      btn.onclick = () => {
-        const opt = opts[parseInt(btn.getAttribute("data-awk"), 10)];
-        RUN.evoStage = 3;
-        RUN.awakening = opt;
-        if (opt.formId) {
-          RUN.speciesId = opt.formId;
-        } else {
-          RUN.speciesId = STARTER_LEARNSETS[RUN.baseId].chain[2];
-        }
-        RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
-        RUN.maxHp = RUN.stats.maxHp;
-        RUN.hp = RUN.maxHp;
-        playCry(RUN.speciesId);
-        // DNA Helix & Rainbow Shockwave Burst!
-        RUN.zones.push({ x: RUN.x, y: RUN.y, r: 165, life: 0.65, maxLife: 0.65, color: opt.color, kind: "sky_pillar" });
-        addPopup(RUN.x, RUN.y - 56, `🌈 ${opt.title} 觉醒完成！`, opt.color, 1.55);
-        updateHudSlots();
-        closeCurrentModal();
-      };
-    });
-  });
-}
-
 function pickupFieldItem(item) {
+  if (!RUN) return;
   sfx("chest");
+  const d = item.def;
   if (item.cat === "keystone") {
     triggerAwakeningModal();
     return;
   }
-  const d = item.def;
   if (item.cat === "vitamin") {
-    SAVE.evs[d.id] = Math.min(15, (SAVE.evs[d.id] || 0) + 1);
-    SAVE.totalVitamins = (SAVE.totalVitamins || 0) + 1;
     RUN.vitaminsThisRun++;
+    SAVE.totalVitamins = (SAVE.totalVitamins || 0) + 1;
+    SAVE.evs[d.id] = Math.min(15, (SAVE.evs[d.id] || 0) + 1);
     writeSave();
-
     if (d.id === "hp") {
-      RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
-      RUN.maxHp = RUN.stats.maxHp;
-      RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.round(RUN.maxHp * 0.22));
+      const heal = Math.round(RUN.maxHp * 0.25);
+      RUN.hp = Math.min(RUN.maxHp, RUN.hp + heal);
     } else {
       RUN.runBuffs[d.id] = (RUN.runBuffs[d.id] || 0) + 1;
-      RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
     }
-    addPopup(RUN.x, RUN.y - 36, `🧪 ${d.name.split(" ")[0]}！局内强化 & 局外永久努力值+1%！`, d.color, 1.2);
+    const oldMax = RUN.maxHp;
+    RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
+    RUN.maxHp = RUN.stats.maxHp;
+    if (RUN.maxHp > oldMax) RUN.hp += (RUN.maxHp - oldMax);
+    addPopup(RUN.x, RUN.y - 36, `🧪 ${d.name.split(" ")[0]}！永久努力值+1%`, d.color, 1.25);
     updateHudSlots();
   } else {
     if (d.kind === "held") {
       RUN.heldItems[d.id] = (RUN.heldItems[d.id] || 0) + 1;
-      addPopup(RUN.x, RUN.y - 36, `🎒 装备【${d.name} (Lv.${RUN.heldItems[d.id]})】！`, "#ffe066", 1.2);
+      addPopup(RUN.x, RUN.y - 36, `🎒 携带【${d.name}】Lv.${RUN.heldItems[d.id]}！`, "#ffd54f", 1.22);
       updateHudSlots();
     } else if (d.id === "poke_doll") {
-      RUN.decoys.push({ x: RUN.x, y: RUN.y, life: 4.0, maxLife: 4.0 });
-      addPopup(RUN.x, RUN.y - 36, `🪆 放置【替身皮皮玩偶】聚怪自爆！`, "#ff80ab", 1.25);
+      RUN.decoys.push({ x: RUN.x, y: RUN.y, life: 4.5, maxLife: 4.5 });
+      addPopup(RUN.x, RUN.y - 38, "🪆 放置皮皮替身诱饵！吸引全屏怪潮！", "#ff80ab", 1.28);
     } else if (d.id === "magnet_pulse") {
-      for (let i = 0; i < RUN.gems.length; i++) RUN.gems[i].magnetized = true;
-      addPopup(RUN.x, RUN.y - 36, `🧲 吸盘磁铁脉冲！全图经验吸附！`, "#81d4fa", 1.22);
+      for (const g of RUN.gems) g.magnetized = true;
+      addPopup(RUN.x, RUN.y - 38, "🧲 磁铁脉冲！全屏经验糖果吸附！", "#80d8ff", 1.28);
     } else if (d.id === "poke_flute") {
-      triggerPlayerLevelUp();
-      for (let i = 0; i < RUN.companions.length; i++) gainCompanionXp(RUN.companions[i], RUN.companions[i].xpNeed);
       RUN.hp = RUN.maxHp;
-      addPopup(RUN.x, RUN.y - 42, `🎶 宝可梦之笛！全员升级 & 满血回复！`, "#69f0ae", 1.3);
-      updateHudSlots();
+      triggerPlayerLevelUp();
+      for (const c of RUN.companions) gainCompanionXp(c, c.xpNeed);
+      addPopup(RUN.x, RUN.y - 45, "🪈 宝可梦之笛！全队升级 & 满血恢复！", "#69f0ae", 1.32);
     }
   }
 }
 
-function offerPlayerMove(moveId, sourceLabel = "升级领悟") {
+function offerPlayerMove(moveId, sourceLabel = "领悟招式") {
   if (!RUN) return;
-  if (RUN.moves.some(m => m.id === moveId)) return;
   const newMove = MOVES_DB[moveId];
   if (!newMove) return;
 
+  if (RUN.moves.some(m => m.id === moveId)) {
+    // If already known, grant a free Hex socket to that move!
+    const slot = getMoveSlotById(moveId);
+    const maxS = getMaxHexSocketsForStage(RUN.evoStage);
+    if (slot && slot.mods.length < maxS) {
+      const mod = MOVE_HEX_MODS[Math.floor(Math.random() * MOVE_HEX_MODS.length)];
+      slot.mods.push(mod.id);
+      addPopup(RUN.x, RUN.y - 42, `💿 招式共鸣：【${newMove.n}】免费嵌入海克斯【${mod.name}】！`, "#00e5ff", 1.3);
+      updateHudSlots();
+    }
+    return;
+  }
+
   if (RUN.moves.length < 4) {
-    RUN.moves.push({ id: moveId, timer: 0.2 });
+    RUN.moves.push({ id: moveId, timer: 0.15, isSignature: false, mods: [] });
     if (sourceLabel.includes("技能机")) {
       SAVE.tmsLearned = (SAVE.tmsLearned || 0) + 1;
       writeSave();
     }
     sfx("level");
     updateHudSlots();
-    addPopup(RUN.x, RUN.y - 42, `💿 ${sourceLabel}：学会了【${newMove.n}】！`, "#ffe066", 1.22);
+    addPopup(RUN.x, RUN.y - 38, `✨ ${sourceLabel}：学会【${newMove.n}】！`, "#ffe066", 1.28);
     return;
   }
 
+  // Replace non-signature move (Slots 1..3), preserving existing Hex sockets on that slot!
   enqueueModal(() => {
     const ov = document.getElementById("modal-ov");
     const box = document.getElementById("modal-box");
     ov.style.display = "flex";
 
     const newTm = TYPE_META[newMove.t];
-    const newStab = RUN.stats.types.includes(newMove.t) ? 1.5 : 1.0;
-    const newAtk = newMove.c === "physical" ? RUN.stats.atk : RUN.stats.spa;
-    const newEstDmg = Math.round((((2 * RUN.level / 5 + 2) * newMove.p * (newAtk / 45)) / 50 + 2) * newStab);
-
     let slotsHtml = "";
     RUN.moves.forEach((mSlot, idx) => {
+      if (idx === 0) return; // Slot 0 Signature Move cannot be forgotten (it evolves with your Pokémon!)
       const om = MOVES_DB[mSlot.id];
       const otm = TYPE_META[om.t];
-      const oStab = RUN.stats.types.includes(om.t) ? 1.5 : 1.0;
-      const oAtk = om.c === "physical" ? RUN.stats.atk : RUN.stats.spa;
-      const oEstDmg = Math.round((((2 * RUN.level / 5 + 2) * om.p * (oAtk / 45)) / 50 + 2) * oStab);
       slotsHtml += `
         <button class="choice-btn" data-replace="${idx}">
           <div class="choice-ic"><img src="${otm.icon}" /></div>
           <div style="flex:1;">
             <div>
-              <b style="font-size:14px;color:#fff;">遗忘【${om.n}】➔ 替换为【${newMove.n}】</b>
-              <span class="choice-tag" style="background:${otm.color};color:#fff;">${TYPE_ZH[om.t]}</span>
+              <b style="font-size:13px;color:#fff;">槽位${idx + 1}：替换【${om.n}】➔【${newMove.n}】</b>
+              <span class="choice-tag" style="background:#00e5ff;color:#000;">继承已嵌 ${mSlot.mods.length} 个海克斯</span>
             </div>
-            <div style="font-size:10px;color:#81d4fa;margin-top:2px;">原机制：${om.mn} (P:${om.p} · 预估≈${oEstDmg})</div>
+            <div style="font-size:10px;color:#81d4fa;margin-top:2px;">原招式：${om.mn}</div>
           </div>
         </button>
       `;
@@ -1378,37 +2063,40 @@ function offerPlayerMove(moveId, sourceLabel = "升级领悟") {
 
     box.innerHTML = `
       <div style="text-align:center;margin-bottom:6px;">
-        <div style="font-size:18px;font-weight:900;color:#ffe066;">💿 ${sourceLabel}：发现【${newMove.n}】！</div>
-        <div style="font-size:11px;color:#cbb98b;">已带满 4 个招式，请选择要替换的旧招式：</div>
+        <div style="font-size:17px;font-weight:900;color:#ffe066;">💿 ${sourceLabel}：发现【${newMove.n}】！</div>
+        <div style="font-size:10px;color:#cbb98b;">替换槽位将 100% 继承该槽位已镶嵌的海克斯强化词条：</div>
       </div>
       <div style="background:#160e24;border:2px solid ${newTm.color};border-radius:6px;padding:8px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
         <img src="${newTm.icon}" style="width:28px;height:28px;image-rendering:pixelated;" />
         <div>
-          <b style="font-size:14px;color:${newTm.color};">新招式：${newMove.n} [${TYPE_ZH[newMove.t]}·${newMove.c === "physical" ? "物理" : "特殊"}]</b>
+          <b style="font-size:14px;color:${newTm.color};">新招式：${newMove.n} [${TYPE_ZH[newMove.t]}·威力${newMove.p}]</b>
           <div style="font-size:11px;color:#81d4fa;font-weight:900;">${newMove.mn}</div>
-          <div style="font-size:11px;color:#fff;">威力：<b>${newMove.p}${newMove.h > 1 ? "×" + newMove.h : ""}</b> · 预估伤害：<b>≈${newEstDmg}</b></div>
         </div>
       </div>
       <div>${slotsHtml}</div>
-      <button id="btn-skip-move" class="vs-btn" style="width:100%;margin-top:8px;">放弃学习【${newMove.n}】</button>
+      <button id="btn-skip-move" class="vs-btn blue" style="width:100%;margin-top:8px;">将其分解为 +1 颗 🎲海克斯刷新骰子</button>
     `;
 
     box.querySelectorAll("[data-replace]").forEach(btn => {
       btn.onclick = () => {
         const idx = parseInt(btn.getAttribute("data-replace"), 10);
         const oldName = MOVES_DB[RUN.moves[idx].id].n;
-        RUN.moves[idx] = { id: moveId, timer: 0.15 };
+        RUN.moves[idx].id = moveId; // Keep RUN.moves[idx].mods intact!
+        RUN.moves[idx].timer = 0.15;
         if (sourceLabel.includes("技能机")) {
           SAVE.tmsLearned = (SAVE.tmsLearned || 0) + 1;
           writeSave();
         }
         sfx("level");
         updateHudSlots();
-        addPopup(RUN.x, RUN.y - 45, `✨ 忘了【${oldName}】，学会了【${newMove.n}】！`, "#ffe066", 1.25);
+        addPopup(RUN.x, RUN.y - 45, `✨ 【${oldName}】替换为【${newMove.n}】（海克斯词条已完美继承）！`, "#ffe066", 1.28);
         closeCurrentModal();
       };
     });
     box.querySelector("#btn-skip-move").onclick = () => {
+      RUN.rerolls = (RUN.rerolls || 0) + 1;
+      updateHudSlots();
+      addPopup(RUN.x, RUN.y - 36, "🎲 分解技能机获得 +1 颗刷新骰子！", "#80d8ff", 1.18);
       closeCurrentModal();
     };
   });
@@ -1416,17 +2104,14 @@ function offerPlayerMove(moveId, sourceLabel = "升级领悟") {
 
 function createCompanion(baseStarterId) {
   const lsData = STARTER_LEARNSETS[baseStarterId];
-  const initLv = Math.max(4, Math.floor(RUN.level * 0.85));
+  const initLv = Math.max(4, Math.floor(RUN.level * 0.88));
   let evoStage = 0;
   if (initLv >= lsData.evoLevels[1]) evoStage = 2;
   else if (initLv >= lsData.evoLevels[0]) evoStage = 1;
   const speciesId = lsData.chain[evoStage];
   const stats = computePokemonStats(speciesId, initLv, false, false);
-
-  let moveId = lsData.levelMoves[0][0];
-  for (const [mid, reqLv] of lsData.levelMoves) {
-    if (initLv >= reqLv) moveId = mid;
-  }
+  const sigChain = SIGNATURE_EVO_MOVES[baseStarterId] || [lsData.levelMoves[0][0], lsData.levelMoves[0][0], lsData.levelMoves[0][0]];
+  const moveId = sigChain[evoStage];
 
   return {
     isPlayerUnit: false,
@@ -1463,6 +2148,7 @@ function gainCompanionXp(comp, amount) {
     comp.xpNeed = Math.round(14 + comp.level * 8 + Math.pow(comp.level, 1.25) * 2);
 
     const lsData = STARTER_LEARNSETS[comp.baseId];
+    const sigChain = SIGNATURE_EVO_MOVES[comp.baseId];
     let newEvoStage = comp.evoStage;
     if (comp.level >= lsData.evoLevels[1]) newEvoStage = 2;
     else if (comp.level >= lsData.evoLevels[0]) newEvoStage = 1;
@@ -1470,22 +2156,15 @@ function gainCompanionXp(comp, amount) {
     if (newEvoStage > comp.evoStage) {
       comp.evoStage = newEvoStage;
       comp.speciesId = lsData.chain[newEvoStage];
+      if (sigChain && sigChain[newEvoStage]) {
+        comp.moveId = sigChain[newEvoStage];
+      }
       playCry(comp.speciesId);
-      addPopup(comp.x, comp.y - 38, `🌟 同伴进化为【${POKEMON_ZH[comp.speciesId]}】！`, "#81d4fa", 1.32);
+      comp.calloutText = `进化奥义：${MOVES_DB[comp.moveId].n}！`;
+      comp.calloutT = 2.5;
+      addPopup(comp.x, comp.y - 38, `🌟 同伴进化【${POKEMON_ZH[comp.speciesId]}】➔ 觉醒【${MOVES_DB[comp.moveId].n}】！`, "#81d4fa", 1.32);
     }
-
     comp.stats = computePokemonStats(comp.speciesId, comp.level, false, false);
-
-    let bestMoveId = comp.moveId;
-    for (const [mid, reqLv] of lsData.levelMoves) {
-      if (comp.level === reqLv) bestMoveId = mid;
-    }
-    if (bestMoveId !== comp.moveId) {
-      comp.moveId = bestMoveId;
-      comp.calloutText = `领悟：${MOVES_DB[bestMoveId].n}！`;
-      comp.calloutT = 2.4;
-      addPopup(comp.x, comp.y - 24, `✨ 同伴【${POKEMON_ZH[comp.speciesId]}】Lv.${comp.level} 领悟【${MOVES_DB[bestMoveId].n}】！`, "#ffe066", 1.2);
-    }
   }
 }
 
@@ -1512,22 +2191,19 @@ function triggerCompanionBallModal() {
           title: `招募同伴【${POKEMON_ZH[previewComp.speciesId]}】(Lv.${previewComp.level})`,
           icon: `./assets/portraits/${previewComp.speciesId}.png`,
           tag: `第${ch.gen}世代`,
-          desc: `独立六维：攻${previewComp.stats.atk}/特${previewComp.stats.spa}/速${previewComp.stats.spe} · 技能：【${m.n}】(${m.mn.split("】")[0]}】)`
+          desc: `独立六维 & 进化蜕变技：【${m.n}】(${m.mn.split("】")[0]}】)`
         });
       }
     }
 
     for (const comp of RUN.companions) {
-      const lsData = STARTER_LEARNSETS[comp.baseId];
-      const nextMoveEntry = lsData.levelMoves.find(([mid, rlv]) => rlv > comp.level);
-      const nextHint = nextMoveEntry ? `（Lv.${nextMoveEntry[1]} 领悟【${MOVES_DB[nextMoveEntry[0]].n}】）` : "（已习得终极招式）";
       choices.push({
         kind: "train_comp",
         comp,
-        title: `特训同伴【${POKEMON_ZH[comp.speciesId]}】连升 3 级`,
+        title: `特训同伴【${POKEMON_ZH[comp.speciesId]}】连升 4 级`,
         icon: `./assets/portraits/${comp.speciesId}.png`,
         tag: "神奇糖果",
-        desc: `提升该同伴自身六维数值，当前招式：【${MOVES_DB[comp.moveId].n}】${nextHint}`
+        desc: `大幅提升该同伴六维并加速其进化蜕变（当前招式：【${MOVES_DB[comp.moveId].n}】）`
       });
     }
 
@@ -1551,7 +2227,7 @@ function triggerCompanionBallModal() {
     box.innerHTML = `
       <div style="text-align:center;margin-bottom:6px;">
         <div style="font-size:18px;font-weight:900;color:#81d4fa;">🔴 发现同行宝可梦精灵球！</div>
-        <div style="font-size:11px;color:#cbb98b;">同伴拥有独立等级、独立六维大数据与唯一升级技能</div>
+        <div style="font-size:11px;color:#cbb98b;">同伴随进化自动觉醒高阶招牌技，并可与【训练家共振】海克斯联动</div>
       </div>
       <div>${html}</div>
     `;
@@ -1567,7 +2243,7 @@ function triggerCompanionBallModal() {
           playCry(nc.speciesId);
           addPopup(RUN.x, RUN.y - 40, `🤝 同伴【${POKEMON_ZH[nc.speciesId]}】加入战斗！`, "#81d4fa", 1.25);
         } else if (c.kind === "train_comp") {
-          for (let k = 0; k < 3; k++) gainCompanionXp(c.comp, c.comp.xpNeed);
+          for (let k = 0; k < 4; k++) gainCompanionXp(c.comp, c.comp.xpNeed);
           playCry(c.comp.speciesId);
         }
         updateHudSlots();
@@ -1577,6 +2253,9 @@ function triggerCompanionBallModal() {
   });
 }
 
+// ============================================================================
+// Player Level-Up -> Tight Evolution-Skill Binding + Hextech Draft!
+// ============================================================================
 function triggerPlayerLevelUp() {
   RUN.level++;
   if (RUN.level > (SAVE.maxLevel || 0)) {
@@ -1584,85 +2263,189 @@ function triggerPlayerLevelUp() {
     writeSave();
   }
   RUN.xp = Math.max(0, RUN.xp - RUN.xpNeed);
-  RUN.xpNeed = Math.round(20 + RUN.level * 9 + Math.pow(RUN.level, 1.30) * 3.0);
+  RUN.xpNeed = Math.round(22 + RUN.level * 10 + Math.pow(RUN.level, 1.32) * 3.2);
+  if (RUN.level % 5 === 0) {
+    RUN.rerolls = (RUN.rerolls || 0) + 1;
+  }
   sfx("level");
 
   const lsData = STARTER_LEARNSETS[RUN.baseId];
-  if (RUN.evoStage < 3) {
+  const sigChain = SIGNATURE_EVO_MOVES[RUN.baseId] || [33, 36, 63];
+  let evolvedNow = false;
+
+  if (RUN.evoStage < 2) {
     let newStage = RUN.evoStage;
     if (RUN.level >= lsData.evoLevels[1]) newStage = 2;
     else if (RUN.level >= lsData.evoLevels[0]) newStage = 1;
 
     if (newStage > RUN.evoStage) {
       RUN.evoStage = newStage;
-      RUN.speciesId = lsData.chain[newStage];
-      playCry(RUN.speciesId);
-      addPopup(RUN.x, RUN.y - 52, `✨ 进化为【${POKEMON_ZH[RUN.speciesId]}】！种族值跃升！`, "#ffe066", 1.45);
-      // Auto-trigger Awakening if reaching Lv.36!
-      if (newStage === 2 && !RUN.awakening && RUN.level >= 36) {
-        triggerAwakeningModal();
+      evolvedNow = true;
+      if (!RUN.ultActive) {
+        RUN.speciesId = lsData.chain[newStage];
       }
+      playCry(lsData.chain[newStage]);
+
+      // Evolve Slot-0 Signature Move automatically & grant a free Hex socket!
+      const newSigMoveId = sigChain[newStage];
+      const oldSigName = MOVES_DB[RUN.moves[0].id]?.n || "招式";
+      RUN.moves[0].id = newSigMoveId;
+      const newSigName = MOVES_DB[newSigMoveId]?.n || "奥义";
+      const maxS = getMaxHexSocketsForStage(RUN.evoStage);
+      if (RUN.moves[0].mods.length < maxS) {
+        const freeMod = MOVE_HEX_MODS[newStage === 2 ? 6 : 3]; // Gold/Prismatic mod on evolution!
+        RUN.moves[0].mods.push(freeMod.id);
+      }
+
+      RUN.zones.push({ x: RUN.x, y: RUN.y, r: 175, life: 0.55, maxLife: 0.55, color: "#00e5ff", kind: "sky_pillar" });
+      addPopup(
+        RUN.x,
+        RUN.y - 60,
+        `🌟 进化【${POKEMON_ZH[lsData.chain[newStage]]}】！本命技蜕变【${oldSigName}➔${newSigName}】& 解锁第${maxS}海克斯槽！`,
+        "#00e5ff",
+        1.52
+      );
     }
-  } else if (!RUN.awakening && RUN.level >= 36) {
-    triggerAwakeningModal();
   }
 
   const oldMaxHp = RUN.maxHp;
   RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
   RUN.maxHp = RUN.stats.maxHp;
-  RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(8, RUN.maxHp - oldMaxHp + 6));
+  RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(10, RUN.maxHp - oldMaxHp + 8));
   updateHudSlots();
 
-  for (const [mid, reqLv] of lsData.levelMoves) {
-    if (reqLv <= RUN.level && !RUN.learnedHistory.has(mid)) {
-      RUN.learnedHistory.add(mid);
-      offerPlayerMove(mid, `Lv.${RUN.level} 升级领悟`);
-    }
-  }
+  // Every single level-up triggers the LoL Arena Hextech Augment 3-Card Draft!
+  const draftTitle = evolvedNow
+    ? `🌟 形态进化突破！选择【${POKEMON_ZH[lsData.chain[RUN.evoStage]]}】的觉醒海克斯`
+    : `⚡ Lv.${RUN.level} 升级！海克斯强化三选一`;
+  triggerHexAugmentDraft(draftTitle);
 }
 
 // ============================================================================
-// Execute 23 Visually Spectacular Move Archetypes (Zero Set() Allocations!)
+// Execute 23 Move Archetypes — Enhanced with Socketed Hex Modifiers & Super-Weapons!
 // ============================================================================
-function executeUnitMove(unit, moveId) {
+function executeUnitMove(unit, moveId, isBonusCast = false, mSlotOverride = null) {
   const m = MOVES_DB[moveId];
   if (!m) return;
-  const col = TYPE_META[m.t]?.color || "#ffffff";
-  const pat = m.pat;
   const isComp = !unit.isPlayerUnit;
-  const scale = isComp ? 0.86 : 1.05;
+  const mSlot = mSlotOverride || (!isComp ? getMoveSlotById(moveId) : null);
+  const isSuper = isMoveSuperWeapon(mSlot);
 
-  const target = nearestEnemy(unit.x, unit.y, 380);
+  let col = TYPE_META[m.t]?.color || "#ffffff";
+  // Mega Charizard X turns fire moves into blue-purple dragon flames!
+  if (!isComp && RUN.ultActive && RUN.awakening && RUN.awakening.formId === 10006 && m.t === "fire") {
+    col = "#00e5ff";
+  } else if (isSuper) {
+    col = "#00e5ff";
+  }
+
+  const pat = m.pat;
+  const goliathScale = (!isComp && RUN.goliathStacks) ? Math.min(0.75, RUN.goliathStacks * 0.022) : 0;
+  const colossalCnt = hasMoveMod(mSlot, "colossal");
+  const multiCnt = hasMoveMod(mSlot, "multishot");
+  const bounceCnt = hasMoveMod(mSlot, "bounce");
+  const aftershockCnt = hasMoveMod(mSlot, "aftershock");
+  const singCnt = hasMoveMod(mSlot, "singularity");
+  const novaCnt = hasMoveMod(mSlot, "supernova");
+  const spdMul = 1 + hasMoveMod(mSlot, "overclock") * 0.35;
+
+  const scale = (isComp ? 0.88 : (1.08 + goliathScale)) * (1 + colossalCnt * 0.42) * (isSuper ? 1.28 : 1.0) * (!isComp && RUN.ultActive ? 1.25 : 1.0);
+  const bonusProjectiles = multiCnt * 2 + (isSuper ? 2 : 0) + (!isComp && RUN.ultActive ? 1 : 0);
+
+  const target = nearestEnemy(unit.x, unit.y, 400);
   const aimAng = target ? Math.atan2(target.y - unit.y, target.x - unit.x) : Math.atan2(unit.facingY || 0, unit.facingX || 1);
 
   if (isComp) {
     unit.lungeT = 0.18;
     unit.lungeDx = Math.cos(aimAng) * 14;
     unit.lungeDy = Math.sin(aimAng) * 14;
-    if (Math.random() < 0.30 && unit.calloutT <= 0) {
+    if (Math.random() < 0.28 && unit.calloutT <= 0) {
       unit.calloutText = `${m.n}！`;
       unit.calloutT = 1.1;
+    }
+  } else if (!isBonusCast) {
+    // 1. Prismatic Double Cast
+    if (RUN.hexes && RUN.hexes.double_cast) {
+      const procChance = Math.min(1.0, 0.65 + (RUN.hexes.double_cast - 1) * 0.35);
+      if (Math.random() < procChance) {
+        RUN.pendingCasts = RUN.pendingCasts || [];
+        RUN.pendingCasts.push({ delay: 0.20, moveId, mSlot });
+      }
+    }
+    // 2. Prismatic Combo Symphony (Slot 0 triggers Slot 1)
+    if (mSlot && mSlot === RUN.moves[0] && RUN.moves[1] && RUN.hexes && RUN.hexes.combo_symphony) {
+      executeUnitMove(RUN, RUN.moves[1].id, true, RUN.moves[1]);
+    }
+    // 3. Prismatic Trainer Resonance (Slot 0 makes all companions fire immediately!)
+    if (mSlot && mSlot === RUN.moves[0] && RUN.hexes && RUN.hexes.trainer_resonance) {
+      for (let c = 0; c < RUN.companions.length; c++) {
+        executeUnitMove(RUN.companions[c], RUN.companions[c].moveId, true, null);
+      }
+    }
+  }
+
+  // Prismatic Supernova Mod: Radial homing star burst on cast!
+  if (novaCnt > 0 && !isBonusCast) {
+    const starCount = 6;
+    for (let s = 0; s < starCount; s++) {
+      const sa = (s / starCount) * Math.PI * 2 + RUN.time;
+      RUN.projectiles.push({
+        uid: allocAttackUid(),
+        kind: "homing_star",
+        x: unit.x, y: unit.y,
+        vx: Math.cos(sa) * 360, vy: Math.sin(sa) * 360,
+        r: 12 * scale, pierce: 2 + bounceCnt, homing: true, life: 1.4, color: "#00e5ff",
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.62
+      });
+    }
+  }
+
+  // Gold Aftershock Mod: Delayed secondary explosion at target!
+  if (aftershockCnt > 0) {
+    const ax = target ? target.x : unit.x + Math.cos(aimAng) * 115;
+    const ay = target ? target.y : unit.y + Math.sin(aimAng) * 115;
+    RUN.zones.push({
+      x: ax, y: ay, r: 78 * scale, life: 0.48, maxLife: 0.48, color: "#00e5ff",
+      kind: "aftershock_bomb", triggered: false,
+      attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
+    });
+  }
+
+  // Gold Singularity Mod: Pull nearby enemies toward target point!
+  if (singCnt > 0) {
+    const gx = target ? target.x : unit.x + Math.cos(aimAng) * 110;
+    const gy = target ? target.y : unit.y + Math.sin(aimAng) * 110;
+    const nearPull = queryEnemiesInRadius(gx, gy, 165 * scale);
+    for (let i = 0; i < nearPull.length; i++) {
+      const pe = nearPull[i];
+      if (!pe.isBoss) {
+        pe.x += (gx - pe.x) * 0.38;
+        pe.y += (gy - pe.y) * 0.38;
+      }
+      pe.slowT = Math.max(pe.slowT, 1.5);
     }
   }
 
   if (pat === "vine_tether") {
-    const near = queryEnemiesInRadius(unit.x, unit.y, 220).slice(0, m.p >= 60 ? 5 : 3);
+    const maxT = (m.p >= 60 ? 5 : 3) + bonusProjectiles;
+    const near = queryEnemiesInRadius(unit.x, unit.y, 235 * scale).slice(0, maxT);
     for (let i = 0; i < near.length; i++) {
       const e = near[i];
-      hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.90);
-      e.leechT = 3.0;
-      RUN.tethers.push({ owner: unit, target: e, life: 0.65, maxLife: 0.65, color: "#00e676" });
+      hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.95, mSlot);
+      e.leechT = 3.2;
+      RUN.tethers.push({ owner: unit, target: e, life: 0.65, maxLife: 0.65, color: col });
     }
   } else if (pat === "whip_wave") {
-    const dirs = m.p >= 85 ? [0, Math.PI] : [0];
-    for (let dIdx = 0; dIdx < dirs.length; dIdx++) {
-      const ang = aimAng + dirs[dIdx];
+    const baseDirs = m.p >= 85 ? 2 : 1;
+    const totalDirs = baseDirs + multiCnt + (isSuper ? 2 : 0);
+    for (let dIdx = 0; dIdx < totalDirs; dIdx++) {
+      const ang = aimAng + (dIdx * Math.PI * 2) / totalDirs;
       RUN.meleeSwings.push({
         uid: allocAttackUid(),
         owner: unit, kind: "whip", ang,
-        len: (m.p >= 90 ? 145 : 115) * scale, wid: 36 * scale,
+        len: (m.p >= 90 ? 150 : 118) * scale, wid: 38 * scale,
         life: 0.26, maxLife: 0.26, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "bible_orbit") {
@@ -1671,60 +2454,64 @@ function executeUnitMove(unit, moveId) {
         swapRemove(RUN.orbitals, i);
       }
     }
-    const count = m.p >= 85 ? 6 : (m.p >= 55 ? 4 : 3);
-    const radius = (m.p >= 85 ? 90 : 72) * scale;
+    const count = (m.p >= 85 ? 6 : (m.p >= 55 ? 4 : 3)) + bonusProjectiles;
+    const radius = (m.p >= 85 ? 92 : 74) * scale;
     for (let i = 0; i < count; i++) {
       RUN.orbitals.push({
         uid: allocAttackUid(),
-        owner: unit, moveId,
-        ang: (i / count) * Math.PI * 2, dist: radius, r: 16 * scale,
-        speed: m.t === "fire" ? 6.0 : 5.0, life: 2.4, color: col,
+        owner: unit, moveId, mSlot,
+        ang: (i / count) * Math.PI * 2, dist: radius, r: 17 * scale,
+        speed: (m.t === "fire" ? 6.2 : 5.2) * spdMul, life: isSuper ? 3.4 : 2.5, color: col,
         attackerLv: unit.level, attackerStats: unit.stats
       });
     }
   } else if (pat === "tidal_vortex") {
-    const count = m.p >= 90 ? 2 : 1;
+    const count = (m.p >= 90 ? 2 : 1) + Math.ceil(bonusProjectiles * 0.5);
     for (let i = 0; i < count; i++) {
-      const ang = aimAng + (i - (count - 1) / 2) * 0.5;
+      const ang = aimAng + (i - (count - 1) / 2) * 0.48;
       RUN.vortexes.push({
         x: unit.x + Math.cos(ang) * 45,
         y: unit.y + Math.sin(ang) * 45,
-        vx: Math.cos(ang) * 115,
-        vy: Math.sin(ang) * 115,
-        r: (m.p >= 90 ? 68 : 54) * scale,
-        life: 2.4, maxLife: 2.4, tick: 0.05, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId
+        vx: Math.cos(ang) * 120 * spdMul,
+        vy: Math.sin(ang) * 120 * spdMul,
+        r: (m.p >= 90 ? 70 : 56) * scale,
+        life: 2.5, maxLife: 2.5, tick: 0.05, color: col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "cross_shuriken") {
-    const count = m.h > 1 ? Math.min(4, m.h) : (m.p >= 70 ? 2 : 1);
+    const count = (m.h > 1 ? Math.min(4, m.h) : (m.p >= 70 ? 2 : 1)) + bonusProjectiles;
+    // Ash-Greninja Ultimate Giant Golden Shuriken!
+    const isGoldenShuriken = (!isComp && RUN.ultActive && RUN.awakening && RUN.awakening.formId === 10658);
     for (let i = 0; i < count; i++) {
-      const ang = aimAng + (i - (count - 1) / 2) * 0.24;
-      const spd = 380;
+      const ang = aimAng + (i - (count - 1) / 2) * 0.22;
+      const spd = 390 * spdMul;
       RUN.boomerangs.push({
         uidOut: allocAttackUid(),
         uidBack: allocAttackUid(),
         owner: unit, x: unit.x, y: unit.y,
         vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
         ax: -Math.cos(ang) * 550, ay: -Math.sin(ang) * 550,
-        r: 17 * scale, life: 1.65, age: 0, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId
+        r: (isGoldenShuriken ? 28 : 18) * scale, life: 1.75, age: 0,
+        color: isGoldenShuriken ? "#ffd600" : col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "flamethrower") {
-    const coneRange = (m.p >= 85 ? 195 : 155) * scale;
-    for (let k = 0; k < 18; k++) {
-      if (RUN.particles.length >= 160) break;
-      const a = aimAng + (Math.random() - 0.5) * 0.58;
-      const spd = 220 + Math.random() * 240;
+    const coneRange = (m.p >= 85 ? 205 : 165) * scale;
+    const coneHalf = 0.50 + multiCnt * 0.18 + (isSuper ? 0.25 : 0);
+    for (let k = 0; k < 20; k++) {
+      if (RUN.particles.length >= 170) break;
+      const a = aimAng + (Math.random() - 0.5) * (coneHalf * 2);
+      const spd = (230 + Math.random() * 250) * spdMul;
       RUN.particles.push({
         x: unit.x + Math.cos(a) * 14,
         y: unit.y + Math.sin(a) * 14,
         vx: Math.cos(a) * spd,
         vy: Math.sin(a) * spd,
         r: (6 + Math.random() * 7) * scale,
-        life: 0.34 + Math.random() * 0.18,
-        maxLife: 0.52,
+        life: 0.36 + Math.random() * 0.18,
+        maxLife: 0.54,
         kind: "flame"
       });
     }
@@ -1734,40 +2521,43 @@ function executeUnitMove(unit, moveId) {
       const dx = e.x - unit.x;
       const dy = e.y - unit.y;
       const diff = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - aimAng), Math.cos(Math.atan2(dy, dx) - aimAng)));
-      if (diff <= 0.48) {
-        hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.92);
-        e.burnT = 3.0;
+      if (diff <= coneHalf) {
+        hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.95, mSlot);
+        e.burnT = 3.5;
       }
     }
   } else if (pat === "daimonji_blast") {
-    const tx = target ? target.x : unit.x + Math.cos(aimAng) * 130;
-    const ty = target ? target.y : unit.y + Math.sin(aimAng) * 130;
-    const rad = (m.p >= 120 ? 88 : 72) * scale;
-    RUN.zones.push({ x: tx, y: ty, r: rad, life: 0.65, maxLife: 0.65, color: "#ff3d00", kind: "daimonji" });
-    const near = queryEnemiesInRadius(tx, ty, rad);
-    for (let i = 0; i < near.length; i++) {
-      hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.0);
-      near[i].burnT = 4.0;
+    const blasts = 1 + Math.floor(bonusProjectiles * 0.5);
+    for (let b = 0; b < blasts; b++) {
+      const tx = (target && b === 0) ? target.x : unit.x + Math.cos(aimAng + b * 1.2) * (125 + b * 35);
+      const ty = (target && b === 0) ? target.y : unit.y + Math.sin(aimAng + b * 1.2) * (125 + b * 35);
+      const rad = (m.p >= 120 ? 92 : 75) * scale;
+      RUN.zones.push({ x: tx, y: ty, r: rad, life: 0.65, maxLife: 0.65, color: col, kind: "daimonji" });
+      const near = queryEnemiesInRadius(tx, ty, rad);
+      for (let i = 0; i < near.length; i++) {
+        hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.05, mSlot);
+        near[i].burnT = 4.0;
+      }
     }
   } else if (pat === "meteor_shower") {
-    const count = m.p >= 130 ? 4 : 3;
+    const count = (m.p >= 130 ? 4 : 3) + bonusProjectiles;
     for (let i = 0; i < count; i++) {
-      const tx = (target && i === 0) ? target.x : unit.x + (Math.random() - 0.5) * 240;
-      const ty = (target && i === 0) ? target.y : unit.y + (Math.random() - 0.5) * 240;
+      const tx = (target && i === 0) ? target.x : unit.x + (Math.random() - 0.5) * 260;
+      const ty = (target && i === 0) ? target.y : unit.y + (Math.random() - 0.5) * 260;
       RUN.meteors.push({
         tx, ty,
         x: tx + 140, y: ty - 260,
-        flightT: 0, flightDur: 0.38 + i * 0.08,
-        r: (m.p >= 130 ? 68 : 54) * scale,
+        flightT: 0, flightDur: (0.36 + i * 0.06) / spdMul,
+        r: (m.p >= 130 ? 70 : 56) * scale,
         color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "quake_fissure") {
-    const branches = m.p >= 100 ? 5 : 3;
+    const branches = (m.p >= 100 ? 5 : 3) + bonusProjectiles;
     for (let b = 0; b < branches; b++) {
-      const ang = aimAng + (b - (branches - 1) / 2) * 0.55;
-      const len = (m.p >= 100 ? 165 : 125) * scale;
+      const ang = aimAng + (b - (branches - 1) / 2) * 0.52;
+      const len = (m.p >= 100 ? 170 : 130) * scale;
       const pts = [{ x: unit.x, y: unit.y }];
       for (let s = 1; s <= 5; s++) {
         const perp = ang + Math.PI / 2;
@@ -1782,17 +2572,17 @@ function executeUnitMove(unit, moveId) {
       const near = queryEnemiesInRadius((unit.x + endPt.x) * 0.5, (unit.y + endPt.y) * 0.5, len * 0.65);
       for (let i = 0; i < near.length; i++) {
         const e = near[i];
-        if (distToSegment(e.x, e.y, unit.x, unit.y, endPt.x, endPt.y) <= 34 + e.radius) {
-          hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.92);
-          e.slowT = 1.2;
+        if (distToSegment(e.x, e.y, unit.x, unit.y, endPt.x, endPt.y) <= 36 + e.radius) {
+          hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.96, mSlot);
+          e.slowT = 1.4;
         }
       }
     }
   } else if (pat === "blizzard_storm") {
-    const rad = (m.p >= 90 ? 135 : 105) * scale;
-    RUN.zones.push({ x: unit.x, y: unit.y, r: rad, life: 0.55, maxLife: 0.55, color: "#80deea", kind: "blizzard_field", followOwner: true, owner: unit });
+    const rad = (m.p >= 90 ? 140 : 110) * scale;
+    RUN.zones.push({ x: unit.x, y: unit.y, r: rad, life: 0.58, maxLife: 0.58, color: "#80deea", kind: "blizzard_field", followOwner: true, owner: unit });
     for (let k = 0; k < 14; k++) {
-      if (RUN.particles.length >= 160) break;
+      if (RUN.particles.length >= 170) break;
       const a = Math.random() * Math.PI * 2;
       const d = Math.random() * rad;
       RUN.particles.push({
@@ -1803,20 +2593,23 @@ function executeUnitMove(unit, moveId) {
     }
     const near = queryEnemiesInRadius(unit.x, unit.y, rad);
     for (let i = 0; i < near.length; i++) {
-      hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 0.90);
-      near[i].slowT = 2.2;
+      hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 0.94, mSlot);
+      near[i].slowT = 2.4;
     }
   } else if (pat === "gravity_well") {
-    const tx = target ? target.x : unit.x + Math.cos(aimAng) * 120;
-    const ty = target ? target.y : unit.y + Math.sin(aimAng) * 120;
-    RUN.vortexes.push({
-      x: tx, y: ty, vx: 0, vy: 0,
-      r: (m.p >= 85 ? 85 : 68) * scale,
-      life: 1.4, maxLife: 1.4, tick: 0.05, isBlackHole: true, color: col,
-      attackerLv: unit.level, attackerStats: unit.stats, moveId
-    });
+    const count = 1 + Math.floor(bonusProjectiles * 0.5);
+    for (let i = 0; i < count; i++) {
+      const tx = (target && i === 0) ? target.x : unit.x + Math.cos(aimAng + i * 1.5) * 125;
+      const ty = (target && i === 0) ? target.y : unit.y + Math.sin(aimAng + i * 1.5) * 125;
+      RUN.vortexes.push({
+        x: tx, y: ty, vx: 0, vy: 0,
+        r: (m.p >= 85 ? 88 : 70) * scale,
+        life: 1.5, maxLife: 1.5, tick: 0.05, isBlackHole: true, color: col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
+      });
+    }
   } else if (pat === "sonic_boom") {
-    const maxR = (m.p >= 90 ? 125 : 96) * scale;
+    const maxR = (m.p >= 90 ? 132 : 102) * scale;
     for (let w = 0; w < 3; w++) {
       RUN.slashes.push({
         kind: "sonic", x: unit.x, y: unit.y,
@@ -1825,18 +2618,19 @@ function executeUnitMove(unit, moveId) {
     }
     const near = queryEnemiesInRadius(unit.x, unit.y, maxR);
     for (let i = 0; i < near.length; i++) {
-      hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 0.90);
+      hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 0.94, mSlot);
     }
   } else if (pat === "fist_flurry") {
-    const reach = (m.p >= 100 ? 115 : 90) * scale;
-    for (let k = 0; k < 7; k++) {
-      const a = aimAng + (Math.random() - 0.5) * 0.85;
+    const reach = (m.p >= 100 ? 120 : 94) * scale;
+    const punches = 7 + bonusProjectiles * 2;
+    for (let k = 0; k < punches; k++) {
+      const a = aimAng + (Math.random() - 0.5) * 0.95;
       const d = 30 + Math.random() * reach;
       RUN.slashes.push({
         kind: "fist",
         x: unit.x + Math.cos(a) * d,
         y: unit.y + Math.sin(a) * d,
-        ang: a, r: 16 * scale, life: 0.24, maxLife: 0.24, color: col
+        ang: a, r: 17 * scale, life: 0.24, maxLife: 0.24, color: col
       });
     }
     const near = queryEnemiesInRadius(unit.x, unit.y, reach);
@@ -1845,71 +2639,74 @@ function executeUnitMove(unit, moveId) {
       const dx = e.x - unit.x;
       const dy = e.y - unit.y;
       const diff = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - aimAng), Math.cos(Math.atan2(dy, dx) - aimAng)));
-      if (diff <= 0.65) {
-        hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.96);
+      if (diff <= 0.72) {
+        hitEnemyWithMove(e, unit.level, unit.stats, moveId, 0.98, mSlot);
       }
     }
   } else if (pat === "iaijutsu_slash") {
-    const tx = target ? target.x : unit.x + Math.cos(aimAng) * 85;
-    const ty = target ? target.y : unit.y + Math.sin(aimAng) * 85;
-    const rad = (m.p >= 85 ? 78 : 62) * scale;
-    RUN.slashes.push({
-      kind: "cross_slash", x: tx, y: ty, ang: aimAng, r: rad, life: 0.28, maxLife: 0.28, color: col
-    });
-    const near = queryEnemiesInRadius(tx, ty, rad);
-    for (let i = 0; i < near.length; i++) {
-      hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.0);
+    const slashes = 1 + Math.floor(bonusProjectiles * 0.5);
+    for (let s = 0; s < slashes; s++) {
+      const tx = (target && s === 0) ? target.x : unit.x + Math.cos(aimAng + (s - 0.5) * 0.6) * 90;
+      const ty = (target && s === 0) ? target.y : unit.y + Math.sin(aimAng + (s - 0.5) * 0.6) * 90;
+      const rad = (m.p >= 85 ? 82 : 65) * scale;
+      RUN.slashes.push({
+        kind: "cross_slash", x: tx, y: ty, ang: aimAng + s * 0.4, r: rad, life: 0.28, maxLife: 0.28, color: col
+      });
+      const near = queryEnemiesInRadius(tx, ty, rad);
+      for (let i = 0; i < near.length; i++) {
+        hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.02, mSlot);
+      }
     }
   } else if (pat === "spear_thrust") {
-    const count = m.h > 1 ? Math.min(3, m.h) : 2;
+    const count = (m.h > 1 ? Math.min(3, m.h) : 2) + bonusProjectiles;
     for (let i = 0; i < count; i++) {
-      const ang = aimAng + (i - (count - 1) / 2) * 0.22;
+      const ang = aimAng + (i - (count - 1) / 2) * 0.20;
       RUN.meleeSwings.push({
         uid: allocAttackUid(),
         owner: unit, kind: "thrust", ang,
-        len: (m.p >= 80 ? 120 : 95) * scale, wid: 28 * scale,
+        len: (m.p >= 80 ? 126 : 100) * scale, wid: 30 * scale,
         life: 0.22, maxLife: 0.22, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "santa_hazard") {
-    const count = m.p >= 80 ? 2 : 1;
+    const count = (m.p >= 80 ? 2 : 1) + bonusProjectiles;
     for (let i = 0; i < count; i++) {
-      let tx = (target && i === 0) ? target.x : unit.x + Math.cos(aimAng + i * 1.4) * 110;
-      let ty = (target && i === 0) ? target.y : unit.y + Math.sin(aimAng + i * 1.4) * 110;
+      let tx = (target && i === 0) ? target.x : unit.x + Math.cos(aimAng + i * 1.25) * 115;
+      let ty = (target && i === 0) ? target.y : unit.y + Math.sin(aimAng + i * 1.25) * 115;
       RUN.projectiles.push({
         uid: allocAttackUid(),
         kind: "santa_bottle", x: unit.x, y: unit.y - 10,
         startX: unit.x, startY: unit.y, tx, ty,
-        flightT: 0, flightDur: 0.34, r: 12 * scale,
-        poolR: (m.p >= 80 ? 66 : 54) * scale, life: 0.4, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId
+        flightT: 0, flightDur: 0.34 / spdMul, r: 12 * scale,
+        poolR: (m.p >= 80 ? 68 : 56) * scale, life: 0.4, color: col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "homing_swarm") {
-    const count = m.p >= 75 ? 5 : 4;
+    const count = (m.p >= 75 ? 5 : 4) + bonusProjectiles;
     for (let i = 0; i < count; i++) {
-      const ang = aimAng + (i - (count - 1) / 2) * 0.45;
+      const ang = aimAng + (i - (count - 1) / 2) * 0.42;
       RUN.projectiles.push({
         uid: allocAttackUid(),
         kind: "homing_star",
         x: unit.x, y: unit.y,
-        vx: Math.cos(ang) * 340, vy: Math.sin(ang) * 340,
-        r: 13 * scale, pierce: 2, homing: true, life: 1.5, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId, aoeScale: 0.68
+        vx: Math.cos(ang) * 350 * spdMul, vy: Math.sin(ang) * 350 * spdMul,
+        r: 13 * scale, pierce: 2 + bounceCnt * 2, homing: true, life: 1.5, color: col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.72
       });
     }
   } else if (pat === "ricochet_ball") {
-    const count = m.p >= 90 ? 2 : 1;
+    const count = (m.p >= 90 ? 2 : 1) + bonusProjectiles;
     for (let i = 0; i < count; i++) {
-      const ang = aimAng + (i - (count - 1) / 2) * 0.35;
+      const ang = aimAng + (i - (count - 1) / 2) * 0.32;
       RUN.projectiles.push({
         uid: allocAttackUid(),
         kind: "runetracer",
         x: unit.x, y: unit.y,
-        vx: Math.cos(ang) * 450, vy: Math.sin(ang) * 450,
-        r: 16 * scale, pierce: 99, bounce: 6, life: 2.1, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId, aoeScale: 0.92
+        vx: Math.cos(ang) * 460 * spdMul, vy: Math.sin(ang) * 460 * spdMul,
+        r: 17 * scale, pierce: 99, bounce: 6 + bounceCnt * 3, life: 2.2, color: col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.94
       });
     }
   } else if (pat === "chain_lightning") {
@@ -1917,10 +2714,11 @@ function executeUnitMove(unit, moveId) {
     let curX = unit.x;
     let curY = unit.y;
     const uid = allocAttackUid();
-    for (let k = 0; k < 5; k++) {
+    const maxJumps = 5 + bonusProjectiles * 2 + bounceCnt * 3;
+    for (let k = 0; k < maxJumps; k++) {
       let best = null;
-      let bestD = 220 * 220;
-      const cands = queryEnemiesInRadius(curX, curY, 220);
+      let bestD = 240 * 240;
+      const cands = queryEnemiesInRadius(curX, curY, 240);
       for (let i = 0; i < cands.length; i++) {
         const e = cands[i];
         if (e.lastHitUid !== uid) {
@@ -1931,15 +2729,15 @@ function executeUnitMove(unit, moveId) {
       if (!best) break;
       best.lastHitUid = uid;
       chainTargets.push({ x1: curX, y1: curY, x2: best.x, y2: best.y });
-      hitEnemyWithMove(best, unit.level, unit.stats, moveId, 0.90);
+      hitEnemyWithMove(best, unit.level, unit.stats, moveId, 0.94, mSlot);
       curX = best.x;
       curY = best.y;
     }
     if (chainTargets.length > 0) {
-      RUN.lightnings.push({ segs: chainTargets, life: 0.25, maxLife: 0.25, color: col });
+      RUN.lightnings.push({ segs: chainTargets, life: 0.26, maxLife: 0.26, color: col });
     }
   } else if (pat === "gravity_boulder") {
-    const count = m.p >= 100 ? 3 : 2;
+    const count = (m.p >= 100 ? 3 : 2) + bonusProjectiles;
     for (let i = 0; i < count; i++) {
       const dirX = (target ? (target.x >= unit.x ? 1 : -1) : 1) * (i % 2 === 0 ? 1 : -0.8);
       RUN.projectiles.push({
@@ -1948,67 +2746,130 @@ function executeUnitMove(unit, moveId) {
         x: unit.x, y: unit.y - 14,
         vx: dirX * (75 + i * 48 + Math.random() * 25),
         vy: -360 - i * 40, gravity: 840,
-        r: 20 * scale, pierce: 6, life: 1.5, rot: 0, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId, aoeScale: 0.98
+        r: 21 * scale, pierce: 6 + bounceCnt * 2, life: 1.5, rot: 0, color: col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot, aoeScale: 0.98
       });
     }
   } else if (pat === "phantom_stampede") {
-    const count = m.p >= 110 ? 3 : (m.p >= 75 ? 2 : 1);
+    const count = (m.p >= 110 ? 3 : (m.p >= 75 ? 2 : 1)) + bonusProjectiles;
     for (let i = 0; i < count; i++) {
-      const ang = aimAng + (i - (count - 1) / 2) * 0.22;
-      const spd = 460;
+      const ang = aimAng + (i - (count - 1) / 2) * 0.20;
+      const spd = 470 * spdMul;
       RUN.phantoms.push({
         uid: allocAttackUid(),
         pid: unit.speciesId,
         x: unit.x, y: unit.y,
         vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
-        r: (m.p >= 100 ? 30 : 24) * scale,
+        r: (m.p >= 100 ? 31 : 25) * scale,
         scale: (1.68 + (unit.evoStage || 0) * 0.2) * scale,
-        life: 0.36, maxLife: 0.36, color: col,
-        attackerLv: unit.level, attackerStats: unit.stats, moveId
+        life: 0.38, maxLife: 0.38, color: col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
       });
     }
   } else if (pat === "crunch_fangs") {
-    const fx = target ? target.x : unit.x + Math.cos(aimAng) * 75;
-    const fy = target ? target.y : unit.y + Math.sin(aimAng) * 75;
-    const rad = 58 * scale;
-    RUN.zones.push({ x: fx, y: fy, r: rad, life: 0.28, maxLife: 0.28, color: col, kind: "fangs" });
-    const near = queryEnemiesInRadius(fx, fy, rad);
-    for (let i = 0; i < near.length; i++) {
-      hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.05);
-      near[i].rootT = 0.65;
+    const count = 1 + Math.floor(bonusProjectiles * 0.5);
+    for (let c = 0; c < count; c++) {
+      const fx = (target && c === 0) ? target.x : unit.x + Math.cos(aimAng + c * 1.1) * 80;
+      const fy = (target && c === 0) ? target.y : unit.y + Math.sin(aimAng + c * 1.1) * 80;
+      const rad = 60 * scale;
+      RUN.zones.push({ x: fx, y: fy, r: rad, life: 0.28, maxLife: 0.28, color: col, kind: "fangs" });
+      const near = queryEnemiesInRadius(fx, fy, rad);
+      for (let i = 0; i < near.length; i++) {
+        hitEnemyWithMove(near[i], unit.level, unit.stats, moveId, 1.05, mSlot);
+        near[i].rootT = 0.70;
+      }
     }
   } else {
-    const beamLen = (m.p >= 90 ? 420 : 300) * scale;
-    const beamWid = (m.p >= 100 ? 28 : 18) * scale;
-    RUN.lasers.push({
-      uid: allocAttackUid(),
-      owner: unit, ang: aimAng, len: beamLen, wid: beamWid,
-      life: 0.32, maxLife: 0.32, color: col,
-      attackerLv: unit.level, attackerStats: unit.stats, moveId
-    });
+    const beams = 1 + Math.floor(bonusProjectiles * 0.5);
+    const beamLen = (m.p >= 90 ? 430 : 310) * scale;
+    const beamWid = (m.p >= 100 ? 30 : 20) * scale;
+    for (let b = 0; b < beams; b++) {
+      const ba = aimAng + (b - (beams - 1) / 2) * 0.22;
+      RUN.lasers.push({
+        uid: allocAttackUid(),
+        owner: unit, ang: ba, len: beamLen, wid: beamWid,
+        life: 0.32, maxLife: 0.32, color: col,
+        attackerLv: unit.level, attackerStats: unit.stats, moveId, mSlot
+      });
+    }
   }
 }
 
-function hitEnemyWithMove(e, attackerLv, attackerStats, moveId, aoeScale = 1.0) {
+function hitEnemyWithMove(e, attackerLv, attackerStats, moveId, aoeScale = 1.0, mSlot = null) {
   if (!e || e.hp <= 0) return;
-  const res = calculatePokemonDamage(attackerLv, attackerStats, moveId, e.level, e.stats, aoeScale, RUN.heldItems);
-  e.hp -= res.dmg;
+  const res = calculatePokemonDamage(attackerLv, attackerStats, moveId, e.level, e.stats, aoeScale, RUN.heldItems, mSlot);
+  let totalDmg = res.dmg;
+
+  const m = MOVES_DB[moveId];
+  const isPlayerAtk = (RUN && attackerStats === RUN.stats);
+
+  // 1. Prismatic Three-Hit True Damage (Every 3rd hit deals 10% maxHp True Damage!)
+  if (isPlayerAtk && RUN.hexes && RUN.hexes.three_hit) {
+    e.hitStacks = (e.hitStacks || 0) + 1;
+    if (e.hitStacks >= 3) {
+      e.hitStacks = 0;
+      const cap = e.isBoss ? RUN.level * 26 : e.maxHp * 0.25;
+      const trueDmg = Math.max(8, Math.min(Math.round(cap), Math.round(e.maxHp * 0.10 * RUN.hexes.three_hit)));
+      totalDmg += trueDmg;
+      RUN.slashes.push({ kind: "cross_slash", x: e.x, y: e.y, ang: 0.78, r: 30, life: 0.18, maxLife: 0.18, color: "#00e5ff" });
+    }
+  }
+
+  // 2. Gold Elemental Overload Reaction (Triggering a different element on primed enemy!)
+  if (m && RUN && RUN.hexes && RUN.hexes.elem_overload) {
+    if (e.lastElem && e.lastElem !== m.t && (RUN.time - (e.lastElemT || 0) <= 2.5)) {
+      e.lastElem = null;
+      const reactDmg = Math.round(res.dmg * 0.85 * RUN.hexes.elem_overload);
+      totalDmg += reactDmg;
+      e.stats.def = Math.max(5, Math.floor(e.stats.def * 0.82));
+      e.stats.spd = Math.max(5, Math.floor(e.stats.spd * 0.82));
+      RUN.zones.push({ x: e.x, y: e.y, r: 58, life: 0.24, maxLife: 0.24, color: "#ffea00", kind: "garlic_ring" });
+    } else {
+      e.lastElem = m.t;
+      e.lastElemT = RUN.time;
+    }
+  }
+
+  // 3. Bounce Mod: Chain to 1 nearby enemy for 40% damage!
+  if (mSlot && hasMoveMod(mSlot, "bounce") > 0 && aoeScale > 0.35) {
+    const near = queryEnemiesInRadius(e.x, e.y, 130);
+    for (let i = 0; i < near.length; i++) {
+      const other = near[i];
+      if (other !== e && other.hp > 0) {
+        other.hp -= Math.max(2, Math.round(totalDmg * 0.42));
+        RUN.lightnings.push({ segs: [{ x1: e.x, y1: e.y, x2: other.x, y2: other.y }], life: 0.16, maxLife: 0.16, color: "#ffd54f" });
+        if (other.hp <= 0) killEnemy(other);
+        break;
+      }
+    }
+  }
+
+  e.hp -= totalDmg;
   e.flashT = 0.08;
   sfx("hit");
 
-  const m = MOVES_DB[moveId];
-  const shellLv = (RUN.heldItems && RUN.heldItems.shell_bell) || 0;
-  const drainPct = ((m && m.dr) || 0) * 0.42 + shellLv * 5;
-  if (drainPct > 0 && RUN.hp < RUN.maxHp) {
-    RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(1, Math.round(res.dmg * (drainPct / 100))));
+  // Charge Ultimate Awakening slightly on combat hits!
+  if (isPlayerAtk && RUN.awakening && !RUN.ultActive) {
+    addUltimateCharge(0.16);
   }
-  if (m && m.t === "fire" && Math.random() < 0.25) e.burnT = 3.0;
-  if (m && m.t === "ice" && Math.random() < 0.30) e.slowT = 1.6;
 
-  // Coalesce per-enemy damage popups (accumulate multi-hit numbers on the same monster & cap total text draws to 14!)
+  // Lifesteal & Vampiric Siphon Overheal Nova
+  const shellLv = (RUN.heldItems && RUN.heldItems.shell_bell) || 0;
+  const vampLv = (RUN.hexes && RUN.hexes.vampiric_siphon) || 0;
+  const drainPct = ((m && m.dr) || 0) * 0.42 + shellLv * 5 + vampLv * 12;
+  if (drainPct > 0) {
+    const healAmt = Math.max(1, Math.round(totalDmg * (drainPct / 100)));
+    if (RUN.hp < RUN.maxHp) {
+      RUN.hp = Math.min(RUN.maxHp, RUN.hp + healAmt);
+    } else if (vampLv > 0 && Math.random() < 0.22) {
+      RUN.zones.push({ x: RUN.x, y: RUN.y, r: 95, life: 0.22, maxLife: 0.22, color: "#ff1744", kind: "garlic_ring" });
+    }
+  }
+  if (m && m.t === "fire" && Math.random() < 0.30) e.burnT = 3.2;
+  if (m && m.t === "ice" && Math.random() < 0.35) e.slowT = 1.8;
+
   if (e._dmgPop && e._dmgPop.life > 0.12) {
-    e._dmgPop.accDmg = (e._dmgPop.accDmg || 0) + res.dmg;
+    e._dmgPop.accDmg = (e._dmgPop.accDmg || 0) + totalDmg;
     e._dmgPop.x = e.x;
     e._dmgPop.y = e.y - 18;
     e._dmgPop.life = 0.42;
@@ -2018,7 +2879,7 @@ function hitEnemyWithMove(e, attackerLv, attackerStats, moveId, aoeScale = 1.0) 
   } else if (res.isCrit || res.eff >= 1.9 || RUN.popups.length < 12) {
     let effText = res.isCrit ? "💥" : (res.eff >= 1.9 ? "绝佳!" : "");
     let color = res.isCrit ? "#ff8a65" : (res.eff >= 1.9 ? "#ffeb3b" : "#ffffff");
-    const pop = { x: e.x, y: e.y - 16, accDmg: res.dmg, text: `${effText}${res.dmg}`, color, scale: res.isCrit || res.eff >= 1.9 ? 1.08 : 0.88, life: 0.44, maxLife: 0.44 };
+    const pop = { x: e.x, y: e.y - 16, accDmg: totalDmg, text: `${effText}${totalDmg}`, color, scale: res.isCrit || res.eff >= 1.9 ? 1.08 : 0.88, life: 0.44, maxLife: 0.44 };
     if (RUN.popups.length < 24) {
       RUN.popups.push(pop);
       e._dmgPop = pop;
@@ -2026,50 +2887,52 @@ function hitEnemyWithMove(e, attackerLv, attackerStats, moveId, aoeScale = 1.0) 
   }
 
   if (e.hp <= 0) {
-    killEnemy(e);
+    killEnemy(e, mSlot);
   }
 }
 
 // ============================================================================
-// Player-Level-Anchored Spawning & Boss Encounters
+// Escalating Spawning, Climax Wave Events & Boss Encounters
 // ============================================================================
 function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite = false) {
   if (!RUN) return;
   const pLv = RUN.level || 5;
+  const timeMin = RUN.time / 60;
   const enemyLv = getTargetEnemyLevel(isBoss, isElite);
 
   let species = 19;
   let affix = null;
 
   if (isBoss) {
-    const pool = (Math.random() < 0.40 || RUN.bossPool.length === 0) ? ALL_BOSS_POOL : RUN.bossPool;
+    const pool = (Math.random() < 0.42 || RUN.bossPool.length === 0) ? ALL_BOSS_POOL : RUN.bossPool;
     species = pool[Math.floor(Math.random() * pool.length)];
     affix = BOSS_AFFIXES[Math.floor(Math.random() * BOSS_AFFIXES.length)];
   } else {
     const wp = RUN.wildPool;
-    // Wild tier progression follows Player Level (Lv.5 -> basic wilds, Lv.16 -> mid wilds, Lv.32+ -> final evolved wilds!)
-    const progress = Math.min(1.0, Math.max(0, (pLv - 5) / 30));
-    const maxIdx = Math.min(wp.length, Math.max(12, Math.floor((0.22 + progress * 0.78) * wp.length)));
-    const minIdx = Math.min(maxIdx - 6, Math.floor(progress * 0.58 * wp.length));
+    const progress = Math.min(1.0, Math.max(0, (pLv - 5) / 26 + timeMin * 0.08));
+    const maxIdx = Math.min(wp.length, Math.max(12, Math.floor((0.25 + progress * 0.75) * wp.length)));
+    const minIdx = Math.min(maxIdx - 6, Math.floor(progress * 0.62 * wp.length));
     const idx = minIdx + Math.floor(Math.random() * Math.max(1, maxIdx - minIdx));
     species = wp[Math.max(0, Math.min(wp.length - 1, idx))];
-    if (!isElite && pLv >= 8 && Math.random() < 0.12) isElite = true;
+    const eliteChance = 0.12 + Math.min(0.22, Math.max(0, timeMin - 2.0) * 0.035);
+    if (!isElite && pLv >= 7 && Math.random() < eliteChance) isElite = true;
   }
 
   const eStats = computePokemonStats(species, enemyLv, false, isBoss);
   if (isElite && !isBoss) {
-    eStats.maxHp = Math.floor(eStats.maxHp * 2.1);
+    eStats.maxHp = Math.floor(eStats.maxHp * (2.3 + Math.min(1.2, timeMin * 0.15)));
   }
   if (affix) {
     eStats.maxHp = Math.floor(eStats.maxHp * affix.hpMul);
   }
 
   const ang = customAng !== null ? customAng : Math.random() * Math.PI * 2;
-  const dist = customDist !== null ? customDist : (Math.max(canvas.width, canvas.height) * 0.52 + 40);
+  const dist = customDist !== null ? customDist : (Math.max(canvas.width, canvas.height) * 0.50 + 36);
 
+  const lateSpdBoost = Math.min(34, Math.max(0, timeMin - 3.0) * 4.5);
   let moveSpd = isBoss
-    ? Math.min(102, 62 + eStats.spe * 0.20 + pLv * 0.5)
-    : Math.min(120, 50 + eStats.spe * 0.28 + Math.min(24, pLv * 0.6));
+    ? Math.min(118, 66 + eStats.spe * 0.22 + pLv * 0.55 + lateSpdBoost * 0.6)
+    : Math.min(136, 54 + eStats.spe * 0.30 + Math.min(28, pLv * 0.65) + lateSpdBoost);
   if (affix) moveSpd *= affix.spdMul;
 
   const enemy = {
@@ -2086,17 +2949,20 @@ function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite
     maxHp: eStats.maxHp,
     speed: moveSpd,
     radius: isBoss ? 34 : (isElite ? 22 : 16),
-    scale: isBoss ? 2.35 * (affix ? affix.scaleMul : 1) : (isElite ? 1.82 : 1.48),
+    scale: isBoss ? 2.38 * (affix ? affix.scaleMul : 1) : (isElite ? 1.85 : 1.50),
     isBoss,
     flashT: 0,
     slowT: 0,
     rootT: 0,
     leechT: 0,
     burnT: 0,
+    hitStacks: 0,
+    lastElem: null,
+    lastElemT: 0,
     lastHitUid: 0,
     lastOrbHitT: -99,
-    shootTimer: (isElite || isBoss) ? (2.0 + Math.random() * 1.5) : 999,
-    skillTimer: isBoss ? 3.4 : 999,
+    shootTimer: (isElite || isBoss) ? (1.8 + Math.random() * 1.3) : 999,
+    skillTimer: isBoss ? 3.0 : 999,
     dashWarnT: 0,
     dashVx: 0,
     dashVy: 0,
@@ -2114,15 +2980,47 @@ function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite
 
 function triggerSwarmAmbush() {
   if (!RUN) return;
-  const count = 12 + Math.min(16, Math.floor(RUN.level * 0.5));
+  const timeMin = RUN.time / 60;
+  const count = 14 + Math.min(22, Math.floor(RUN.level * 0.55 + timeMin * 2.5));
   for (let i = 0; i < count; i++) {
     const ang = (i / count) * Math.PI * 2;
-    spawnEnemy(false, ang, 235, i % 5 === 0);
+    spawnEnemy(false, ang, 225, i % 3 === 0);
   }
-  addPopup(RUN.x, RUN.y - 48, `⚠️ 野生怪潮合围突袭！`, "#ff9100", 1.22);
+  addPopup(RUN.x, RUN.y - 48, `⚠️ 狂暴怪潮包围圈突袭！小心突围！`, "#ff9100", 1.28);
 }
 
-function killEnemy(e) {
+// High-Tension Timed Climax Wave Events (Every 90s so 3m, 4.5m, 6m, 7.5m, 9m stay super intense!)
+function checkClimaxWaveEvents() {
+  if (!RUN) return;
+  const timeMin = RUN.time / 60;
+  const nextMilestone = (RUN.waveEventIdx + 1) * 1.5; // 1.5m, 3.0m, 4.5m, 6.0m, 7.5m...
+  if (timeMin < nextMilestone) return;
+  RUN.waveEventIdx++;
+
+  if (RUN.waveEventIdx % 3 === 1) {
+    // Climax 1: Iron Fortress Ring (20 Elites closing in from 360 degrees!)
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2;
+      spawnEnemy(false, a, 210, true);
+    }
+    addPopup(RUN.x, RUN.y - 64, "🚨 高潮事件：【铁壁精英包围网】降临！击败精英拾取海克斯！", "#ff1744", 1.45);
+  } else if (RUN.waveEventIdx % 3 === 2) {
+    // Climax 2: Twin Apex Boss Invasion + Rare Key Stone Drop!
+    spawnEnemy(true);
+    spawnEnemy(true);
+    spawnKeystoneItem(RUN.x + 85, RUN.y - 65);
+    addPopup(RUN.x, RUN.y - 68, "🌋 高潮事件：【时空双神同屏降临】+ 战场刷新超进化钥石！", "#ffd600", 1.50);
+  } else {
+    // Climax 3: Berserk Stampede + Free Hex Chest!
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      spawnEnemy(false, a, 195, i % 2 === 0);
+    }
+    triggerHexAugmentDraft("🎁 坚守奖励：高潮波次海克斯空投！");
+  }
+}
+
+function killEnemy(e, mSlot = null) {
   RUN.kills++;
   SAVE.totalKills = (SAVE.totalKills || 0) + 1;
   if (RUN.activeBoss === e) {
@@ -2130,33 +3028,61 @@ function killEnemy(e) {
     if (!RUN.activeBoss) nextStageBgm();
   }
 
-  const baseXp = Math.max(3, Math.round((e.stats.bst * e.level) / 210));
+  // Charge Ultimate Awakening on kills!
+  if (RUN.awakening && !RUN.ultActive) {
+    addUltimateCharge(e.isBoss ? 32 : (e.isElite ? 6.5 : 1.4));
+  }
+
+  // Prismatic Reaper Mod: Refund cooldowns on kill!
+  if (mSlot && hasMoveMod(mSlot, "reaper") > 0) {
+    for (let i = 0; i < RUN.moves.length; i++) {
+      RUN.moves[i].timer = Math.max(0.05, RUN.moves[i].timer * 0.45);
+    }
+    addUltimateCharge(1.2);
+  }
+
+  // Prismatic Goliath (Heartsteel) Scaling on every 18 kills!
+  if (RUN.hexes && RUN.hexes.goliath && RUN.kills % 18 === 0) {
+    RUN.goliathStacks = (RUN.goliathStacks || 0) + 1;
+    RUN.goliathHpBonus = (RUN.goliathHpBonus || 0) + 12 * RUN.hexes.goliath;
+    const oldMax = RUN.maxHp;
+    RUN.stats = computePokemonStats(RUN.speciesId, RUN.level, true, false, RUN.runBuffs);
+    RUN.maxHp = RUN.stats.maxHp;
+    RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(12, RUN.maxHp - oldMax));
+    addPopup(RUN.x, RUN.y - 34, `🦖 心之钢叠层(${RUN.goliathStacks})：体型与技能范围膨胀！`, "#ffab40", 1.15);
+    updateHudSlots();
+  }
+
+  const xpMul = (RUN.hexes && RUN.hexes.apex_collector) ? (1 + 0.28 * RUN.hexes.apex_collector) : 1.0;
+  const baseXp = Math.max(3, Math.round(((e.stats.bst * e.level) / 205) * xpMul));
+
   if (e.isBoss) {
     RUN.bossesKilledThisRun++;
     SAVE.bossKills = (SAVE.bossKills || 0) + 1;
+    RUN.rerolls = (RUN.rerolls || 0) + 2;
     writeSave();
     spawnFieldTM(true);
-    spawnCompanionBall(false, e.x - 24, e.y);
-    spawnFieldItem(false, "vitamin", e.x + 24, e.y);
-    if (!RUN.awakening && (RUN.evoStage >= 1 || RUN.level >= 18)) {
-      RUN.fieldItems.push({
-        x: e.x, y: e.y - 22, cat: "keystone",
-        def: { id: "keystone", name: "🌈 超进化/极巨钥石", icon: "./assets/items/dawn-stone.png" }
-      });
-      addPopup(e.x, e.y - 48, "🌈 掉落【超进化/极巨钥石】！拾取可突破第四形态！", "#ffd600", 1.42);
+    spawnCompanionBall(false, e.x - 26, e.y);
+    spawnFieldItem(false, "vitamin", e.x + 26, e.y);
+
+    // Bosses have a 38% chance (or 100% if player hasn't unlocked Awakening yet after Lv.14) to drop a Key Stone!
+    if ((!RUN.awakening && RUN.level >= 14) || Math.random() < 0.38) {
+      spawnKeystoneItem(e.x, e.y - 24);
     }
+
     RUN.gems.push({ x: e.x, y: e.y + 18, xp: baseXp * 6, tier: 3, kind: "xp" });
-    addPopup(e.x, e.y - 24, `🎁 击败 ${POKEMON_ZH[e.species]}！掉落TM、同伴球与秘药！`, "#ff80ab", 1.25);
+    addPopup(e.x, e.y - 24, `🎁 击败头目 ${POKEMON_ZH[e.species]}！奖励 +2 颗🎲骰子与稀有战利品！`, "#ff80ab", 1.32);
   } else {
     const roll = Math.random();
-    if (roll < 0.022) {
+    if (e.isElite && roll < 0.032 && RUN.level >= 12) {
+      spawnKeystoneItem(e.x, e.y);
+    } else if (roll < 0.022) {
       RUN.gems.push({ x: e.x, y: e.y, heal: Math.round(RUN.maxHp * 0.20), kind: "berry" });
     } else if (e.isElite && roll < 0.35) {
       spawnFieldItem(false, null, e.x, e.y);
-    } else if (roll < 0.042) {
+    } else if (roll < 0.040) {
       spawnFieldItem(false, null, e.x, e.y);
     } else {
-      // Auto-merge XP gems if > 140 on ground so ground clutter never lags!
       if (RUN.gems.length > 140) {
         RUN.gems[0].xp = (RUN.gems[0].xp || 5) + baseXp;
         RUN.gems[0].tier = 2;
@@ -2201,19 +3127,20 @@ function pauseRun() {
   const ov = document.getElementById("modal-ov");
   const box = document.getElementById("modal-box");
   ov.style.display = "flex";
-  const heldSummary = Object.entries(RUN.heldItems).map(([k, v]) => {
-    const def = TACTICAL_ITEMS.find(x => x.id === k);
-    return def ? `${def.name}×${v}` : k;
-  }).join(" · ") || "暂无";
+  const movesSummary = RUN.moves.map((ms, idx) => {
+    const m = MOVES_DB[ms.id];
+    const mods = ms.mods.map(mid => MOVE_HEX_MODS.find(x => x.id === mid)?.tag || mid).join("+");
+    return `${idx === 0 ? '★本命' : '槽' + (idx + 1)}:${m.n}[${mods || '无'}]`;
+  }).join("<br/>");
 
   box.innerHTML = `
     <div style="text-align:center;padding:8px;">
-      <div style="font-size:20px;font-weight:900;color:#ffe066;margin-bottom:8px;">⏸️ 暂停 · 队伍与BGM</div>
-      <div style="font-size:12px;color:#ccc;line-height:1.6;margin-bottom:12px;background:#160e22;padding:8px;border-radius:6px;">
+      <div style="font-size:20px;font-weight:900;color:#ffe066;margin-bottom:8px;">⏸️ 暂停 · 海克斯构筑总览</div>
+      <div style="font-size:12px;color:#ccc;line-height:1.6;margin-bottom:12px;background:#160e22;padding:8px;border-radius:6px;text-align:left;">
         主控：<b>Lv.${RUN.level} ${POKEMON_ZH[RUN.speciesId]}</b> (HP ${Math.ceil(RUN.hp)}/${RUN.maxHp})<br/>
         六维：物攻${RUN.stats.atk} · 特攻${RUN.stats.spa} · 物防${RUN.stats.def} · 特防${RUN.stats.spd} · 速度${RUN.stats.spe}<br/>
-        当前BGM：<b style="color:#81d4fa;">${BGM_TRACKS[curBgmIdx]?.name}</b><br/>
-        携带道具：<b style="color:#ffd54f;">${heldSummary}</b>
+        超进化大招：<b style="color:#00e5ff;">${RUN.awakening ? RUN.awakening.title + ' (Lv.' + (1 + (RUN.ultUpgrades || 0)) + ')' : '未拾取钥石'}</b><br/>
+        当前招式与海克斯嵌槽：<br/><b style="color:#ffd54f;">${movesSummary}</b>
       </div>
       <div style="display:flex;gap:10px;justify-content:center;">
         <button id="btn-resume" class="vs-btn green" style="flex:1;">继续战斗</button>
@@ -2272,7 +3199,7 @@ function endRun(victory) {
 }
 
 // ============================================================================
-// High-Performance 60FPS Update Loop (Spatial Hash Grid + Swap-and-Pop!)
+// High-Performance 60FPS Update Loop (Spatial Hash Grid + Timed Ultimate + Climax Waves)
 // ============================================================================
 let lastTime = performance.now();
 
@@ -2282,6 +3209,45 @@ function updateRun(dt) {
   const timeMin = RUN.time / 60;
   if (RUN.time > (SAVE.maxTime || 0)) SAVE.maxTime = Math.floor(RUN.time);
   if (RUN.invulnT > 0) RUN.invulnT -= dt;
+
+  // Check timed high-intensity climax wave events!
+  checkClimaxWaveEvents();
+
+  // Passive Ultimate Awakening charge (+1.2% per second when unlocked, plus active combat charge)
+  if (RUN.awakening && !RUN.ultActive) {
+    addUltimateCharge(dt * 1.2);
+  }
+
+  // Active Timed Ultimate Awakening countdown!
+  if (RUN.ultActive) {
+    RUN.ultTimer -= dt;
+    RUN.awkBurstTimer -= dt;
+    if (RUN.awkBurstTimer <= 0) {
+      RUN.awkBurstTimer = 3.2;
+      const awk = RUN.awakening;
+      RUN.zones.push({ x: RUN.x, y: RUN.y, r: 175, life: 0.45, maxLife: 0.45, color: awk.color, kind: "sky_pillar" });
+      const near = queryEnemiesInRadius(RUN.x, RUN.y, 175);
+      for (let k = 0; k < near.length; k++) {
+        hitEnemyWithMove(near[k], RUN.level, RUN.stats, RUN.moves[0].id, 1.55, RUN.moves[0]);
+      }
+      addPopup(RUN.x, RUN.y - 44, `🌈 ${awk.title.split("：")[1] || awk.title} 领域轰炸！`, awk.color, 1.22);
+    }
+    if (RUN.ultTimer <= 0) {
+      deactivateUltimateAwakening();
+    }
+  }
+
+  // Process pending Double Casts
+  if (RUN.pendingCasts && RUN.pendingCasts.length > 0) {
+    for (let i = RUN.pendingCasts.length - 1; i >= 0; i--) {
+      const pc = RUN.pendingCasts[i];
+      pc.delay -= dt;
+      if (pc.delay <= 0) {
+        swapRemove(RUN.pendingCasts, i);
+        executeUnitMove(RUN, pc.moveId, true, pc.mSlot);
+      }
+    }
+  }
 
   // Rebuild O(1) Spatial Hash Grid for all living enemies at start of frame!
   clearSpatialGrid();
@@ -2304,7 +3270,12 @@ function updateRun(dt) {
     }
   }
 
-  const playerMoveSpd = Math.min(232, 140 + RUN.stats.spe * 0.40);
+  let spdMul = 1.0;
+  if (RUN.hexes && RUN.hexes.berserker_drive) spdMul += 0.25 * RUN.hexes.berserker_drive;
+  if (RUN.hexes && RUN.hexes.silver_haste) spdMul += 0.18 * RUN.hexes.silver_haste;
+  if (RUN.ultActive) spdMul += 0.22;
+  const playerMoveSpd = Math.min(265, (142 + RUN.stats.spe * 0.40) * spdMul);
+
   let mx = JOY.active ? JOY.dx : 0;
   let my = JOY.active ? JOY.dy : 0;
   if (KEYS.has("KeyW") || KEYS.has("ArrowUp")) my -= 1;
@@ -2327,21 +3298,8 @@ function updateRun(dt) {
     const mSlot = RUN.moves[i];
     mSlot.timer -= dt;
     if (mSlot.timer <= 0) {
-      mSlot.timer = computeMoveCooldown(mSlot.id, RUN.stats, RUN.heldItems);
-      executeUnitMove(RUN, mSlot.id);
-    }
-  }
-  if (RUN.awakening) {
-    RUN.awkBurstTimer -= dt;
-    if (RUN.awkBurstTimer <= 0) {
-      RUN.awkBurstTimer = 6.5;
-      const awk = RUN.awakening;
-      RUN.zones.push({ x: RUN.x, y: RUN.y, r: 155, life: 0.45, maxLife: 0.45, color: awk.color, kind: "sky_pillar" });
-      const near = queryEnemiesInRadius(RUN.x, RUN.y, 155);
-      for (let k = 0; k < near.length; k++) {
-        hitEnemyWithMove(near[k], RUN.level, RUN.stats, RUN.moves[0].id, 1.45);
-      }
-      addPopup(RUN.x, RUN.y - 44, `🌈 ${awk.title.split("：")[1] || awk.title} 领域爆发！`, awk.color, 1.22);
+      mSlot.timer = computeMoveCooldown(mSlot.id, RUN.stats, RUN.heldItems, mSlot);
+      executeUnitMove(RUN, mSlot.id, false, mSlot);
     }
   }
 
@@ -2355,7 +3313,7 @@ function updateRun(dt) {
     const m = MOVES_DB[comp.moveId];
     const isMeleeComp = m && (m.pat === "fist_flurry" || m.pat === "iaijutsu_slash" || m.pat === "spear_thrust" || m.pat === "whip_wave" || m.pat === "bible_orbit" || m.pat === "sonic_boom");
     const distToPlayer = Math.hypot(comp.x - RUN.x, comp.y - RUN.y);
-    const cSpd = Math.min(242, 146 + comp.stats.spe * 0.45);
+    const cSpd = Math.min(245, 148 + comp.stats.spe * 0.45);
     const foe = nearestEnemy(comp.x, comp.y, 240);
 
     let goalX = RUN.x;
@@ -2429,7 +3387,7 @@ function updateRun(dt) {
     vx.y += vx.vy * dt;
     vx.tick -= dt;
     const doDmg = vx.tick <= 0;
-    if (doDmg) vx.tick = 0.42;
+    if (doDmg) vx.tick = 0.40;
 
     const near = queryEnemiesInRadius(vx.x, vx.y, vx.r * 1.45);
     for (let k = 0; k < near.length; k++) {
@@ -2437,11 +3395,11 @@ function updateRun(dt) {
       const d = Math.hypot(e.x - vx.x, e.y - vx.y);
       if (!e.isBoss && d > 10) {
         const pullA = Math.atan2(vx.y - e.y, vx.x - e.x);
-        e.x += Math.cos(pullA) * (vx.isBlackHole ? 95 : 55) * dt;
-        e.y += Math.sin(pullA) * (vx.isBlackHole ? 95 : 55) * dt;
+        e.x += Math.cos(pullA) * (vx.isBlackHole ? 105 : 60) * dt;
+        e.y += Math.sin(pullA) * (vx.isBlackHole ? 105 : 60) * dt;
       }
       if (doDmg && d <= vx.r + e.radius) {
-        hitEnemyWithMove(e, vx.attackerLv, vx.attackerStats, vx.moveId, 0.55);
+        hitEnemyWithMove(e, vx.attackerLv, vx.attackerStats, vx.moveId, 0.58, vx.mSlot);
       }
     }
   }
@@ -2456,7 +3414,7 @@ function updateRun(dt) {
       RUN.zones.push({ x: mt.tx, y: mt.ty, r: mt.r, life: 0.42, maxLife: 0.42, color: mt.color, kind: "sky_pillar" });
       const near = queryEnemiesInRadius(mt.tx, mt.ty, mt.r);
       for (let k = 0; k < near.length; k++) {
-        hitEnemyWithMove(near[k], mt.attackerLv, mt.attackerStats, mt.moveId, 0.95);
+        hitEnemyWithMove(near[k], mt.attackerLv, mt.attackerStats, mt.moveId, 0.96, mt.mSlot);
       }
       swapRemove(RUN.meteors, i);
     }
@@ -2490,7 +3448,7 @@ function updateRun(dt) {
       const e = near[k];
       if (e.lastHitUid !== ph.uid) {
         e.lastHitUid = ph.uid;
-        hitEnemyWithMove(e, ph.attackerLv, ph.attackerStats, ph.moveId, 0.95);
+        hitEnemyWithMove(e, ph.attackerLv, ph.attackerStats, ph.moveId, 0.96, ph.mSlot);
         if (!e.isBoss) {
           const a = Math.atan2(e.y - ph.y, e.x - ph.x);
           e.x += Math.cos(a) * 28;
@@ -2504,10 +3462,10 @@ function updateRun(dt) {
     const dc = RUN.decoys[i];
     dc.life -= dt;
     if (dc.life <= 0) {
-      RUN.zones.push({ x: dc.x, y: dc.y, r: 120, life: 0.38, maxLife: 0.38, color: "#ff4081", kind: "sky_pillar" });
-      const near = queryEnemiesInRadius(dc.x, dc.y, 120);
+      RUN.zones.push({ x: dc.x, y: dc.y, r: 125, life: 0.38, maxLife: 0.38, color: "#ff4081", kind: "sky_pillar" });
+      const near = queryEnemiesInRadius(dc.x, dc.y, 125);
       for (let k = 0; k < near.length; k++) {
-        hitEnemyWithMove(near[k], RUN.level, RUN.stats, RUN.moves[0].id, 1.5);
+        hitEnemyWithMove(near[k], RUN.level, RUN.stats, RUN.moves[0].id, 1.55, RUN.moves[0]);
       }
       swapRemove(RUN.decoys, i);
     }
@@ -2523,9 +3481,9 @@ function updateRun(dt) {
     const near = queryEnemiesInRadius(o.x, o.y, o.r);
     for (let k = 0; k < near.length; k++) {
       const e = near[k];
-      if (RUN.time - e.lastOrbHitT >= 0.32) {
+      if (RUN.time - e.lastOrbHitT >= 0.30) {
         e.lastOrbHitT = RUN.time;
-        hitEnemyWithMove(e, o.attackerLv, o.attackerStats, o.moveId, 0.70);
+        hitEnemyWithMove(e, o.attackerLv, o.attackerStats, o.moveId, 0.75, o.mSlot);
       }
     }
   }
@@ -2556,7 +3514,7 @@ function updateRun(dt) {
       const e = near[k];
       if (e.lastHitUid !== curUid) {
         e.lastHitUid = curUid;
-        hitEnemyWithMove(e, b.attackerLv, b.attackerStats, b.moveId, 0.88);
+        hitEnemyWithMove(e, b.attackerLv, b.attackerStats, b.moveId, 0.90, b.mSlot);
       }
     }
   }
@@ -2578,7 +3536,7 @@ function updateRun(dt) {
       const e = near[k];
       if (e.lastHitUid !== sw.uid && distToSegment(e.x, e.y, x1, y1, x2, y2) <= sw.wid * 0.5 + e.radius) {
         e.lastHitUid = sw.uid;
-        hitEnemyWithMove(e, sw.attackerLv, sw.attackerStats, sw.moveId, 0.96);
+        hitEnemyWithMove(e, sw.attackerLv, sw.attackerStats, sw.moveId, 0.98, sw.mSlot);
         if (!e.isBoss) {
           e.x += Math.cos(curAng) * 24;
           e.y += Math.sin(curAng) * 24;
@@ -2601,7 +3559,7 @@ function updateRun(dt) {
       const e = near[k];
       if (e.lastHitUid !== ls.uid && distToSegment(e.x, e.y, x1, y1, x2, y2) <= ls.wid * 0.5 + e.radius) {
         e.lastHitUid = ls.uid;
-        hitEnemyWithMove(e, ls.attackerLv, ls.attackerStats, ls.moveId, 0.92);
+        hitEnemyWithMove(e, ls.attackerLv, ls.attackerStats, ls.moveId, 0.94, ls.mSlot);
       }
     }
   }
@@ -2619,8 +3577,8 @@ function updateRun(dt) {
       p.y = p.startY + (p.ty - p.startY) * u - Math.sin(u * Math.PI) * 65;
       if (u >= 1) {
         RUN.zones.push({
-          x: p.tx, y: p.ty, r: p.poolR, life: 3.2, maxLife: 3.2, color: p.color,
-          kind: "santa_pool", tick: 0.05, attackerLv: p.attackerLv, attackerStats: p.attackerStats, moveId: p.moveId
+          x: p.tx, y: p.ty, r: p.poolR, life: 3.4, maxLife: 3.4, color: p.color,
+          kind: "santa_pool", tick: 0.05, attackerLv: p.attackerLv, attackerStats: p.attackerStats, moveId: p.moveId, mSlot: p.mSlot
         });
         swapRemove(RUN.projectiles, i);
       }
@@ -2633,7 +3591,7 @@ function updateRun(dt) {
       p.rot = (p.rot || 0) + 10 * dt;
     }
     if (p.homing) {
-      const t = nearestEnemy(p.x, p.y, 260);
+      const t = nearestEnemy(p.x, p.y, 280);
       if (t) {
         const spd = Math.hypot(p.vx, p.vy);
         const ta = Math.atan2(t.y - p.y, t.x - p.x);
@@ -2658,7 +3616,7 @@ function updateRun(dt) {
       const e = near[k];
       if (e.lastHitUid === p.uid) continue;
       e.lastHitUid = p.uid;
-      hitEnemyWithMove(e, p.attackerLv, p.attackerStats, p.moveId, p.aoeScale || 0.9);
+      hitEnemyWithMove(e, p.attackerLv, p.attackerStats, p.moveId, p.aoeScale || 0.9, p.mSlot);
       p.pierce--;
       if (p.pierce <= 0) { p.life = 0; break; }
     }
@@ -2672,14 +3630,21 @@ function updateRun(dt) {
       z.x = z.owner.x;
       z.y = z.owner.y;
     }
-    if (z.kind === "santa_pool") {
+    if (z.kind === "aftershock_bomb" && !z.triggered && z.life <= 0.16) {
+      z.triggered = true;
+      z.kind = "sky_pillar";
+      const near = queryEnemiesInRadius(z.x, z.y, z.r);
+      for (let k = 0; k < near.length; k++) {
+        hitEnemyWithMove(near[k], z.attackerLv, z.attackerStats, z.moveId, 0.78, z.mSlot);
+      }
+    } else if (z.kind === "santa_pool") {
       z.tick -= dt;
       if (z.tick <= 0) {
-        z.tick = 0.48;
+        z.tick = 0.45;
         const near = queryEnemiesInRadius(z.x, z.y, z.r);
         for (let k = 0; k < near.length; k++) {
-          hitEnemyWithMove(near[k], z.attackerLv, z.attackerStats, z.moveId, 0.52);
-          near[k].slowT = 0.7;
+          hitEnemyWithMove(near[k], z.attackerLv, z.attackerStats, z.moveId, 0.55, z.mSlot);
+          near[k].slowT = 0.8;
         }
       }
     }
@@ -2693,7 +3658,7 @@ function updateRun(dt) {
     eb.y += eb.vy * dt;
     if (RUN.invulnT <= 0 && Math.hypot(eb.x - RUN.x, eb.y - RUN.y) <= eb.r + 13) {
       RUN.invulnT = 0.30;
-      const dmg = Math.max(3, Math.round(eb.dmg));
+      const dmg = Math.max(4, Math.round(eb.dmg));
       RUN.hp -= dmg;
       addPopup(RUN.x, RUN.y - 24, `-${dmg}`, "#ff1744", 1.12);
       swapRemove(RUN.enemyBullets, i);
@@ -2713,9 +3678,9 @@ function updateRun(dt) {
     }
   }
 
-  // Player-Level-Scaled Horde Capacity (Smoothly scales up to 160 monsters on screen at high levels with 60FPS!)
-  const targetEnemyCap = Math.min(165, 22 + RUN.level * 3 + Math.floor(timeMin * 6));
-  RUN.spawnAcc += dt * (1.7 + RUN.level * 0.14);
+  // High-Density Escalating Horde Capacity (Scales up to 170 monsters on screen with 60FPS!)
+  const targetEnemyCap = Math.min(170, 26 + RUN.level * 3 + Math.floor(timeMin * 9));
+  RUN.spawnAcc += dt * (2.0 + RUN.level * 0.16 + timeMin * 0.35);
   while (RUN.spawnAcc >= 1 && RUN.enemies.length < targetEnemyCap) {
     RUN.spawnAcc -= 1;
     spawnEnemy(false);
@@ -2723,7 +3688,7 @@ function updateRun(dt) {
 
   RUN.swarmTimer -= dt;
   if (RUN.swarmTimer <= 0) {
-    RUN.swarmTimer = 34;
+    RUN.swarmTimer = Math.max(18, 30 - timeMin * 1.2);
     triggerSwarmAmbush();
   }
 
@@ -2735,7 +3700,7 @@ function updateRun(dt) {
 
   RUN.ballSpawnAcc -= dt;
   if (RUN.ballSpawnAcc <= 0) {
-    RUN.ballSpawnAcc = 32;
+    RUN.ballSpawnAcc = 30;
     spawnCompanionBall(false);
   }
 
@@ -2745,17 +3710,26 @@ function updateRun(dt) {
     spawnFieldItem(false);
   }
 
+  // Low-frequency rare field spawn for Mega/Gmax Key Stone!
+  RUN.keystoneSpawnAcc -= dt;
+  if (RUN.keystoneSpawnAcc <= 0) {
+    RUN.keystoneSpawnAcc = 55 + Math.random() * 25;
+    if (RUN.level >= 12 && Math.random() < (RUN.awakening ? 0.45 : 0.72)) {
+      spawnKeystoneItem();
+    }
+  }
+
   RUN.bossAcc -= dt;
   if (RUN.bossAcc <= 0) {
-    RUN.bossAcc = 30 + Math.random() * 14;
+    RUN.bossAcc = Math.max(20, 32 - timeMin * 1.1) + Math.random() * 10;
     spawnEnemy(true);
-    if (RUN.level >= 16 && Math.random() < 0.25) {
+    if ((RUN.level >= 15 || timeMin >= 3.5) && Math.random() < 0.38) {
       spawnEnemy(true);
       addPopup(RUN.x, RUN.y - 78, `⚡ 双神降临！两只传说头目同时现身！`, "#ffd600", 1.45);
     }
   }
 
-  // Update Enemies + Fast Spatial-Grid Crowd Separation (Like Vampire Survivors so monsters form a real horde!)
+  // Update Enemies + Fast Spatial-Grid Crowd Separation
   const activeDecoy = RUN.decoys[0] || null;
   const maxTeleportDist = Math.max(canvas.width, canvas.height) * 0.92;
   for (let i = RUN.enemies.length - 1; i >= 0; i--) {
@@ -2766,7 +3740,7 @@ function updateRun(dt) {
     if (e.rootT > 0) e.rootT -= dt;
 
     if (e.affix && e.affix.regen && e.hp < e.maxHp) {
-      e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.008 * dt);
+      e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.01 * dt);
     }
 
     if (e.leechT > 0) {
@@ -2781,7 +3755,7 @@ function updateRun(dt) {
     if (e.burnT > 0) {
       e.burnT -= dt;
       if (Math.random() < dt * 2.0) {
-        e.hp -= Math.max(1, Math.round(e.maxHp * 0.03));
+        e.hp -= Math.max(1, Math.round(e.maxHp * 0.032));
         if (e.hp <= 0) { killEnemy(e); swapRemove(RUN.enemies, i); continue; }
       }
     }
@@ -2802,13 +3776,13 @@ function updateRun(dt) {
 
     if (e.isElite && !e.isBoss) {
       e.shootTimer -= dt;
-      if (e.shootTimer <= 0 && dist < 240 && RUN.enemyBullets.length < 45) {
-        e.shootTimer = 2.8;
+      if (e.shootTimer <= 0 && dist < 255 && RUN.enemyBullets.length < 52) {
+        e.shootTimer = Math.max(1.6, 2.7 - timeMin * 0.1);
         const a = Math.atan2(dy, dx);
-        const rawDmg = (((2 * e.level / 5 + 2) * 26 * (e.stats.spa / Math.max(1, RUN.stats.spd))) / 50 + 2);
+        const rawDmg = (((2 * e.level / 5 + 2) * 32 * (e.stats.spa / Math.max(1, RUN.stats.spd))) / 50 + 3);
         RUN.enemyBullets.push({
-          x: e.x, y: e.y, vx: Math.cos(a) * 180, vy: Math.sin(a) * 180,
-          r: 7, dmg: rawDmg, life: 2.0, color: TYPE_META[e.stats.types[0]]?.color || "#ff5252"
+          x: e.x, y: e.y, vx: Math.cos(a) * 195, vy: Math.sin(a) * 195,
+          r: 7, dmg: rawDmg, life: 2.1, color: TYPE_META[e.stats.types[0]]?.color || "#ff5252"
         });
       }
     }
@@ -2819,42 +3793,42 @@ function updateRun(dt) {
         const pm = BOSS_PRIMAL_MAP[e.species];
         e.primalAwakened = true;
         e.species = pm.formId;
-        e.stats = computePokemonStats(e.species, e.level + 2, false, true);
-        e.maxHp = Math.floor(e.maxHp * 1.35);
-        e.hp = Math.floor(e.maxHp * 0.80);
+        e.stats = computePokemonStats(e.species, e.level + 3, false, true);
+        e.maxHp = Math.floor(e.maxHp * 1.42);
+        e.hp = Math.floor(e.maxHp * 0.85);
         e.scale *= 1.18;
         if (e.affix) e.affix.color = pm.color;
         playCry(e.species);
-        RUN.zones.push({ x: e.x, y: e.y, r: 140, life: 0.55, maxLife: 0.55, color: pm.color, kind: "sky_pillar" });
+        RUN.zones.push({ x: e.x, y: e.y, r: 150, life: 0.55, maxLife: 0.55, color: pm.color, kind: "sky_pillar" });
         addPopup(e.x, e.y - 52, `🌋 头目二阶段突破：【${pm.name}】原始回归/超进化！`, pm.color, 1.48);
       }
       e.skillTimer -= dt;
-      if (e.skillTimer <= 0 && dist < 350) {
-        e.skillTimer = 4.0 * (e.affix ? e.affix.skillCdMul : 1.0);
+      if (e.skillTimer <= 0 && dist < 370) {
+        e.skillTimer = 3.6 * (e.affix ? e.affix.skillCdMul : 1.0);
         const a = Math.atan2(dy, dx);
-        const rawDmg = (((2 * e.level / 5 + 2) * 42 * (Math.max(e.stats.atk, e.stats.spa) / Math.max(1, RUN.stats.spd))) / 50 + 2);
+        const rawDmg = (((2 * e.level / 5 + 2) * 48 * (Math.max(e.stats.atk, e.stats.spa) / Math.max(1, RUN.stats.spd))) / 50 + 4);
         const bCol = e.affix ? e.affix.color : "#ff1744";
 
         const roll = Math.random();
-        if (roll < 0.35 || (e.affix && e.affix.bulletHell && roll < 0.65)) {
-          const ways = (e.affix && e.affix.bulletHell) ? 10 : 8;
+        if (roll < 0.38 || (e.affix && e.affix.bulletHell && roll < 0.68)) {
+          const ways = (e.affix && e.affix.bulletHell) ? 12 : 9;
           for (let k = 0; k < ways; k++) {
             const ba = a + (k / ways) * Math.PI * 2;
             RUN.enemyBullets.push({
-              x: e.x, y: e.y, vx: Math.cos(ba) * 190, vy: Math.sin(ba) * 190,
-              r: 9, dmg: rawDmg, life: 2.2, color: bCol
+              x: e.x, y: e.y, vx: Math.cos(ba) * 205, vy: Math.sin(ba) * 205,
+              r: 9, dmg: rawDmg, life: 2.3, color: bCol
             });
           }
           addPopup(e.x, e.y - 36, `⚠️ ${POKEMON_ZH[e.species]} 释放全方位弹幕！`, bCol, 1.15);
-        } else if (roll < 0.70) {
-          e.dashWarnT = 0.68;
-          e.dashVx = Math.cos(a) * 255;
-          e.dashVy = Math.sin(a) * 255;
+        } else if (roll < 0.72) {
+          e.dashWarnT = 0.65;
+          e.dashVx = Math.cos(a) * 275;
+          e.dashVy = Math.sin(a) * 275;
           for (let k = -1; k <= 1; k++) {
-            const ba = a + k * 0.25;
+            const ba = a + k * 0.24;
             RUN.enemyBullets.push({
-              x: e.x, y: e.y, vx: Math.cos(ba) * 220, vy: Math.sin(ba) * 220,
-              r: 9, dmg: rawDmg, life: 1.8, color: bCol
+              x: e.x, y: e.y, vx: Math.cos(ba) * 230, vy: Math.sin(ba) * 230,
+              r: 9, dmg: rawDmg, life: 1.9, color: bCol
             });
           }
         } else {
@@ -2880,14 +3854,13 @@ function updateRun(dt) {
         e.y += e.dashVy * dt;
       }
     } else {
-      const spd = e.rootT > 0 ? 0 : e.speed * (e.slowT > 0 ? 0.52 : 1.0);
+      const spd = e.rootT > 0 ? 0 : e.speed * (e.slowT > 0 ? 0.50 : 1.0);
       if (dist > 1) {
         e.vx = (dx / dist) * spd;
         e.vy = (dy / dist) * spd;
         e.x += e.vx * dt;
         e.y += e.vy * dt;
       }
-      // Fast O(1) same-cell crowd repulsion so monsters spread out naturally like Vampire Survivors!
       const cx = Math.floor(e.x / GRID_CELL);
       const cy = Math.floor(e.y / GRID_CELL);
       const cellBucket = GRID_BUCKETS.get(((cx & 0xffff) << 16) | (cy & 0xffff));
@@ -2908,14 +3881,14 @@ function updateRun(dt) {
 
     const distToPlayer = Math.hypot(RUN.x - e.x, RUN.y - e.y);
     if (distToPlayer < e.radius + 15 && RUN.invulnT <= 0) {
-      RUN.invulnT = 0.34;
+      RUN.invulnT = 0.32;
       const usePhys = e.stats.atk >= e.stats.spa;
       let eAtk = usePhys ? e.stats.atk : e.stats.spa;
-      if (usePhys && e.burnT > 0) eAtk = Math.floor(eAtk * 0.5);
+      if (usePhys && e.burnT > 0) eAtk = Math.floor(eAtk * 0.55);
       const pDef = Math.max(1, usePhys ? RUN.stats.def : RUN.stats.spd);
       const eff = getTypeEffectiveness(e.stats.types[0], RUN.stats.types);
-      const rawHit = (((2 * e.level / 5 + 2) * (e.isBoss ? 52 : (e.isElite ? 40 : 32)) * (eAtk / pDef)) / 50 + 2) * eff;
-      const dmgTaken = Math.max(2, Math.round(rawHit));
+      const rawHit = (((2 * e.level / 5 + 2) * (e.isBoss ? 58 : (e.isElite ? 45 : 36)) * (eAtk / pDef)) / 50 + 3) * eff;
+      const dmgTaken = Math.max(3, Math.round(rawHit));
       RUN.hp -= dmgTaken;
       addPopup(RUN.x, RUN.y - 22, `-${dmgTaken}`, "#ff5252", 1.12);
 
@@ -2956,7 +3929,7 @@ function updateRun(dt) {
 
   for (let i = RUN.fieldTMs.length - 1; i >= 0; i--) {
     const tm = RUN.fieldTMs[i];
-    if (Math.hypot(RUN.x - tm.x, RUN.y - tm.y) < 30) {
+    if (Math.hypot(RUN.x - tm.x, RUN.y - tm.y) < 32) {
       swapRemove(RUN.fieldTMs, i);
       offerPlayerMove(tm.moveId, "拾取场地技能机");
       break;
@@ -2965,7 +3938,7 @@ function updateRun(dt) {
 
   for (let i = RUN.fieldBalls.length - 1; i >= 0; i--) {
     const b = RUN.fieldBalls[i];
-    if (Math.hypot(RUN.x - b.x, RUN.y - b.y) < 30) {
+    if (Math.hypot(RUN.x - b.x, RUN.y - b.y) < 32) {
       swapRemove(RUN.fieldBalls, i);
       triggerCompanionBallModal();
       break;
@@ -2974,23 +3947,24 @@ function updateRun(dt) {
 
   for (let i = RUN.fieldItems.length - 1; i >= 0; i--) {
     const it = RUN.fieldItems[i];
-    if (Math.hypot(RUN.x - it.x, RUN.y - it.y) < 30) {
+    if (Math.hypot(RUN.x - it.x, RUN.y - it.y) < 34) {
       swapRemove(RUN.fieldItems, i);
       pickupFieldItem(it);
       break;
     }
   }
 
+  const magnetRadius = 98 * (1 + ((RUN.hexes && RUN.hexes.apex_collector) || 0) * 1.2);
   for (let i = RUN.gems.length - 1; i >= 0; i--) {
     const g = RUN.gems[i];
     const d = Math.hypot(RUN.x - g.x, RUN.y - g.y);
-    if (d < 98 || g.magnetized) {
+    if (d < magnetRadius || g.magnetized) {
       g.magnetized = true;
       const ang = Math.atan2(RUN.y - g.y, RUN.x - g.x);
-      g.x += Math.cos(ang) * 440 * dt;
-      g.y += Math.sin(ang) * 440 * dt;
+      g.x += Math.cos(ang) * 460 * dt;
+      g.y += Math.sin(ang) * 460 * dt;
     }
-    if (d < 22) {
+    if (d < 24) {
       swapRemove(RUN.gems, i);
       sfx("gem");
       if (g.kind === "berry") {
@@ -2999,6 +3973,20 @@ function updateRun(dt) {
         updateHudSlots();
       } else {
         RUN.xp += g.xp;
+        if (RUN.awakening && !RUN.ultActive) {
+          addUltimateCharge(0.6);
+        }
+        if (RUN.hexes && RUN.hexes.apex_collector) {
+          RUN.gemPulseCount = (RUN.gemPulseCount || 0) + 1;
+          if (RUN.gemPulseCount >= 15) {
+            RUN.gemPulseCount = 0;
+            const foe = nearestEnemy(RUN.x, RUN.y, 240);
+            if (foe) {
+              RUN.lightnings.push({ segs: [{ x1: RUN.x, y1: RUN.y, x2: foe.x, y2: foe.y }], life: 0.22, maxLife: 0.22, color: "#00e5ff" });
+              hitEnemyWithMove(foe, RUN.level, RUN.stats, RUN.moves[0].id, 0.85, RUN.moves[0]);
+            }
+          }
+        }
         for (let k = 0; k < RUN.companions.length; k++) {
           gainCompanionXp(RUN.companions[k], Math.max(1, Math.round(g.xp * 0.85)));
         }
@@ -3017,17 +4005,18 @@ function updateRun(dt) {
     if (p.life <= 0) swapRemove(RUN.popups, i);
   }
 
-  // Throttle DOM HUD text updates to 5Hz (every 0.2s) instead of 60Hz to avoid layout thrashing!
+  // Throttle DOM HUD text updates to 5Hz (every 0.2s)
   RUN.hudTimer -= dt;
   if (RUN.hudTimer <= 0) {
     RUN.hudTimer = 0.20;
     document.getElementById("xp-fill").style.width = `${Math.min(100, (RUN.xp / RUN.xpNeed) * 100)}%`;
-    document.getElementById("xp-lv").textContent = `LV.${RUN.level} ${POKEMON_ZH[RUN.speciesId]}`;
+    document.getElementById("xp-lv").textContent = `LV.${RUN.level} ${POKEMON_ZH[RUN.speciesId]}${RUN.ultActive ? ' [🔥超进化爆发中]' : ''}`;
     const mins = String(Math.floor(RUN.time / 60)).padStart(2, "0");
     const secs = String(Math.floor(RUN.time % 60)).padStart(2, "0");
     document.getElementById("hud-timer").textContent = `${mins}:${secs}`;
     document.getElementById("hud-wave").textContent = `怪潮Lv.${getTargetEnemyLevel(false, false)}`;
     document.getElementById("hud-kills").textContent = RUN.kills;
+    updateUltButtonHud();
 
     const bossBar = document.getElementById("boss-bar");
     if (RUN.activeBoss && RUN.activeBoss.hp > 0) {
@@ -3274,14 +4263,36 @@ function render2D() {
     const it = RUN.fieldItems[i];
     const sx = it.x - camX;
     const sy = it.y - camY;
+    if (it.cat === "keystone" && (sx < 15 || sx > w - 15 || sy < 35 || sy > h - 25)) {
+      // Draw off-screen radar pointer for rare Key Stone!
+      const px = Math.max(24, Math.min(w - 24, sx));
+      const py = Math.max(46, Math.min(h - 32, sy));
+      ctx.save();
+      ctx.fillStyle = "#00e5ff";
+      ctx.font = "900 11px monospace, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("🌈钥石▶", px, py);
+      ctx.restore();
+    }
     if (sx < -40 || sx > w + 40 || sy < -40 || sy > h + 40) continue;
     const d = it.def;
+    if (it.cat === "keystone") {
+      ctx.save();
+      ctx.strokeStyle = "#00e5ff";
+      ctx.fillStyle = "rgba(224, 64, 251, 0.35)";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 20 + Math.sin(RUN.time * 8) * 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
     const ic = getImg(d.icon);
     if (ic.complete) ctx.drawImage(ic, sx - 13, sy - 13, 26, 26);
     ctx.font = "900 10px monospace, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillStyle = it.cat === "vitamin" ? "#69f0ae" : "#ffd54f";
-    ctx.fillText(d.name.split(" ")[0], sx, sy - 16);
+    ctx.fillStyle = it.cat === "keystone" ? "#00e5ff" : (it.cat === "vitamin" ? "#69f0ae" : "#ffd54f");
+    ctx.fillText(it.cat === "keystone" ? "🌈超进化钥石" : d.name.split(" ")[0], sx, sy - 17);
   }
 
   const dollImg = getImg("./assets/items/poke-doll.png");
@@ -3380,10 +4391,11 @@ function render2D() {
         ctx.fillText(label, comp._sx | 0, (comp._sy - 25 - hop) | 0);
       } else {
         const hop = (Math.abs(RUN.vx) > 0.01 || Math.abs(RUN.vy) > 0.01) ? Math.abs(Math.sin(RUN.time * 10)) * 3.5 : 0;
-        const pScale = 1.80 + RUN.evoStage * 0.22 + (RUN.awakening && RUN.awakening.kind === "gmax" ? 0.45 : 0);
-        const pRing = RUN.awakening ? RUN.awakening.color : "#ffe066";
+        const goliathBonusScale = Math.min(0.65, (RUN.goliathStacks || 0) * 0.025);
+        const pScale = 1.80 + RUN.evoStage * 0.22 + goliathBonusScale + (RUN.ultActive && RUN.awakening && RUN.awakening.kind === "gmax" ? 0.48 : 0);
+        const pRing = (RUN.ultActive && RUN.awakening) ? RUN.awakening.color : "#ffe066";
         drawPokemonSprite(ctx, RUN.speciesId, RUN._sx, RUN._sy, RUN.vx, RUN.vy, RUN.time * 1.25, pScale, RUN.invulnT > 0.18, pRing, hop);
-        if (RUN.awakening) {
+        if (RUN.ultActive && RUN.awakening) {
           ctx.save();
           if (RUN.awakening.kind === "gmax") {
             // Swirling red Dynamax clouds above head!
@@ -3722,6 +4734,11 @@ function loop(now) {
 }
 
 document.getElementById("btn-start-run").onclick = startRun;
+const ultBtnEl = document.getElementById("ult-btn");
+if (ultBtnEl) {
+  ultBtnEl.onclick = e => { e.stopPropagation(); activateUltimateAwakening(); };
+  ultBtnEl.addEventListener("touchstart", e => { e.stopPropagation(); e.preventDefault(); activateUltimateAwakening(); }, { passive: false });
+}
 document.getElementById("btn-pause").onclick = pauseRun;
 document.getElementById("btn-bgm").onclick = () => {
   playBgmTrack(curBgmIdx + 1, false);

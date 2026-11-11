@@ -1,411 +1,625 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>PokéSurvivors v3.8.0 · 竖屏全屏宝可梦幸存者</title>
-<style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-}
-html, body {
-  width: 100vw;
-  height: 100dvh;
-  overflow: hidden;
-  background: #120d1d;
-  color: #f4eed8;
-  font-family: "PingFang SC", "Microsoft YaHei", "Courier New", monospace, sans-serif;
-}
-canvas#game {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
-  display: block;
-  image-rendering: pixelated;
-  z-index: 1;
-  touch-action: none;
-}
-.vs-panel {
-  background: linear-gradient(180deg, #2b1d38 0%, #191024 100%);
-  border: 2px solid #d4af37;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.75);
-  border-radius: 8px;
-  color: #fff6d6;
-}
-.vs-btn {
-  background: linear-gradient(180deg, #9e1b24 0%, #630d14 100%);
-  border: 2px solid #f2c94c;
-  box-shadow: 0 2px 0 #2a0408;
-  color: #fff8e7;
-  font-weight: 900;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  text-shadow: 1px 1px 0 #000;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-}
-.vs-btn:active { transform: translateY(1px); }
-.vs-btn.gold { background: linear-gradient(180deg, #d99b16 0%, #8c5d05 100%); border-color: #fff1a8; }
-.vs-btn.blue { background: linear-gradient(180deg, #24589e 0%, #113061 100%); border-color: #8cc4ff; }
-.vs-btn.green { background: linear-gradient(180deg, #1f8a4c 0%, #0e4f29 100%); border-color: #7ef2a9; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>宝可梦幸存者 v4.0 — 海克斯超武与极限超进化版</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #100a1c;
+      color: #f8f0dc;
+      font-family: "Courier New", "PingFang SC", "Microsoft YaHei", monospace, sans-serif;
+    }
+    #game {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      z-index: 1;
+      touch-action: none;
+      image-rendering: pixelated;
+    }
 
-/* Portrait Scrollable Full-Screen Menu! */
-.screen {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  display: flex;
-  flex-direction: column;
-  background: radial-gradient(circle at top, rgba(44,24,68,0.92) 0%, rgba(12,7,22,0.98) 100%);
-  padding: max(12px, env(safe-area-inset-top)) 12px max(90px, env(safe-area-inset-bottom)) 12px;
-  z-index: 20;
-  gap: 10px;
-}
-.topbar {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.logo-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.logo-title {
-  font-size: 24px;
-  font-weight: 900;
-  color: #ffe066;
-  text-shadow: 0 2px 0 #7a1c1c, 0 4px 10px #000;
-}
-.logo-title span { color: #ff4d4d; }
-.nav-btns {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
+    .vs-panel {
+      background: linear-gradient(180deg, rgba(46, 26, 62, 0.96) 0%, rgba(22, 13, 33, 0.98) 100%);
+      border: 2.5px solid #d4af37;
+      box-shadow: inset 0 0 0 1.5px #4a2e1b, 0 6px 18px rgba(0, 0, 0, 0.85);
+      border-radius: 10px;
+      color: #fff3d6;
+    }
+    .vs-btn {
+      background: linear-gradient(180deg, #b8332a 0%, #7c1814 100%);
+      border: 2px solid #ffd54f;
+      box-shadow: 0 3px 0 #470d0a;
+      color: #fff8e7;
+      font-weight: 900;
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      text-shadow: 1px 1px 2px #000;
+      transition: transform 0.08s;
+      text-align: center;
+    }
+    .vs-btn:active { transform: translateY(2px); }
+    .vs-btn.gold {
+      background: linear-gradient(180deg, #f5b041 0%, #b9770e 100%);
+      color: #241004;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+    }
+    .vs-btn.blue {
+      background: linear-gradient(180deg, #2980b9 0%, #1a5276 100%);
+    }
+    .vs-btn.green {
+      background: linear-gradient(180deg, #27ae60 0%, #196f3d 100%);
+    }
 
-.char-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 7px;
-  width: 100%;
-}
-.char-card {
-  background: #1e1429;
-  border: 2px solid #6b5328;
-  border-radius: 7px;
-  padding: 6px 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  position: relative;
-  text-align: center;
-}
-.char-card.active {
-  background: #36224a;
-  border-color: #ffe066;
-  box-shadow: 0 0 10px rgba(255,224,102,0.45);
-}
-.char-card.locked { opacity: 0.62; filter: grayscale(0.75); }
-.char-card img.av { width: 44px; height: 44px; image-rendering: pixelated; object-fit: contain; }
-.char-card .cname { font-size: 12px; font-weight: 900; margin-top: 2px; color: #fff; }
-.char-card .cwep { font-size: 9px; color: #d4b872; margin-top: 1px; line-height: 1.2; }
+    /* Fullscreen Portrait Scrollable Main Menu */
+    #scr-menu {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      background: radial-gradient(circle at center, rgba(18, 10, 28, 0.72) 0%, rgba(8, 4, 15, 0.94) 100%);
+      padding: max(10px, env(safe-area-inset-top)) 8px max(14px, env(safe-area-inset-bottom)) 8px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+    }
+    .menu-wrap {
+      width: 100%;
+      max-width: 500px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .title-banner {
+      text-align: center;
+      border-bottom: 2px solid #8e6b23;
+      padding-bottom: 6px;
+    }
+    .title-banner h1 {
+      font-size: 21px;
+      letter-spacing: 1px;
+      color: #ffe066;
+      text-shadow: 0 2px 0 #9c4100, 0 4px 10px rgba(255, 160, 0, 0.7);
+    }
+    .title-banner p {
+      font-size: 10px;
+      color: #d6c6a5;
+      margin-top: 3px;
+    }
 
-.sticky-start-bar {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  padding: 8px 12px max(10px, env(safe-area-inset-bottom)) 12px;
-  background: linear-gradient(180deg, rgba(18,13,29,0.0) 0%, rgba(18,13,29,0.96) 28%);
-  z-index: 25;
-}
+    /* Portrait 3-Column Starter Grid */
+    #char-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      max-height: 235px;
+      overflow-y: auto;
+      padding: 5px;
+      background: rgba(10, 5, 18, 0.68);
+      border: 1.5px solid #6e5223;
+      border-radius: 7px;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+    }
+    .char-card {
+      background: #231630;
+      border: 2px solid #574124;
+      border-radius: 7px;
+      padding: 5px 3px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      text-align: center;
+    }
+    .char-card.active {
+      background: #422659;
+      border-color: #ffe066;
+      box-shadow: 0 0 10px rgba(255, 224, 102, 0.65);
+    }
+    .char-card.locked {
+      opacity: 0.62;
+      background: #160e1f;
+      border-color: #3d2f1d;
+    }
+    .char-card img.av {
+      width: 44px;
+      height: 44px;
+      image-rendering: pixelated;
+      object-fit: contain;
+    }
+    .char-card .cname {
+      font-size: 11px;
+      font-weight: 800;
+      margin-top: 2px;
+      color: #fff;
+    }
+    .char-card .cwep {
+      font-size: 9px;
+      color: #ffd54f;
+      margin-top: 1px;
+    }
 
-/* Portrait HUD */
-#hud {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  display: none;
-  z-index: 10;
-}
-.xp-bar-wrap {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 18px;
-  background: #0d0914;
-  border-bottom: 2px solid #d4af37;
-}
-.xp-bar-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #1d6ff2 0%, #44d9ff 100%);
-  transition: width 0.1s;
-}
-.xp-bar-lv {
-  position: absolute;
-  right: 8px; top: 0;
-  line-height: 16px;
-  font-weight: 900;
-  font-size: 11px;
-  color: #fff;
-  text-shadow: 1px 1px 2px #000;
-}
-.hud-top {
-  position: absolute;
-  top: 20px; left: 6px; right: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.hud-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.timer-box {
-  font-size: 20px;
-  font-weight: 900;
-  color: #fff;
-  text-shadow: 0 2px 0 #000;
-}
-.wave-sub { font-size: 10px; color: #ffd166; text-shadow: 1px 1px 0 #000; }
-.stats-right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(18, 12, 28, 0.86);
-  border: 1.5px solid #96783c;
-  padding: 3px 8px;
-  border-radius: 5px;
-  font-weight: 900;
-  font-size: 11px;
-}
-.pause-btn {
-  pointer-events: auto;
-  background: #36224a;
-  border: 2px solid #d4af37;
-  color: #fff;
-  width: 30px;
-  height: 30px;
-  border-radius: 5px;
-  font-weight: 900;
-  cursor: pointer;
-}
-.slot-grid-4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 3px;
-}
-.slot-grid-5 {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 3px;
-}
-.move-slot {
-  height: 34px;
-  background: rgba(18, 12, 28, 0.88);
-  border: 1.5px solid #b58d3d;
-  border-radius: 4px;
-  padding: 2px 4px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  overflow: hidden;
-}
-.move-slot.empty {
-  opacity: 0.45;
-  justify-content: center;
-  font-size: 9px;
-  color: #998;
-}
-.move-slot img { width: 18px; height: 18px; image-rendering: pixelated; flex-shrink: 0; }
-.comp-slot {
-  height: 34px;
-  background: rgba(16, 26, 38, 0.88);
-  border: 1.5px solid #4fc3f7;
-  border-radius: 4px;
-  padding: 2px 3px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  overflow: hidden;
-}
-.comp-slot.empty {
-  border-color: #375a6e;
-  opacity: 0.45;
-  justify-content: center;
-  font-size: 9px;
-  color: #8ab;
-}
-.comp-slot img { width: 22px; height: 22px; image-rendering: pixelated; flex-shrink: 0; }
+    /* Portrait HUD */
+    #hud {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      display: none;
+    }
+    .xp-bar-wrap {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 22px;
+      background: #140d1f;
+      border-bottom: 2px solid #d4af37;
+    }
+    #xp-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #1e88e5, #00e5ff, #80d8ff);
+      transition: width 0.1s;
+    }
+    #xp-lv {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 1px 1px 2px #000;
+    }
 
-.boss-bar-wrap {
-  position: absolute;
-  top: 132px;
-  left: 8px; right: 8px;
-  background: rgba(15, 8, 22, 0.92);
-  border: 2px solid #ff4d4d;
-  border-radius: 6px;
-  padding: 3px 6px;
-  display: none;
-  text-align: center;
-}
-.boss-bar-name { font-size: 11px; font-weight: 900; color: #ff9999; margin-bottom: 2px; }
-.boss-bar-track { height: 8px; background: #2b090c; border-radius: 3px; overflow: hidden; }
-.boss-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff2a2a, #ff9900); }
+    .hud-top-row {
+      position: absolute;
+      top: 26px;
+      left: 6px;
+      right: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    .hud-slots-col {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .slot-bar {
+      display: flex;
+      gap: 3px;
+      background: rgba(16, 9, 26, 0.88);
+      border: 1.5px solid #a67c1e;
+      padding: 3px 4px;
+      border-radius: 5px;
+      align-items: center;
+    }
+    .slot-label {
+      font-size: 9px;
+      font-weight: 900;
+      color: #ffe066;
+      writing-mode: vertical-rl;
+      line-height: 1;
+      padding-right: 2px;
+    }
+    .slot-cell {
+      width: 34px;
+      height: 34px;
+      background: #1c112b;
+      border: 1.5px solid #5c4322;
+      border-radius: 4px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .slot-cell.super-move {
+      border-color: #00e5ff;
+      box-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
+      background: linear-gradient(135deg, #2a1142, #0d324d);
+    }
+    .slot-cell img {
+      width: 24px;
+      height: 24px;
+      image-rendering: pixelated;
+    }
+    .slot-cell .slv {
+      position: absolute;
+      bottom: 0px;
+      right: 1px;
+      font-size: 8px;
+      font-weight: 900;
+      color: #ffe066;
+      text-shadow: 1px 1px 1px #000;
+    }
+    .slot-cell .sname {
+      position: absolute;
+      top: 0px;
+      left: 1px;
+      font-size: 7px;
+      color: #90caf9;
+      text-shadow: 1px 1px 1px #000;
+      max-width: 32px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .slot-cell .hex-pips {
+      position: absolute;
+      bottom: 1px;
+      left: 1px;
+      display: flex;
+      gap: 1px;
+    }
+    .slot-cell .hex-pip {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      border: 0.5px solid #000;
+    }
 
-.modal-ov {
-  position: fixed;
-  inset: 0;
-  background: rgba(8, 4, 15, 0.86);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  padding: 10px;
-  pointer-events: auto;
-}
-.lvl-card {
-  width: 100%;
-  max-width: 480px;
-  max-height: 88dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  padding: 12px;
-}
-.choice-btn {
-  width: 100%;
-  background: linear-gradient(180deg, #322447 0%, #201530 100%);
-  border: 2px solid #c9a347;
-  border-radius: 6px;
-  padding: 8px 10px;
-  margin-top: 6px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #fff;
-  text-align: left;
-  cursor: pointer;
-}
-.choice-btn:active { border-color: #fff099; background: #422f5e; }
-.choice-btn.evo-choice {
-  background: linear-gradient(180deg, #1b3f5e 0%, #0e2238 100%);
-  border-color: #4fc3f7;
-}
-.choice-ic {
-  width: 38px; height: 38px;
-  background: #140c1f;
-  border: 2px solid #8a6d2b;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.choice-ic img { width: 28px; height: 28px; image-rendering: pixelated; }
-.choice-tag {
-  display: inline-block;
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: 900;
-  background: #d4af37;
-  color: #140c1f;
-  margin-left: 4px;
-}
-</style>
+    /* Active Global Hex Bar */
+    #hud-hex-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      max-width: 205px;
+      margin-top: 2px;
+    }
+    .hex-badge {
+      font-size: 9px;
+      font-weight: 900;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(20, 12, 34, 0.9);
+      border: 1px solid #ffd54f;
+      color: #fff;
+      text-shadow: 1px 1px 1px #000;
+    }
+    .hex-badge.prismatic {
+      border-color: #00e5ff;
+      background: linear-gradient(90deg, rgba(123,31,162,0.9), rgba(0,184,212,0.9));
+      color: #fff;
+    }
+
+    .hud-stats {
+      text-align: right;
+      background: rgba(16, 9, 26, 0.88);
+      border: 1.5px solid #a67c1e;
+      padding: 4px 7px;
+      border-radius: 6px;
+      pointer-events: auto;
+    }
+    #hud-timer {
+      font-size: 17px;
+      font-weight: 900;
+      color: #ffe066;
+      letter-spacing: 1px;
+    }
+    .hud-sub {
+      font-size: 10px;
+      color: #e6d3a7;
+      margin-top: 2px;
+    }
+
+    #boss-bar {
+      position: absolute;
+      top: 128px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(350px, 90vw);
+      background: rgba(25, 6, 12, 0.92);
+      border: 2px solid #ff5252;
+      border-radius: 6px;
+      padding: 3px 7px;
+      display: none;
+      text-align: center;
+    }
+    #boss-name {
+      font-size: 11px;
+      font-weight: 900;
+      color: #ff8a80;
+      margin-bottom: 2px;
+    }
+    .boss-hp-bg {
+      width: 100%;
+      height: 8px;
+      background: #2b0909;
+      border: 1px solid #ff8a80;
+    }
+    #boss-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #ff1744, #ff9100);
+    }
+
+    /* Ultimate Mega/Gmax/Tera Charge & Burst Button (Bottom-Right HUD) */
+    #ult-btn-wrap {
+      position: fixed;
+      right: 14px;
+      bottom: max(26px, env(safe-area-inset-bottom));
+      z-index: 16;
+      pointer-events: auto;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    #ult-btn {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      border: 3px solid #ffd600;
+      background: radial-gradient(circle at 30% 30%, #3a1c54, #140824);
+      box-shadow: 0 0 16px rgba(255, 214, 0, 0.5), inset 0 0 12px rgba(255, 255, 255, 0.25);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.1s;
+    }
+    #ult-btn.ready {
+      border-color: #00e5ff;
+      background: radial-gradient(circle at 30% 30%, #ff4081, #7c4dff, #00e5ff);
+      box-shadow: 0 0 24px #00e5ff, 0 0 40px rgba(255, 64, 129, 0.85);
+      animation: ultPulse 0.9s infinite alternate;
+    }
+    #ult-btn.active-burst {
+      border-color: #ffd600;
+      background: radial-gradient(circle, #ff9100, #d50000);
+      box-shadow: 0 0 28px #ffd600;
+    }
+    @keyframes ultPulse {
+      from { transform: scale(1.0); }
+      to   { transform: scale(1.09); }
+    }
+    #ult-fill-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 0%;
+      background: linear-gradient(180deg, rgba(0, 229, 255, 0.45), rgba(124, 77, 255, 0.65));
+      pointer-events: none;
+      transition: height 0.15s;
+    }
+    #ult-icon {
+      font-size: 22px;
+      z-index: 2;
+      line-height: 1;
+    }
+    #ult-pct {
+      font-size: 11px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 1px 1px 2px #000;
+      z-index: 2;
+      margin-top: 2px;
+    }
+    #ult-label {
+      font-size: 10px;
+      font-weight: 900;
+      color: #ffe066;
+      background: rgba(14, 8, 24, 0.9);
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid #ffd54f;
+      text-shadow: 1px 1px 1px #000;
+      white-space: nowrap;
+    }
+
+    /* Modals & Hex Augment Cards */
+    #modal-ov {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: rgba(6, 3, 12, 0.86);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+    #modal-box {
+      width: 100%;
+      max-width: 470px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 12px;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+    }
+    .choice-btn {
+      width: 100%;
+      background: linear-gradient(180deg, #2d1d3e 0%, #1b1026 100%);
+      border: 2px solid #b5892e;
+      border-radius: 8px;
+      padding: 9px;
+      margin-top: 7px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      cursor: pointer;
+      color: #fff;
+      text-align: left;
+      position: relative;
+    }
+    .choice-btn.hex-silver {
+      background: linear-gradient(135deg, #263238 0%, #151c21 100%);
+      border: 2px solid #b0bec5;
+      box-shadow: 0 0 10px rgba(176, 190, 197, 0.25);
+    }
+    .choice-btn.hex-gold {
+      background: linear-gradient(135deg, #3b2810 0%, #1e1306 100%);
+      border: 2px solid #ffd54f;
+      box-shadow: 0 0 12px rgba(255, 213, 79, 0.4);
+    }
+    .choice-btn.hex-prismatic {
+      background: linear-gradient(135deg, #311b47 0%, #112a38 55%, #2b123f 100%);
+      border: 2.5px solid #00e5ff;
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.65), inset 0 0 10px rgba(224, 64, 251, 0.35);
+    }
+    .choice-btn.evo-choice {
+      background: linear-gradient(180deg, #4a235a 0%, #21102b 100%);
+      border-color: #00e5ff;
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.45);
+    }
+    .choice-ic {
+      width: 42px;
+      height: 42px;
+      background: #140b1d;
+      border: 1.5px solid #ffd54f;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 20px;
+    }
+    .choice-ic img {
+      width: 32px;
+      height: 32px;
+      image-rendering: pixelated;
+    }
+    .choice-tag {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 900;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: #b8332a;
+      color: #ffe066;
+      margin-left: 4px;
+    }
+    .reroll-mini-btn {
+      background: linear-gradient(180deg, #1e88e5, #0d47a1);
+      border: 1.5px solid #80d8ff;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 5px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: 0 2px 0 #062356;
+    }
+  </style>
 </head>
 <body>
-<canvas id="game"></canvas>
+  <canvas id="game"></canvas>
 
-<div id="hud">
-  <div class="xp-bar-wrap">
-    <div id="xp-fill" class="xp-bar-fill"></div>
-    <div id="xp-lv" class="xp-bar-lv">LV 5</div>
-  </div>
-  <div class="hud-top">
-    <div class="hud-header-row">
-      <div>
-        <span id="hud-timer" class="timer-box">00:00</span>
-        <span id="hud-wave" class="wave-sub" style="margin-left:6px;">野生Lv.3</span>
+  <!-- Fullscreen Scrollable Portrait Main Menu -->
+  <div id="scr-menu">
+    <div class="vs-panel menu-wrap">
+      <div class="title-banner">
+        <h1>⚡ 宝可梦幸存者 v4.0 · 海克斯超武觉醒 ⚡</h1>
+        <p>每次升级海克斯三选一 · 进化蜕变本命技 · 3嵌槽合成★超武 · 稀有钥石充能超进化大招</p>
       </div>
-      <div style="display:flex;align-items:center;gap:5px;">
-        <div class="stats-right">
-          <span id="hud-stats" style="color:#82e0aa;"></span>
-          <span>💀<b id="hud-kills">0</b></span>
-          <span id="hud-held" style="color:#ffd54f;"></span>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <b style="font-size:12px;color:#ffe066;">1. 选择出战御三家（下滑浏览全 9 世代 27 只）</b>
+          <span id="char-count" style="font-size:10px;color:#82e0aa;"></span>
         </div>
-        <button id="btn-bgm" class="pause-btn" title="切歌" style="width:auto;padding:0 6px;font-size:10px;">🎵切歌</button><button id="btn-pause" class="pause-btn" title="暂停">❚❚</button>
+        <div id="char-grid"></div>
       </div>
-    </div>
-    <div id="wep-slots" class="slot-grid-4"></div>
-    <div id="pas-slots" class="slot-grid-5"></div>
-  </div>
-  <div id="boss-bar" class="boss-bar-wrap">
-    <div id="boss-name" class="boss-bar-name">传说头目</div>
-    <div class="boss-bar-track"><div id="boss-fill" class="boss-bar-fill"></div></div>
-  </div>
-</div>
 
-<!-- Portrait Scrollable Main Menu Screen -->
-<div id="scr-menu" class="screen">
-  <div class="topbar">
-    <div class="logo-row">
+      <div id="char-detail" style="background:#1c1128;border:1.5px solid #785c28;border-radius:7px;padding:8px;display:flex;flex-direction:column;gap:5px;"></div>
+
       <div>
-        <div class="logo-title">Poké<span>Survivors</span> <small style="font-size:12px;color:#81d4fa;">v3.8.0 竖屏</small></div>
-        <div style="font-size:10px;color:#cbb98b;">97%显存精简(4.8GB→131MB) · 原生零拦截硬件加速 · Mega/羁绊/超极巨/太晶化</div>
+        <b style="font-size:12px;color:#ffe066;display:block;margin-bottom:4px;">2. 选择狩猎秘境（硬核波次高潮 & 传说双神降临）</b>
+        <div id="stage-list" style="display:flex;flex-direction:column;gap:5px;"></div>
+      </div>
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;align-items:center;padding-top:4px;border-top:1.5px solid #594322;">
+        <button id="btn-powerups" class="vs-btn blue" style="flex:1;">🧬 局外成长 & 成就</button>
+        <button id="btn-evolutions" class="vs-btn" style="flex:1;">📖 海克斯与技能图鉴</button>
+        <button id="btn-unlock-all" class="vs-btn" style="padding:8px 8px;font-size:11px;">🔓 全解锁</button>
+      </div>
+      <button id="btn-start-run" class="vs-btn gold" style="width:100%;font-size:16px;padding:11px;">▶ 立即出发狩猎</button>
+    </div>
+  </div>
+
+  <!-- Portrait HUD -->
+  <div id="hud">
+    <div class="xp-bar-wrap">
+      <div id="xp-fill"></div>
+      <div id="xp-lv">LV.5</div>
+    </div>
+
+    <div class="hud-top-row">
+      <div class="hud-slots-col">
+        <div class="slot-bar">
+          <span class="slot-label">招式</span>
+          <div id="hud-moves" style="display:flex;gap:3px;"></div>
+        </div>
+        <div class="slot-bar">
+          <span class="slot-label" style="color:#81d4fa;">同伴</span>
+          <div id="hud-comps" style="display:flex;gap:3px;"></div>
+        </div>
+        <div id="hud-hex-bar"></div>
+      </div>
+      <div class="hud-stats">
+        <div id="hud-timer">00:00</div>
+        <div class="hud-sub">
+          <span id="hud-wave" style="color:#ff8a80;font-weight:bold;">波次1</span> · 击败 <b id="hud-kills">0</b>
+        </div>
+        <div class="hud-sub" style="margin-top:2px;">
+          ❤️ <b id="hud-hp" style="color:#69f0ae;">100/100</b> · 🎲骰子 <b id="hud-rerolls" style="color:#80d8ff;">3</b>
+        </div>
+        <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:4px;">
+          <button id="btn-bgm" class="vs-btn blue" style="padding:3px 6px;font-size:10px;">🎵 切歌</button>
+          <button id="btn-pause" class="vs-btn" style="padding:3px 7px;font-size:10px;">⏸️</button>
+        </div>
       </div>
     </div>
-    <div class="nav-btns">
-      <button id="btn-powerups" class="vs-btn gold">🧬 局外成长记录</button>
-      <button id="btn-evolutions" class="vs-btn blue">📖 招式&道具图鉴</button>
-      <button id="btn-unlock-all" class="vs-btn green">🔓 解锁全部成就</button>
+
+    <div id="boss-bar">
+      <div id="boss-name">👑 传说宝可梦 降临</div>
+      <div class="boss-hp-bg"><div id="boss-fill"></div></div>
+    </div>
+
+    <!-- Bottom-Right Ultimate Awakening Button -->
+    <div id="ult-btn-wrap">
+      <div id="ult-btn">
+        <div id="ult-fill-overlay"></div>
+        <div id="ult-icon">🧬</div>
+        <div id="ult-pct">0%</div>
+      </div>
+      <div id="ult-label">拾取钥石解锁</div>
     </div>
   </div>
 
-  <!-- Selected Character Card -->
-  <div id="char-detail" class="vs-panel" style="padding:10px;display:flex;flex-direction:column;gap:6px;"></div>
-
-  <!-- Stage Selection -->
-  <div class="vs-panel" style="padding:10px;display:flex;flex-direction:column;gap:6px;">
-    <b style="color:#ffe066;font-size:13px;">1. 选择世代平面战场（达成条件即可解锁后续世代）</b>
-    <div id="stage-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+  <!-- Modal -->
+  <div id="modal-ov">
+    <div id="modal-box" class="vs-panel"></div>
   </div>
 
-  <!-- All 27 Starters Selection Grid (Smoothly Scrollable!) -->
-  <div class="vs-panel" style="padding:10px;display:flex;flex-direction:column;gap:6px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <b style="color:#ffe066;font-size:13px;">2. 选择出战御三家（达成局内条件解锁）</b>
-      <span id="char-count" style="font-size:11px;color:#cbb98b;"></span>
-    </div>
-    <div id="char-grid" class="char-grid"></div>
-  </div>
-
-  <div class="sticky-start-bar">
-    <button id="btn-start-run" class="vs-btn" style="width:100%;font-size:17px;padding:12px;">⚔️ 开始竖屏冒险 (START)</button>
-  </div>
-</div>
-
-<div id="modal-ov" class="modal-ov">
-  <div id="modal-box" class="vs-panel lvl-card"></div>
-</div>
-
-<script src="./assets/vs-game.js"></script>
+  <script src="./assets/vs-game.js"></script>
 </body>
 </html>
