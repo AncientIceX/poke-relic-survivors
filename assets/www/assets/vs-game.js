@@ -207,6 +207,14 @@ const BOSS_AFFIXES = [
   { id: "apex",    name: "【传说觉醒】", color: "#ffd600", hpMul: 1.48, spdMul: 1.15, scaleMul: 1.22, bulletHell: true, summonMinions: true, skillCdMul: 0.72 }
 ];
 
+const BOSS_PRIMAL_MAP = {
+  150: { formId: 10150, name: "超级超梦X", color: "#ea80fc" },
+  382: { formId: 10382, name: "原始盖欧卡", color: "#00b0ff" },
+  383: { formId: 10383, name: "原始固拉多", color: "#ff3d00" },
+  384: { formId: 10384, name: "超级裂空座", color: "#00e676" },
+  800: { formId: 10800, name: "究极奈克洛兹玛", color: "#ffd600" }
+};
+
 const TYPE_META = {
   normal:   { color: "#a8a878", icon: "./assets/items/silk-scarf.png" },
   fighting: { color: "#c03028", icon: "./assets/items/black-belt.png" },
@@ -1268,12 +1276,11 @@ function drawPokemonSprite(ctx, pid, x, y, vx, vy, animTime, scale = 1.6, flashW
 
   ctx.drawImage(img, sx, sy, fw, fh, dx, dy, dw, dh);
   if (flashWhite) {
-    const sil = getWhiteSilhouette(src, img);
-    if (sil) {
-      ctx.globalAlpha = 0.75;
-      ctx.drawImage(sil, sx, sy, fw, fh, dx, dy, dw, dh);
-      ctx.globalAlpha = 1.0;
-    }
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(x | 0, (y - hopY) | 0, (dw * 0.34) | 0, 0, Math.PI * 2);
+    ctx.stroke();
   }
 }
 
@@ -1331,6 +1338,7 @@ function playCry(pid) {
 }
 
 let audioCtx = null;
+let activeOscCount = 0;
 let lastHitSfxTime = 0;
 let lastGemSfxTime = 0;
 
@@ -1338,31 +1346,37 @@ function sfx(type) {
   try {
     const nowMs = performance.now();
     if (type === "hit") {
-      if (nowMs - lastHitSfxTime < 68) return; // Throttle hit sfx to max 14/sec so multi-hit AoEs never lag WebAudio!
+      if (nowMs - lastHitSfxTime < 85) return;
       lastHitSfxTime = nowMs;
     } else if (type === "gem") {
-      if (nowMs - lastGemSfxTime < 55) return;
+      if (nowMs - lastGemSfxTime < 70) return;
       lastGemSfxTime = nowMs;
     }
+    if (activeOscCount >= 6 && (type === "hit" || type === "gem")) return;
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === "suspended") audioCtx.resume();
+    if (audioCtx.state === "suspended") return;
     const now = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain);
     gain.connect(audioCtx.destination);
+    activeOscCount++;
+    osc.onended = () => {
+      activeOscCount = Math.max(0, activeOscCount - 1);
+      try { osc.disconnect(); gain.disconnect(); } catch (e) {}
+    };
     if (type === "gem") {
       osc.type = "sine";
       osc.frequency.setValueAtTime(720, now);
       osc.frequency.exponentialRampToValueAtTime(1150, now + 0.05);
-      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.setValueAtTime(0.055, now);
       gain.gain.linearRampToValueAtTime(0.001, now + 0.055);
       osc.start(now); osc.stop(now + 0.06);
     } else if (type === "hit") {
       osc.type = "triangle";
       osc.frequency.setValueAtTime(160, now);
       osc.frequency.linearRampToValueAtTime(65, now + 0.045);
-      gain.gain.setValueAtTime(0.045, now);
+      gain.gain.setValueAtTime(0.04, now);
       gain.gain.linearRampToValueAtTime(0.001, now + 0.045);
       osc.start(now); osc.stop(now + 0.05);
     } else if (type === "level") {
@@ -1371,7 +1385,7 @@ function sfx(type) {
       osc.frequency.setValueAtTime(554, now + 0.07);
       osc.frequency.setValueAtTime(659, now + 0.14);
       osc.frequency.setValueAtTime(880, now + 0.21);
-      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.setValueAtTime(0.08, now);
       gain.gain.linearRampToValueAtTime(0.001, now + 0.34);
       osc.start(now); osc.stop(now + 0.35);
     } else if (type === "chest") {
@@ -1380,7 +1394,7 @@ function sfx(type) {
       osc.frequency.setValueAtTime(659, now + 0.08);
       osc.frequency.setValueAtTime(784, now + 0.16);
       osc.frequency.setValueAtTime(1046, now + 0.24);
-      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.setValueAtTime(0.10, now);
       gain.gain.linearRampToValueAtTime(0.001, now + 0.45);
       osc.start(now); osc.stop(now + 0.46);
     }
@@ -1663,10 +1677,18 @@ function updateJoystickFromPoint(clientX, clientY) {
   }
 }
 
+function resetJoystick() {
+  JOY.active = false;
+  JOY.id = null;
+  JOY.dx = 0;
+  JOY.dy = 0;
+  JOY.dist = 0;
+}
+
 canvas.addEventListener("touchstart", e => {
   if (!RUN || RUN.paused || RUN.over) return;
   e.preventDefault();
-  if (!JOY.active && e.changedTouches.length > 0) {
+  if (e.changedTouches.length > 0) {
     const t = e.changedTouches[0];
     JOY.active = true;
     JOY.id = t.identifier;
@@ -2057,7 +2079,13 @@ function updateHudSlots() {
     hexBar.innerHTML = badges;
   }
 
-  document.getElementById("hud-hp").textContent = `${Math.ceil(RUN.hp)}/${RUN.maxHp}`;
+  updateHpHud();
+}
+
+function updateHpHud() {
+  if (!RUN) return;
+  const hpEl = document.getElementById("hud-hp");
+  if (hpEl) hpEl.textContent = `${Math.ceil(RUN.hp)}/${RUN.maxHp}`;
   const rrEl = document.getElementById("hud-rerolls");
   if (rrEl) rrEl.textContent = RUN.rerolls || 0;
 }
@@ -2080,6 +2108,7 @@ function popNextModal() {
   }
   RUN.modalOpen = true;
   RUN.paused = true;
+  resetJoystick();
   const nextFn = RUN.modalQueue.shift();
   nextFn();
 }
@@ -3791,6 +3820,7 @@ function distToSegment(px, py, x1, y1, x2, y2) {
 function pauseRun() {
   if (!RUN || RUN.over || RUN.modalOpen) return;
   RUN.paused = true;
+  resetJoystick();
   const ov = document.getElementById("modal-ov");
   const box = document.getElementById("modal-box");
   ov.style.display = "flex";
@@ -3934,7 +3964,7 @@ function updateRun(dt) {
       RUN.regenAcc -= 1.0;
       const heal = Math.round(RUN.maxHp * 0.012 * Math.min(3, leftoversLv)) + Math.round(svRegenLv * 1.5) + innateRegen;
       RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(1, heal));
-      updateHudSlots();
+      updateHpHud();
     }
   }
 
@@ -4370,14 +4400,14 @@ function updateRun(dt) {
           return;
         }
       }
-      updateHudSlots();
+      updateHpHud();
     }
   }
 
   // Vampire Survivors Horde Density Scaled by Difficulty Tier (N1 / N2 / N3)!
   const dfCap = getActiveDiff().capMul;
   const targetEnemyCap = Math.min(168, Math.round((20 + RUN.level * 2.8 + Math.floor(timeMin * 9)) * dfCap));
-  RUN.spawnAcc += dt * (1.85 + RUN.level * 0.14 + timeMin * 0.38) * dfCap;
+  RUN.spawnAcc = Math.min(4, RUN.spawnAcc + dt * (1.85 + RUN.level * 0.14 + timeMin * 0.38) * dfCap);
   while (RUN.spawnAcc >= 1 && RUN.enemies.length < targetEnemyCap) {
     RUN.spawnAcc -= 1;
     spawnEnemy(false);
@@ -4618,13 +4648,13 @@ function updateRun(dt) {
             other.x += Math.cos(a) * 130;
             other.y += Math.sin(a) * 130;
           }
-          updateHudSlots();
+          updateHpHud();
         } else {
           endRun(false);
           return;
         }
       }
-      updateHudSlots();
+      updateHpHud();
     }
   }
 
@@ -4674,19 +4704,21 @@ function updateRun(dt) {
         const healAmt = Math.round(g.heal * berryBoost);
         RUN.hp = Math.min(RUN.maxHp, RUN.hp + healAmt);
         addPopup(RUN.x, RUN.y - 24, `+${healAmt} HP`, "#69f0ae", 1.0);
-        updateHudSlots();
+        updateHpHud();
       } else {
         RUN.xp += g.xp;
         if (RUN.awakening && !RUN.ultActive) {
           addUltimateCharge(0.35);
         }
         for (let k = 0; k < RUN.companions.length; k++) {
-          gainCompanionXp(RUN.companions[k], Math.max(1, Math.round(g.xp * 2.5)));
+          const comp = RUN.companions[k];
+          const oldLv = comp.level;
+          gainCompanionXp(comp, Math.max(1, Math.round(g.xp * 2.5)));
+          if (comp.level !== oldLv) updateHudSlots();
         }
         if (RUN.xp >= RUN.xpNeed) {
           RUN.pendingLevelUp = true;
         }
-        updateHudSlots();
       }
     }
   }
