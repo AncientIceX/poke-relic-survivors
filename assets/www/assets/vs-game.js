@@ -319,17 +319,17 @@ const DIFFICULTIES = [
   {
     id: "n1",
     code: "N1",
-    name: "N1 · 标准冒险",
-    tag: "正统爽游",
+    name: "N1 · 标准幸存者",
+    tag: "正统抗压",
     color: "#69f0ae",
-    hpMul: 0.72,
-    atkMul: 0.78,
-    spdMul: 0.90,
-    timeScaleMul: 0.65,
-    capMul: 0.90,
-    eliteMul: 0.85,
+    hpMul: 1.08,
+    atkMul: 0.95,
+    spdMul: 0.95,
+    timeScaleMul: 0.92,
+    capMul: 1.05,
+    eliteMul: 1.00,
     lvOffset: 0,
-    desc: "正统《吸血鬼幸存者》曲线：前2分钟走位聚怪（2~3下清小怪），中期合成★超武迎来割草爽感，后期迎战尸潮与传说头目！",
+    desc: "正统《吸血鬼幸存者》抗压节奏：怪潮刷新快、步步紧逼，必须走位聚怪、凑齐Lv.2催化被动合成★超武才能杀出重围！",
     condText: "初始开放",
     check: s => true
   },
@@ -337,16 +337,16 @@ const DIFFICULTIES = [
     id: "n2",
     code: "N2",
     name: "N2 · 精英道馆",
-    tag: "高压进阶",
+    tag: "高密度围城",
     color: "#ffd54f",
-    hpMul: 1.00,
-    atkMul: 0.98,
-    spdMul: 0.98,
-    timeScaleMul: 0.88,
-    capMul: 1.02,
-    eliteMul: 1.05,
+    hpMul: 1.48,
+    atkMul: 1.18,
+    spdMul: 1.02,
+    timeScaleMul: 1.15,
+    capMul: 1.20,
+    eliteMul: 1.22,
     lvOffset: 1,
-    desc: "进阶高压挑战：怪潮密度与韧性提升，3分钟后重甲怪潮合围，考验跨系武器搭配、★超武催化与元素套装羁绊！",
+    desc: "高密度重甲怪潮 + 护盾精英频繁突袭，容错率大幅收紧，考验元素套装羁绊、★超武与基因遗物的代价权衡！",
     condText: "在 N1 存活满 3 分钟或击败 1 只 Boss 解锁",
     check: s => s.maxTime >= 180 || s.bossKills >= 1
   },
@@ -354,20 +354,21 @@ const DIFFICULTIES = [
     id: "n3",
     code: "N3",
     name: "N3 · 冠军深渊",
-    tag: "硬核地狱",
+    tag: "绝境尸潮",
     color: "#ff5252",
-    hpMul: 1.32,
-    atkMul: 1.20,
-    spdMul: 1.05,
-    timeScaleMul: 1.12,
-    capMul: 1.15,
-    eliteMul: 1.25,
+    hpMul: 1.95,
+    atkMul: 1.42,
+    spdMul: 1.08,
+    timeScaleMul: 1.38,
+    capMul: 1.35,
+    eliteMul: 1.45,
     lvOffset: 2,
-    desc: "硬核地狱难度：全期高强度尸潮 + 双神同屏弹幕压制，必须善用基因遗物取舍、★★双超武合体与大招无敌帧方能通关！",
+    desc: "绝境级地狱尸潮：满屏高韧性怪海 + 双神同屏狂暴弹幕，唯有极致★★合体超武、精准封印选卡与极限走位方能生还！",
     condText: "累计击败 3 只 Boss 或单局达到 Lv.22 解锁",
     check: s => s.bossKills >= 3 || s.maxLevel >= 22
   }
 ];
+
 function getActiveDiff() {
   if (RUN && RUN.diff) return RUN.diff;
   const sel = (SAVE && SAVE.selectedDiff) || "n1";
@@ -893,9 +894,11 @@ function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false,
   const timeMin = RUN ? (RUN.time / 60) : 0;
 
   const df = getActiveDiff();
-  // Calibrated Wave Fortitude: Keeps wild TTK at ~2.5 hits early, ~1.2 hits at ★Super-Weapon spike, and ~2.8 hits in late horde waves!
-  const vsWaveFortitude = 1 + (Math.max(0, timeMin - 1.0) * 0.20 + Math.pow(Math.max(0, timeMin - 3.5), 1.25) * 0.22) * df.timeScaleMul;
-  const evoScale = (1 + pEvo * 0.24 + Math.max(0, pLv - 6) * 0.028) * vsWaveFortitude * df.hpMul;
+  // Coupled Wave Fortitude: Scales with elapsed time AND active weapon count / super-weapons so enemies ALWAYS push back!
+  const moveCnt = (RUN && RUN.moves) ? Math.max(0, RUN.moves.length - 1) : 0;
+  const superCnt = (RUN && RUN.moves) ? RUN.moves.filter(ms => isMoveSuperWeapon(ms)).length : 0;
+  const vsWaveFortitude = (1 + (Math.max(0, timeMin - 0.4) * 0.32 + Math.pow(Math.max(0, timeMin - 1.8), 1.38) * 0.38) * df.timeScaleMul) * (1 + moveCnt * 0.12 + superCnt * 0.22);
+  const evoScale = (1 + pEvo * 0.26 + Math.max(0, pLv - 5) * 0.035) * vsWaveFortitude * df.hpMul;
 
   let maxHp = coreHp;
   if (isPlayer) {
@@ -905,13 +908,13 @@ function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false,
     const goliathBonus = RUN ? (RUN.goliathHpBonus || 0) : 0;
     const goliathMul = (RUN && RUN.hexes && RUN.hexes.goliath) ? 1.18 : 1.0;
     const turtwigBonus = (RUN && RUN.baseId === 387) ? 1.20 : 1.0;
-    const glassMul = hasGeneticRelic("relic_glass_cannon") ? 0.70 : 1.0;
-    const speedDemonMul = hasGeneticRelic("relic_speed_demon") ? 0.82 : 1.0;
-    maxHp = Math.floor(((coreHp * 2.45 + 54) * (1 + evPct + vitStacks * 0.12 + shellBonus) * goliathMul * turtwigBonus * glassMul * speedDemonMul) + goliathBonus);
+    const glassMul = hasGeneticRelic("relic_glass_cannon") ? 0.65 : 1.0;
+    const speedDemonMul = hasGeneticRelic("relic_speed_demon") ? 0.80 : 1.0;
+    maxHp = Math.floor(((coreHp * 2.15 + 42) * (1 + evPct + vitStacks * 0.12 + shellBonus) * goliathMul * turtwigBonus * glassMul * speedDemonMul) + goliathBonus);
   } else if (isBoss) {
-    maxHp = Math.floor((coreHp * 11.5 + 220) * evoScale);
+    maxHp = Math.floor((coreHp * 13.5 + 280) * evoScale);
   } else {
-    maxHp = Math.floor((coreHp * 1.28 + 14) * evoScale);
+    maxHp = Math.floor((coreHp * 1.05 + 6) * evoScale);
   }
 
   const syns = isPlayer ? getActiveSynergyCounts() : null;
@@ -919,13 +922,11 @@ function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false,
   const statFn = (base, key) => {
     const raw = Math.floor(((2 * base + 31) * level) / 100) + 8;
     if (!isPlayer) {
-      // Important: Enemy DEF/SPD scales gently (only +5%/min) so player damage grows crisply,
-      // while Enemy ATK/SPA scales firmly (+12%/min) so enemies remain dangerous!
       if (key === "def" || key === "spd") {
-        const defMul = 1 + pEvo * 0.08 + Math.max(0, timeMin - 2.0) * 0.045 * df.timeScaleMul;
+        const defMul = 1 + pEvo * 0.10 + Math.max(0, timeMin - 1.5) * 0.055 * df.timeScaleMul;
         return Math.max(6, Math.floor(raw * defMul));
       }
-      const enemyAtkMul = (1 + pEvo * 0.14 + (timeMin * 0.10 + Math.pow(Math.max(0, timeMin - 3.5), 1.18) * 0.10) * df.timeScaleMul) * df.atkMul;
+      const enemyAtkMul = (1 + pEvo * 0.16 + (timeMin * 0.13 + Math.pow(Math.max(0, timeMin - 3.0), 1.22) * 0.12) * df.timeScaleMul) * df.atkMul;
       return Math.max(8, Math.floor(raw * enemyAtkMul));
     }
     let bonusPct = getEvBonusPct(key) * 0.01 + ((runBuffs && runBuffs[key]) || 0) * 0.04;
@@ -993,15 +994,16 @@ function hasMoveMod(mSlot, modId) {
 
 function computeMoveCooldown(moveId, attackerStats, heldItems = null, mSlot = null) {
   const m = MOVES_DB[moveId];
-  if (!m) return 1.15;
+  if (!m) return 1.35;
   const effPower = m.p * (m.h > 1 ? (m.h > 2 ? 2.1 : 1.55) : 1.0);
-  let baseCd = 0.74 + Math.pow(effPower / 42, 0.68) * 0.45;
-  if (m.pat === "bible_orbit") baseCd = 2.4;
-  else if (m.pat === "santa_hazard" || m.pat === "gravity_well") baseCd = 2.1;
-  else if (m.pat === "sonic_boom") baseCd = 1.04;
-  else if (m.pat === "fist_flurry" || m.pat === "spear_thrust") baseCd *= 0.86;
+  // Vampire Survivors Pacing: Base cooldowns start at ~1.25s~1.65s so cooldown reduction items feel genuinely impactful!
+  let baseCd = 0.88 + Math.pow(effPower / 40, 0.68) * 0.52;
+  if (m.pat === "bible_orbit") baseCd = 2.6;
+  else if (m.pat === "santa_hazard" || m.pat === "gravity_well") baseCd = 2.25;
+  else if (m.pat === "sonic_boom") baseCd = 1.18;
+  else if (m.pat === "fist_flurry" || m.pat === "spear_thrust") baseCd *= 0.88;
 
-  const speFactor = Math.max(0.68, Math.min(1.12, 110 / (85 + attackerStats.spe * 0.42)));
+  const speFactor = Math.max(0.72, Math.min(1.12, 110 / (85 + attackerStats.spe * 0.40)));
   const scarfBonus = Math.pow(0.95, getPassiveLv("choice_scarf"));
 
   let hexCdMul = 1.0;
@@ -1009,7 +1011,7 @@ function computeMoveCooldown(moveId, attackerStats, heldItems = null, mSlot = nu
     const scd = hasMoveMod(mSlot, "s_cd");
     if (scd > 0) hexCdMul *= Math.pow(0.90, scd);
     const gat = hasMoveMod(mSlot, "gatling");
-    if (gat > 0) hexCdMul *= Math.pow(0.75, gat);
+    if (gat > 0) hexCdMul *= Math.pow(0.76, gat);
     if (isMoveSuperWeapon(mSlot)) hexCdMul *= 0.88;
     if (mSlot.unionData) hexCdMul *= 0.88;
   }
@@ -1030,14 +1032,9 @@ function computeMoveCooldown(moveId, attackerStats, heldItems = null, mSlot = nu
     if (RUN.baseId === 912 && (RUN.quaxlyDanceT || 0) > 0) hexCdMul *= 0.82;
     if (RUN.ultActive) hexCdMul *= 0.76;
   }
-  return Math.max(0.38, baseCd * speFactor * scarfBonus * hexCdMul);
+  return Math.max(0.46, baseCd * speFactor * scarfBonus * hexCdMul);
 }
 
-// ============================================================================
-// Additive Damage Bucket Architecture (Prevents Exponential 12x One-Shot Inflation!)
-// Instead of multiplying 14 separate multipliers (`1.3^10 = 13.7x`), all passive/hex/relic
-// % damage bonuses sum into an Additive Bucket (`1 + bonusDmgPct`), with soft diminishing returns!
-// ============================================================================
 function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, defenderStats, aoeScale = 1.0, heldItems = null, mSlot = null, targetEnemy = null) {
   const m = MOVES_DB[moveId];
   if (!m) return { dmg: 5, eff: 1.0, isCrit: false, stab: 1.0 };
@@ -1051,8 +1048,8 @@ function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, d
   const isPlayerAtk = (RUN && attackerStats === RUN.stats);
   const isTera = isPlayerAtk && RUN.ultActive && RUN.awakening && RUN.awakening.kind === "tera";
   const hasProtean = isPlayerAtk && (RUN.baseId === 656 || RUN.baseId === 813 || hasGeneticRelic("relic_elemental_conductor"));
-  const stab = (hasProtean || attackerStats.types.includes(m.t)) ? (isTera ? 1.85 : 1.35) : 1.0;
-  const awkMul = (isPlayerAtk && RUN.ultActive) ? 1.30 : 1.0;
+  const stab = (hasProtean || attackerStats.types.includes(m.t)) ? (isTera ? 1.80 : 1.30) : 1.0;
+  const awkMul = (isPlayerAtk && RUN.ultActive) ? 1.28 : 1.0;
 
   let eff = getTypeEffectiveness(m.t, defenderStats.types);
 
@@ -1090,7 +1087,6 @@ function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, d
   const isCrit = Math.random() * 100 < ((m.cr || 6) + extraCrit);
   const critMul = isCrit ? critDmgMul : (isPlayerAtk && hasGeneticRelic("relic_crit_nova") ? 0.80 : 1.0);
 
-  // Additive Bonus Damage Bucket (`bonusDmgPct`)
   let bonusDmgPct = 0;
   let evoTierMul = 1.0;
 
@@ -1098,19 +1094,18 @@ function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, d
     bonusDmgPct += mSlot.mods.length * 0.06;
     bonusDmgPct += hasMoveMod(mSlot, "s_power") * 0.14;
     bonusDmgPct += hasMoveMod(mSlot, "colossal") * 0.18;
-    if (hasMoveMod(mSlot, "reaper") > 0) bonusDmgPct += 0.24;
+    if (hasMoveMod(mSlot, "reaper") > 0) bonusDmgPct += 0.22;
     if (targetEnemy && hasMoveMod(mSlot, "s_exec") > 0 && targetEnemy.hp <= targetEnemy.maxHp * 0.40) {
       bonusDmgPct += hasMoveMod(mSlot, "s_exec") * 0.22;
     }
     if (targetEnemy && (targetEnemy.isElite || targetEnemy.isBoss) && hasMoveMod(mSlot, "s_boss") > 0) {
       bonusDmgPct += hasMoveMod(mSlot, "s_boss") * 0.20;
     }
-    if (isMoveSuperWeapon(mSlot)) evoTierMul *= 1.24;
-    if (mSlot.unionData) evoTierMul *= 1.25;
+    if (isMoveSuperWeapon(mSlot)) evoTierMul *= 1.22;
+    if (mSlot.unionData) evoTierMul *= 1.24;
   }
 
   if (isPlayerAtk && RUN) {
-    // Passive Held Item Additive Bonuses
     if (getPassiveLv("life_orb") > 0) {
       bonusDmgPct += 0.09 * getPassiveLv("life_orb");
       if (targetEnemy && (targetEnemy.isElite || targetEnemy.isBoss)) bonusDmgPct += 0.06 * getPassiveLv("life_orb");
@@ -1128,7 +1123,6 @@ function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, d
       bonusDmgPct += 0.05 * getPassiveLv("muscle_band");
     }
 
-    // Genetic Relic Trade-Off Bonuses & Penalties!
     if (hasGeneticRelic("relic_blood_mage")) {
       bonusDmgPct += Math.min(0.45, Math.floor(RUN.maxHp / 20) * 0.03);
     }
@@ -1151,7 +1145,6 @@ function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, d
       bonusDmgPct += spdBonus * 0.80;
     }
 
-    // Elemental Synergy Set Additive Bonuses
     const syns = getActiveSynergyCounts();
     if (syns.syn_fire >= 2 && ["fire", "dragon"].includes(m.t)) bonusDmgPct += 0.14;
     if (syns.syn_water >= 2 && ["water", "ice"].includes(m.t)) bonusDmgPct += 0.14;
@@ -1189,12 +1182,11 @@ function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, d
     if (hasGeneticRelic("relic_lone_wolf")) bonusDmgPct += 0.45;
   }
 
-  // Soft diminishing returns above +160% bonus damage so player DPS stays in the sweet spot!
-  const effectiveBonus = bonusDmgPct > 1.60 ? (1.60 + (bonusDmgPct - 1.60) * 0.45) : bonusDmgPct;
+  const effectiveBonus = bonusDmgPct > 1.40 ? (1.40 + (bonusDmgPct - 1.40) * 0.40) : bonusDmgPct;
   const totalModMul = Math.max(0.45, 1 + effectiveBonus) * evoTierMul;
 
   const randVar = 0.94 + Math.random() * 0.12;
-  const baseDmg = (((2 * attackerLv / 5 + 2) * m.p * (A / D)) / 52 + 2);
+  const baseDmg = (((2 * attackerLv / 5 + 2) * m.p * (A / D)) / 56 + 2);
   let finalDmg = Math.max(2, Math.round(baseDmg * stab * eff * critMul * aoeScale * awkMul * totalModMul * randVar));
   if (isPlayerAtk && RUN.baseId === 390) {
     finalDmg += Math.round(RUN.level * 1.5);
@@ -2311,12 +2303,12 @@ function startRun() {
     fieldItems: [],
     popups: [],
     spawnAcc: 0,
-    swarmTimer: 32,
-    tmSpawnAcc: 34,
-    ballSpawnAcc: 44,
-    itemSpawnAcc: 28,
-    keystoneSpawnAcc: 65,
-    bossAcc: 42,
+    swarmTimer: 26,
+    tmSpawnAcc: 65,
+    ballSpawnAcc: 75,
+    itemSpawnAcc: 52,
+    keystoneSpawnAcc: 85,
+    bossAcc: 65,
     activeBoss: null
   };
 
@@ -2348,12 +2340,15 @@ function updateHudSlots() {
   const maxMoveSlots = getMaxMoveSlots();
   const moveWrap = document.getElementById("hud-moves");
   moveWrap.innerHTML = "";
+  moveWrap.style.pointerEvents = "auto";
   for (let i = 0; i < maxMoveSlots; i++) {
     const slot = RUN.moves[i];
     const cell = document.createElement("div");
     const isUnion = !!(slot && slot.unionData);
     const isSuper = isMoveSuperWeapon(slot);
     cell.className = "slot-cell" + (isUnion ? " union-move" : (isSuper ? " super-move" : ""));
+    cell.style.cursor = "pointer";
+    cell.onclick = (e) => { e.stopPropagation(); openBuildInspectorModal("moves"); };
     if (slot) {
       const m = MOVES_DB[slot.id];
       const tm = TYPE_META[m.t] || TYPE_META.normal;
@@ -2380,19 +2375,23 @@ function updateHudSlots() {
     moveWrap.appendChild(cell);
   }
 
-  // Passive Held Items Bar (Up to 6 Slots)
+  // Passive Held Items Bar (Up to 6 Slots, clickable to inspect!)
   const itemWrap = document.getElementById("hud-items");
   if (itemWrap) {
     itemWrap.innerHTML = "";
+    itemWrap.style.pointerEvents = "auto";
     const eqIds = getEquippedPassiveIds();
     for (let i = 0; i < 6; i++) {
       const pid = eqIds[i];
       const cell = document.createElement("div");
       cell.className = "slot-cell";
+      cell.style.cursor = "pointer";
+      cell.onclick = (e) => { e.stopPropagation(); openBuildInspectorModal("items"); };
       if (pid) {
         const pDef = PASSIVE_HELD_MAP[pid];
         const lv = getPassiveLv(pid);
         if (lv >= 5) cell.style.borderColor = "#ffd54f";
+        else if (lv >= 2) cell.style.borderColor = "#00e5ff";
         cell.innerHTML = `
           <span class="sname" style="color:#ffd54f;">${pDef.short}</span>
           <img src="${pDef.icon}" alt="" />
@@ -2407,10 +2406,13 @@ function updateHudSlots() {
 
   const compWrap = document.getElementById("hud-comps");
   compWrap.innerHTML = "";
+  compWrap.style.pointerEvents = "auto";
   for (let i = 0; i < 5; i++) {
     const comp = RUN.companions[i];
     const cell = document.createElement("div");
     cell.className = "slot-cell";
+    cell.style.cursor = "pointer";
+    cell.onclick = (e) => { e.stopPropagation(); openBuildInspectorModal("relics"); };
     if (comp) {
       const m = MOVES_DB[comp.moveId];
       cell.innerHTML = `
@@ -2426,6 +2428,9 @@ function updateHudSlots() {
 
   const hexBar = document.getElementById("hud-hex-bar");
   if (hexBar) {
+    hexBar.style.pointerEvents = "auto";
+    hexBar.style.cursor = "pointer";
+    hexBar.onclick = (e) => { e.stopPropagation(); openBuildInspectorModal("relics"); };
     const trait = STARTER_TRAITS[RUN.baseId];
     let badges = trait ? `<span class="hex-badge" style="border-color:#00e676;color:#b9f6ca;">🌟${trait.name.slice(1, 5)}</span>` : "";
     for (const rid of (RUN.relics || [])) {
@@ -2667,7 +2672,7 @@ function generateSingleHexChoice(excludeKeys = new Set()) {
       }
     }
     const pTier = (matchMoveName || curLv >= 3) ? "gold" : "silver";
-    if (pTier === tier || (matchMoveName && Math.random() < 0.45)) {
+    if ((pTier === tier && Math.random() < 0.55) || (matchMoveName && Math.random() < 0.30)) {
       candidates.push({
         key,
         kind: "passive_held",
@@ -2707,7 +2712,7 @@ function generateSingleHexChoice(excludeKeys = new Set()) {
   }
 
   // 3. Open Cross-Element Weapon Learning (Any Pokémon can draft native moves OR cross-element Open Arcana moves!)
-  if (RUN.moves.length < maxMoveSlots && (tier === "gold" || Math.random() < 0.42)) {
+  if (RUN.moves.length < maxMoveSlots && (RUN.moves.length < 2 || tier === "gold" || Math.random() < 0.52)) {
     const lsData = STARTER_LEARNSETS[RUN.baseId];
     const ownedIds = new Set(RUN.moves.map(x => x.id));
     const nativePool = [...lsData.levelMoves.map(x => x[0]), ...lsData.tmMoves];
@@ -3555,7 +3560,8 @@ function triggerCompanionBallModal() {
 // ============================================================================
 function computeNextLevelXpNeed(lv) {
   const d = Math.max(1, lv - 4);
-  return Math.round(16 + d * 8 + Math.pow(d, 2.08) * 1.35);
+  // Vampire Survivors Marginal XP Curve: Lv.5->6=20 XP, Lv.10=92 XP, Lv.15=245 XP, Lv.20=510 XP, Lv.26=980 XP
+  return Math.round(18 + d * 10 + Math.pow(d, 2.25) * 1.85);
 }
 
 function triggerEvolutionBranchModal(newSpeciesId, newSigMoveId) {
@@ -4560,28 +4566,27 @@ function triggerSwarmAmbush() {
 function checkClimaxWaveEvents() {
   if (!RUN) return;
   const timeMin = RUN.time / 60;
-  const nextMilestone = (RUN.waveEventIdx + 1) * 1.35; // Every ~81s
+  const nextMilestone = (RUN.waveEventIdx + 1) * 1.5; // Every 90s (1.5m, 3.0m, 4.5m, 6.0m...)
   if (timeMin < nextMilestone) return;
   RUN.waveEventIdx++;
 
   if (RUN.waveEventIdx % 3 === 1) {
-    for (let i = 0; i < 18; i++) {
-      const a = (i / 18) * Math.PI * 2;
-      spawnEnemy(false, a, 215, true);
+    for (let i = 0; i < 20; i++) {
+      const a = (i / 20) * Math.PI * 2;
+      spawnEnemy(false, a, 205, true);
     }
-    spawnFieldItem(true, "chest", RUN.x + 65, RUN.y - 45);
-    addPopup(RUN.x, RUN.y - 60, "🚨 波次高潮：【精英包围网】+ 掉落黄金进化宝箱！", "#ff1744", 1.38);
+    addPopup(RUN.x, RUN.y - 60, "🚨 波次高潮：【铁壁精英包围网】合围突袭！", "#ff1744", 1.38);
   } else if (RUN.waveEventIdx % 3 === 2) {
     spawnEnemy(true);
     spawnEnemy(true);
     spawnAwakeningRelicItem(RUN.x + 85, RUN.y - 65);
-    addPopup(RUN.x, RUN.y - 64, "🌋 波次高潮：【双神头目降临】+ 刷新超进化信物！", "#ffd600", 1.42);
+    addPopup(RUN.x, RUN.y - 64, "🌋 波次高潮：【双神头目同屏降临】+ 刷新超进化信物！", "#ffd600", 1.42);
   } else {
-    for (let i = 0; i < 22; i++) {
-      const a = (i / 22) * Math.PI * 2;
-      spawnEnemy(false, a, 200, i % 2 === 0);
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2;
+      spawnEnemy(false, a, 195, i % 2 === 0);
     }
-    triggerGeneticRelicDraft("🧬 波次突破空投：额外选择 1 项基因改造遗物！");
+    triggerGeneticRelicDraft("🧬 波次突破空投：选择第 2 项基因改造遗物！");
   }
 }
 
@@ -4649,37 +4654,39 @@ function killEnemy(e, mSlot = null) {
   if (e.isBoss) {
     RUN.bossesKilledThisRun++;
     SAVE.bossKills = (SAVE.bossKills || 0) + 1;
-    RUN.rerolls = (RUN.rerolls || 0) + 2;
-    RUN.banishes = (RUN.banishes || 0) + 1;
+    RUN.rerolls = (RUN.rerolls || 0) + 1;
     writeSave();
-    spawnFieldTM(true);
-    spawnCompanionBall(false, e.x - 28, e.y);
+    // Boss drops a physical Treasure Chest at its death location (player must fight through the horde to pick it up!)
+    spawnFieldItem(false, "chest", e.x, e.y);
+    if (RUN.bossesKilledThisRun % 2 === 1) {
+      spawnCompanionBall(false, e.x - 28, e.y);
+    } else {
+      spawnFieldTM(true);
+    }
     spawnFieldItem(false, "vitamin", e.x + 28, e.y);
 
-    if (!RUN.awakening || Math.random() < 0.55) {
+    if ((!RUN.awakening && RUN.level >= 13) || Math.random() < 0.40) {
       spawnAwakeningRelicItem(e.x, e.y - 26);
     }
 
-    RUN.gems.push({ x: e.x, y: e.y + 18, xp: 45, tier: 3, kind: "xp" });
-    addPopup(e.x, e.y - 24, `🎁 击败头目 ${POKEMON_ZH[e.species]}！开启豪华宝箱 & +2🎲骰子！`, "#ff80ab", 1.28);
-    // Boss kill immediately triggers a Vampire-Survivors Boss Treasure Chest Jackpot!
-    triggerTreasureChestModal(true);
+    RUN.gems.push({ x: e.x, y: e.y + 18, xp: 24, tier: 3, kind: "xp" });
+    addPopup(e.x, e.y - 24, `🎁 击败头目 ${POKEMON_ZH[e.species]}！掉落【黄金进化宝箱】与战利品！`, "#ff80ab", 1.28);
   } else {
     const roll = Math.random();
-    const xpBoost = 1 + getPassiveLv("magnet_core") * 0.08;
-    const gemXp = Math.max(1, Math.round((e.isElite ? 9 : (e.level >= 20 ? 3 : 2)) * xpBoost));
-    const gemTier = e.isElite ? 2 : (e.level >= 20 ? 1 : 0);
+    const xpBoost = 1 + getPassiveLv("magnet_core") * 0.05;
+    const gemXp = Math.max(1, Math.round((e.isElite ? 6 : (e.level >= 22 ? 2 : 1)) * xpBoost));
+    const gemTier = e.isElite ? 2 : (e.level >= 22 ? 1 : 0);
     const chestHunterMul = (RUN.hexes && RUN.hexes.gd_chest_hunter) ? 2.0 : 1.0;
 
-    if (e.isElite && roll < 0.04 * chestHunterMul && RUN.level >= 10) {
+    if (e.isElite && roll < 0.025 * chestHunterMul && RUN.level >= 13) {
       spawnAwakeningRelicItem(e.x, e.y);
-    } else if (e.isElite && roll < 0.14 * chestHunterMul) {
+    } else if (e.isElite && roll < 0.05 * chestHunterMul) {
       spawnFieldItem(false, "chest", e.x, e.y);
-    } else if (roll < 0.016) {
-      RUN.gems.push({ x: e.x, y: e.y, heal: Math.round(RUN.maxHp * 0.18), kind: "berry" });
-    } else if (e.isElite && roll < 0.25) {
+    } else if (roll < 0.010) {
+      RUN.gems.push({ x: e.x, y: e.y, heal: Math.round(RUN.maxHp * 0.16), kind: "berry" });
+    } else if (e.isElite && roll < 0.14) {
       spawnFieldItem(false, null, e.x, e.y);
-    } else if (roll < 0.012) {
+    } else if (roll < 0.006) {
       spawnFieldItem(false, null, e.x, e.y);
     } else {
       if (RUN.gems.length > 140) {
@@ -4720,43 +4727,294 @@ function distToSegment(px, py, x1, y1, x2, y2) {
 }
 
 function pauseRun() {
+  openBuildInspectorModal("moves");
+}
+
+function openBuildInspectorModal(initialTab = "moves") {
   if (!RUN || RUN.over || RUN.modalOpen) return;
   RUN.paused = true;
   resetJoystick();
   const ov = document.getElementById("modal-ov");
   const box = document.getElementById("modal-box");
   ov.style.display = "flex";
-  const trait = STARTER_TRAITS[RUN.baseId];
-  const movesSummary = RUN.moves.map((ms, idx) => {
-    const m = MOVES_DB[ms.id];
-    const mods = ms.mods.map(mid => MOVE_HEX_MODS.find(x => x.id === mid)?.tag || mid).join("+");
-    const prefix = ms.unionData ? `★★${ms.unionData.name.split("：")[1] || "合体"}` : (isMoveSuperWeapon(ms) ? `★超武·${m.n}` : m.n);
-    return `槽${idx + 1}: ${prefix} [${mods || "无"}]`;
-  }).join("<br/>");
 
-  const passivesSummary = getEquippedPassiveIds().map(pid => `${PASSIVE_HELD_MAP[pid].name} Lv.${getPassiveLv(pid)}`).join(" · ") || "尚未装备";
-  const relicsSummary = (RUN.relics || []).map(rid => GENETIC_RELICS.find(r => r.id === rid)?.name).join(" · ") || "无";
+  let curTab = initialTab;
 
-  box.innerHTML = `
-    <div style="text-align:center;padding:8px;">
-      <div style="font-size:20px;font-weight:900;color:#ffe066;margin-bottom:8px;">⏸️ 暂停 · 幸存者构筑总览</div>
-      <div style="font-size:11px;color:#ccc;line-height:1.6;margin-bottom:12px;background:#160e22;padding:8px;border-radius:6px;text-align:left;">
-        主控：<b>Lv.${RUN.level} ${POKEMON_ZH[RUN.speciesId]}</b> (HP ${Math.ceil(RUN.hp)}/${RUN.maxHp} · 经验 ${RUN.xp}/${RUN.xpNeed})<br/>
-        本命特性：<b style="color:#00e676;">${trait ? trait.name : ""}</b><br/>
-        基因遗物：<b style="color:#80d8ff;">${relicsSummary}</b><br/>
-        携带道具：<b style="color:#ffd54f;">${passivesSummary}</b><br/>
-        六维：物攻${RUN.stats.atk} · 特攻${RUN.stats.spa} · 物防${RUN.stats.def} · 特防${RUN.stats.spd} · 速度${RUN.stats.spe}<br/>
-        超进化信物：<b style="color:#00e5ff;">${RUN.awakening ? RUN.awakening.title + ' (Lv.' + (1 + (RUN.ultUpgrades || 0)) + ')' : '尚未拾取信物'}</b><br/>
-        当前武器与词条：<br/><b style="color:#ffd54f;">${movesSummary}</b>
+  function renderInspector() {
+    const trait = STARTER_TRAITS[RUN.baseId];
+    const maxSockets = getMaxHexSocketsForStage(RUN.evoStage);
+    const syns = getActiveSynergyCounts();
+
+    const tabBtnStyle = (id) => `flex:1;padding:6px 4px;font-size:11px;font-weight:900;border-radius:6px;cursor:pointer;border:1.5px solid ${curTab === id ? "#ffd600" : "#5e4724"};background:${curTab === id ? "#3b2254" : "#160e22"};color:${curTab === id ? "#ffe066" : "#b8a0d8"};`;
+
+    let bodyHtml = "";
+
+    if (curTab === "moves") {
+      // Tab 1: Detailed Equipped Weapons, Live Cooldown, Damage Estimate, Socketed Mods & Catalyst Progress
+      const dummyEnemyStats = { def: 35, spd: 35, types: ["normal"] };
+      let movesHtml = "";
+      RUN.moves.forEach((ms, idx) => {
+        const m = MOVES_DB[ms.id];
+        if (!m) return;
+        const tm = TYPE_META[m.t] || TYPE_META.normal;
+        const isUnion = !!ms.unionData;
+        const isSuper = isMoveSuperWeapon(ms);
+        const cd = computeMoveCooldown(ms.id, RUN.stats, RUN.heldItems, ms);
+        const estDmg = calculatePokemonDamage(RUN.level, RUN.stats, ms.id, RUN.level, dummyEnemyStats, 1.0, RUN.heldItems, ms).dmg;
+        const rec = WEAPON_EVO_RECIPES[m.pat];
+        const catDetails = rec ? rec.cats.map(cid => {
+          const lv = getPassiveLv(cid);
+          const pName = PASSIVE_HELD_MAP[cid]?.name || cid;
+          return `<span style="color:${lv >= 2 ? '#69f0ae' : (lv === 1 ? '#ffd54f' : '#9e9e9e')};">${pName}(Lv.${lv}/2${lv >= 2 ? '✓' : ''})</span>`;
+        }).join(" 或 ") : "无";
+
+        const modsListHtml = ms.mods.length > 0
+          ? ms.mods.map(mid => {
+              const md = MOVE_HEX_MODS.find(x => x.id === mid);
+              const col = md?.tier === "prismatic" ? "#00e5ff" : (md?.tier === "gold" ? "#ffd54f" : "#cfd8dc");
+              return `<div style="font-size:10px;color:${col};margin-top:2px;">• ${md ? md.icon + " " + md.name : mid}：<span style="color:#ccc;">${md ? md.desc : ""}</span></div>`;
+            }).join("")
+          : `<div style="font-size:10px;color:#777;margin-top:2px;">• 尚未镶嵌海克斯词条（当前阶段上限 ${maxSockets} 槽）</div>`;
+
+        const borderCol = isUnion ? "#ffd600" : (isSuper ? "#00e5ff" : tm.color);
+        const statusBadge = isUnion
+          ? `<span style="background:#ffd600;color:#000;font-size:9px;font-weight:900;padding:1px 5px;border-radius:4px;">★★合体神话</span>`
+          : (isSuper
+              ? `<span style="background:#00e5ff;color:#000;font-size:9px;font-weight:900;padding:1px 5px;border-radius:4px;">★超武形态</span>`
+              : `<span style="background:#2a1b3d;color:#ffe066;font-size:9px;padding:1px 5px;border-radius:4px;">嵌槽 ${ms.mods.length}/${maxSockets}</span>`);
+
+        movesHtml += `
+          <div style="background:#1a1026;border:1.5px solid ${borderCol};border-radius:7px;padding:8px;margin-bottom:7px;text-align:left;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <img src="${tm.icon}" style="width:22px;height:22px;image-rendering:pixelated;" />
+                <b style="font-size:13px;color:${isUnion ? '#ffd600' : (isSuper ? '#00e5ff' : '#ffe066')};">
+                  槽位${idx + 1}：${isUnion ? ms.unionData.name : (isSuper && rec ? rec.superTitle + " (" + m.n + ")" : m.n)}
+                </b>
+                <span style="background:${tm.color};color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;">${TYPE_ZH[m.t]}·${m.c === 'physical' ? '物理' : '特殊'}</span>
+              </div>
+              ${statusBadge}
+            </div>
+            <div style="font-size:10px;color:#81d4fa;margin-top:3px;font-weight:700;">
+              ⚡ 预估单段伤害：<b style="color:#fff;">~${estDmg}</b> · ⏱️ 冷却：<b style="color:#69f0ae;">${cd.toFixed(2)}秒</b> · 基础威力：${m.p}
+            </div>
+            <div style="font-size:10px;color:#d8c8a8;margin-top:2px;">${isUnion ? ms.unionData.desc : (isSuper && rec ? rec.superDesc : m.mn)}</div>
+            <div style="background:#120a1c;padding:5px 7px;border-radius:5px;margin-top:4px;">
+              <div style="font-size:10px;font-weight:900;color:#ffe066;">已镶嵌词条 (${ms.mods.length}/${maxSockets})：</div>
+              ${modsListHtml}
+            </div>
+            ${!isSuper ? `
+            <div style="font-size:9px;color:#b3e5fc;margin-top:4px;">
+              🔮 <b>★超武合成条件</b>：嵌满 2 个词条 + 携带催化道具 ${catDetails}（或直接嵌满 3 个词条）➔ 进化为 <b style="color:#00e5ff;">${rec ? rec.superTitle : "★超武"}</b>
+            </div>` : ""}
+          </div>
+        `;
+      });
+      bodyHtml = movesHtml;
+    } else if (curTab === "items") {
+      // Tab 2: Equipped Passive Held Items (with Current Bonus & Catalyst Mapping) + Unowned Passives Catalog
+      const eqIds = getEquippedPassiveIds();
+      let eqHtml = "";
+      if (eqIds.length === 0) {
+        eqHtml = `<div style="background:#1a1026;border:1px dashed #5e4724;padding:10px;border-radius:6px;font-size:11px;color:#999;margin-bottom:8px;">当前尚未装备任何携带被动道具（升级三选一或开启宝箱可获取，最多携带 6 件）。</div>`;
+      } else {
+        for (const pid of eqIds) {
+          const p = PASSIVE_HELD_MAP[pid];
+          const lv = getPassiveLv(pid);
+          eqHtml += `
+            <div style="background:#1d122b;border:1.5px solid ${lv >= 2 ? '#00e5ff' : '#ffd54f'};border-radius:6px;padding:7px 8px;display:flex;align-items:center;gap:8px;margin-bottom:6px;text-align:left;">
+              <img src="${p.icon}" style="width:30px;height:30px;image-rendering:pixelated;flex-shrink:0;" />
+              <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <b style="font-size:12px;color:#ffe066;">${p.name} <span style="color:#69f0ae;">Lv.${lv} / ${p.maxLv}</span></b>
+                  <span style="font-size:9px;background:${lv >= 2 ? '#00e5ff' : '#37474f'};color:${lv >= 2 ? '#000' : '#ccc'};padding:1px 5px;border-radius:4px;font-weight:900;">
+                    ${lv >= 2 ? "★已激活超武催化资格" : "升至Lv.2可催化超武"}
+                  </span>
+                </div>
+                <div style="font-size:10px;color:#e0e0e0;margin-top:2px;">${p.desc}</div>
+                <div style="font-size:9px;color:#80d8ff;margin-top:2px;">${p.evoHint}</div>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      if ((RUN.heldItems && RUN.heldItems.focus_sash) > 0) {
+        eqHtml += `
+          <div style="background:#261818;border:1.5px solid #ff8a80;border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:8px;margin-bottom:6px;text-align:left;">
+            <img src="./assets/items/focus-sash.png" style="width:26px;height:26px;image-rendering:pixelated;" />
+            <div>
+              <b style="font-size:12px;color:#ff8a80;">气势披带 ×${RUN.heldItems.focus_sash} 层</b>
+              <div style="font-size:10px;color:#ccc;">受到致命伤害时保留 1 点 HP 并恢复 50% 生命、震退全屏怪物！</div>
+            </div>
+          </div>
+        `;
+      }
+
+      const unownedHtml = PASSIVE_HELD_POOL.filter(p => !eqIds.includes(p.id)).map(p => `
+        <div style="background:#140c1e;border:1px solid #4a3820;border-radius:5px;padding:5px 7px;display:flex;align-items:center;gap:7px;margin-bottom:4px;text-align:left;opacity:0.85;">
+          <img src="${p.icon}" style="width:24px;height:24px;image-rendering:pixelated;" />
+          <div style="flex:1;">
+            <b style="font-size:11px;color:#cbb98b;">${p.name} (未装备)</b>
+            <div style="font-size:9px;color:#aaa;">${p.desc} <span style="color:#80d8ff;">${p.evoHint}</span></div>
+          </div>
+        </div>
+      `).join("");
+
+      bodyHtml = `
+        <div style="text-align:left;font-size:11px;font-weight:900;color:#ffd54f;margin-bottom:4px;">🎒 已装备携带道具 (${eqIds.length} / 6 槽)：</div>
+        ${eqHtml}
+        <div style="text-align:left;font-size:11px;font-weight:900;color:#b8a0d8;margin:8px 0 4px 0;">📚 其他可刷出的携带道具图鉴：</div>
+        ${unownedHtml}
+      `;
+    } else if (curTab === "relics") {
+      // Tab 3: Starter Innate Trait, Genetic Relics, Elemental Set Synergies, Companions & Global Hex Augments
+      const relicsHtml = (RUN.relics && RUN.relics.length > 0)
+        ? RUN.relics.map(rid => {
+            const r = GENETIC_RELICS.find(x => x.id === rid);
+            return r ? `
+              <div style="background:#161e2e;border:1.5px solid #00e5ff;border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:8px;margin-bottom:5px;text-align:left;">
+                <div style="font-size:20px;">${r.icon}</div>
+                <div>
+                  <b style="font-size:12px;color:#00e5ff;">${r.name}</b>
+                  <div style="font-size:10px;color:#e0f7fa;margin-top:1px;">${r.desc}</div>
+                </div>
+              </div>` : "";
+          }).join("")
+        : `<div style="font-size:10px;color:#888;margin-bottom:6px;text-align:left;">• 达到 Lv.8 及波次高潮时解锁基因改造遗物。</div>`;
+
+      const synHtml = ELEMENT_SYNERGY_SETS.map(s => {
+        const cnt = syns[s.id] || 0;
+        const active2 = cnt >= 2;
+        const active4 = cnt >= 4;
+        return `
+          <div style="background:#181024;border:1px solid ${active4 ? '#ffd600' : (active2 ? '#ff80ab' : '#3e2c4a')};border-radius:5px;padding:5px 7px;margin-bottom:4px;text-align:left;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <b style="font-size:11px;color:${active2 ? '#ff80ab' : '#999'};">${s.name}</b>
+              <span style="font-size:10px;font-weight:900;color:${active4 ? '#ffd600' : (active2 ? '#69f0ae' : '#777')};">当前计数：${cnt}</span>
+            </div>
+            <div style="font-size:9px;color:${active2 ? '#e0e0e0' : '#666'};margin-top:1px;">${s.desc2} · <span style="color:${active4 ? '#ffd600' : '#666'};">${s.desc4}</span></div>
+          </div>
+        `;
+      }).join("");
+
+      const compsHtml = RUN.companions.length > 0
+        ? RUN.companions.map(c => {
+            const cm = MOVES_DB[c.moveId];
+            return `
+              <div style="background:#141d29;border:1px solid #4fc3f7;border-radius:5px;padding:5px 7px;display:flex;align-items:center;gap:7px;margin-bottom:4px;text-align:left;">
+                <img src="./assets/icons/${c.speciesId}.png" style="width:26px;height:26px;image-rendering:pixelated;" />
+                <div>
+                  <b style="font-size:11px;color:#81d4fa;">Lv.${c.level} ${POKEMON_ZH[c.speciesId]}</b>
+                  <span style="font-size:9px;color:#ffe066;margin-left:4px;">招牌技：【${cm ? cm.n : ""}】(${cm ? TYPE_ZH[cm.t] : ""}系)</span>
+                  <div style="font-size:9px;color:#bbb;">物攻${c.stats.atk} · 特攻${c.stats.spa} · 速度${c.stats.spe} · 下级经验 ${c.xp}/${c.xpNeed}</div>
+                </div>
+              </div>`;
+          }).join("")
+        : `<div style="font-size:10px;color:#888;margin-bottom:6px;text-align:left;">• 尚未招募同行宝可梦同伴（拾取场地精灵球可招募，最多 5 只）。</div>`;
+
+      const hexEntries = Object.entries(RUN.hexes || {});
+      const hexListHtml = hexEntries.length > 0
+        ? hexEntries.map(([hid, cnt]) => {
+            const hd = GLOBAL_HEX_POOL.find(x => x.id === hid);
+            if (!hd) return "";
+            const col = hd.tier === "prismatic" ? "#00e5ff" : (hd.tier === "gold" ? "#ffd54f" : "#cfd8dc");
+            return `
+              <div style="background:#1a1126;border:1px solid ${col};border-radius:5px;padding:5px 7px;margin-bottom:4px;text-align:left;">
+                <b style="font-size:11px;color:${col};">${hd.icon} ${hd.name} ${cnt > 1 ? "×" + cnt + "层" : ""}</b>
+                <div style="font-size:9px;color:#ccc;margin-top:1px;">${hd.desc}</div>
+              </div>`;
+          }).join("")
+        : `<div style="font-size:10px;color:#888;text-align:left;">• 尚未激活全局海克斯符文。</div>`;
+
+      bodyHtml = `
+        <div style="background:#192824;border:1.5px solid #00e676;padding:6px 8px;border-radius:6px;text-align:left;margin-bottom:7px;">
+          <b style="font-size:12px;color:#00e676;">🌟 本命流派特性：${trait ? trait.name : ""}</b>
+          <div style="font-size:10px;color:#e8f5e9;margin-top:2px;">${trait ? trait.desc : ""}</div>
+        </div>
+        <div style="text-align:left;font-size:11px;font-weight:900;color:#00e5ff;margin-bottom:4px;">🧬 已激活基因改造遗物：</div>
+        ${relicsHtml}
+        <div style="text-align:left;font-size:11px;font-weight:900;color:#ff80ab;margin:6px 0 4px 0;">⚛️ 元素套装羁绊（武器+同伴属性合计）：</div>
+        ${synHtml}
+        <div style="text-align:left;font-size:11px;font-weight:900;color:#81d4fa;margin:6px 0 4px 0;">🤝 同行宝可梦同伴 (${RUN.companions.length}/5)：</div>
+        ${compsHtml}
+        <div style="text-align:left;font-size:11px;font-weight:900;color:#ffd54f;margin:6px 0 4px 0;">⚡ 已激活海克斯强化符文 (${hexEntries.length})：</div>
+        ${hexListHtml}
+      `;
+    } else {
+      // Tab 4: Complete Super-Weapon Evolution & Dual Union Recipe Cheat Sheet
+      const unionHtml = WEAPON_UNIONS.map(u => `
+        <div style="background:#261033;border:1.5px solid ${u.color};border-radius:6px;padding:6px 8px;margin-bottom:5px;text-align:left;">
+          <b style="font-size:11px;color:${u.color};">${u.name}</b>
+          <div style="font-size:9px;color:#e0d4b8;margin-top:2px;">${u.desc}</div>
+        </div>
+      `).join("");
+
+      const catTableHtml = Object.entries(WEAPON_EVO_RECIPES).map(([pat, r]) => {
+        const catNames = r.cats.map(cid => PASSIVE_HELD_MAP[cid]?.name || cid).join(" / ");
+        return `
+          <div style="background:#160f22;border:1px solid #4a3820;border-radius:5px;padding:5px 7px;margin-bottom:4px;text-align:left;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <b style="font-size:11px;color:#00e5ff;">${r.superTitle}</b>
+              <span style="font-size:9px;color:#ffd54f;">需：2词条 + 【${catNames}】Lv.2</span>
+            </div>
+            <div style="font-size:9px;color:#bbb;margin-top:1px;">${r.superDesc}</div>
+          </div>
+        `;
+      }).join("");
+
+      bodyHtml = `
+        <div style="text-align:left;font-size:11px;font-weight:900;color:#ffd600;margin-bottom:4px;">🌌 6大 ★★双超武合体配方（合体后腾出1个武器槽！）：</div>
+        ${unionHtml}
+        <div style="text-align:left;font-size:11px;font-weight:900;color:#00e5ff;margin:8px 0 4px 0;">🌟 23类招式 ★超武催化合成表：</div>
+        ${catTableHtml}
+      `;
+    }
+
+    box.innerHTML = `
+      <div style="padding:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:7px;">
+            <img src="./assets/portraits/${RUN.speciesId}.png" style="width:38px;height:38px;image-rendering:pixelated;border:1.5px solid #ffd54f;border-radius:6px;" />
+            <div style="text-align:left;">
+              <b style="font-size:15px;color:#ffe066;">⏸️ 战术暂停 · 局内构筑与技能详情</b>
+              <div style="font-size:10px;color:#b9f6ca;">
+                Lv.${RUN.level} ${POKEMON_ZH[RUN.speciesId]} · HP ${Math.ceil(RUN.hp)}/${RUN.maxHp} · 物攻${RUN.stats.atk}/特攻${RUN.stats.spa}/物防${RUN.stats.def}/特防${RUN.stats.spd}/速度${RUN.stats.spe}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:4px;margin-bottom:8px;">
+          <button data-tab="moves" style="${tabBtnStyle('moves')}">⚔️ 武器(${RUN.moves.length})</button>
+          <button data-tab="items" style="${tabBtnStyle('items')}">🎒 道具(${getEquippedPassiveIds().length}/6)</button>
+          <button data-tab="relics" style="${tabBtnStyle('relics')}">🧬 遗物&羁绊</button>
+          <button data-tab="recipes" style="${tabBtnStyle('recipes')}">📖 合成表</button>
+        </div>
+
+        <div style="max-height:54vh;overflow-y:auto;padding-right:2px;-webkit-overflow-scrolling:touch;">
+          ${bodyHtml}
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;padding-top:6px;border-top:1px solid #4a3520;">
+          <button id="btn-resume" class="vs-btn green" style="flex:2;font-size:14px;">▶ 继续战斗</button>
+          <button id="btn-quit" class="vs-btn" style="flex:1;font-size:12px;">结算退出</button>
+        </div>
       </div>
-      <div style="display:flex;gap:10px;justify-content:center;">
-        <button id="btn-resume" class="vs-btn green" style="flex:1;">继续战斗</button>
-        <button id="btn-quit" class="vs-btn" style="flex:1;">结算返回主菜单</button>
-      </div>
-    </div>
-  `;
-  box.querySelector("#btn-resume").onclick = resumeRun;
-  box.querySelector("#btn-quit").onclick = () => endRun(false);
+    `;
+
+    box.querySelectorAll("[data-tab]").forEach(btn => {
+      btn.onclick = () => {
+        curTab = btn.getAttribute("data-tab");
+        sfx("gem");
+        renderInspector();
+      };
+    });
+    box.querySelector("#btn-resume").onclick = resumeRun;
+    box.querySelector("#btn-quit").onclick = () => endRun(false);
+  }
+
+  renderInspector();
 }
 
 function resumeRun() {
@@ -5325,10 +5583,12 @@ function updateRun(dt) {
     }
   }
 
-  // Horde Density
+  // True Bullet-Heaven Horde Density: High spawn rate + minimum floor replenishment so the screen is NEVER empty!
   const dfCap = getActiveDiff().capMul;
-  const targetEnemyCap = Math.min(165, Math.round((22 + RUN.level * 2.8 + Math.floor(timeMin * 9)) * dfCap));
-  RUN.spawnAcc = Math.min(4, RUN.spawnAcc + dt * (1.95 + RUN.level * 0.14 + timeMin * 0.38) * dfCap);
+  const targetEnemyCap = Math.min(185, Math.round((34 + RUN.level * 3.4 + Math.floor(timeMin * 14)) * dfCap));
+  const minHordeFloor = Math.min(95, Math.round((16 + timeMin * 9) * dfCap));
+  const deficitBoost = RUN.enemies.length < minHordeFloor ? 2.4 : 1.0;
+  RUN.spawnAcc = Math.min(8, RUN.spawnAcc + dt * (3.2 + RUN.level * 0.24 + timeMin * 0.85) * dfCap * deficitBoost);
   while (RUN.spawnAcc >= 1 && RUN.enemies.length < targetEnemyCap) {
     RUN.spawnAcc -= 1;
     spawnEnemy(false);
@@ -5336,41 +5596,41 @@ function updateRun(dt) {
 
   RUN.swarmTimer -= dt;
   if (RUN.swarmTimer <= 0) {
-    RUN.swarmTimer = Math.max(22, 34 - timeMin * 1.1);
+    RUN.swarmTimer = Math.max(18, 28 - timeMin * 1.1);
     triggerSwarmAmbush();
   }
 
   RUN.tmSpawnAcc -= dt;
   if (RUN.tmSpawnAcc <= 0) {
-    RUN.tmSpawnAcc = 36 + Math.random() * 12;
+    RUN.tmSpawnAcc = 62 + Math.random() * 16;
     spawnFieldTM(false);
   }
 
   RUN.ballSpawnAcc -= dt;
   if (RUN.ballSpawnAcc <= 0) {
-    RUN.ballSpawnAcc = 46 + Math.random() * 14;
+    RUN.ballSpawnAcc = 74 + Math.random() * 18;
     spawnCompanionBall(false);
   }
 
   RUN.itemSpawnAcc -= dt;
   if (RUN.itemSpawnAcc <= 0) {
-    RUN.itemSpawnAcc = 30 + Math.random() * 10;
+    RUN.itemSpawnAcc = 50 + Math.random() * 14;
     spawnFieldItem(false);
   }
 
   RUN.keystoneSpawnAcc -= dt;
   if (RUN.keystoneSpawnAcc <= 0) {
-    RUN.keystoneSpawnAcc = 68 + Math.random() * 20;
-    if (RUN.level >= 11 && Math.random() < (RUN.awakening ? 0.45 : 0.75)) {
+    RUN.keystoneSpawnAcc = 85 + Math.random() * 25;
+    if (RUN.level >= 13 && Math.random() < (RUN.awakening ? 0.35 : 0.65)) {
       spawnAwakeningRelicItem();
     }
   }
 
   RUN.bossAcc -= dt;
   if (RUN.bossAcc <= 0) {
-    RUN.bossAcc = Math.max(24, 38 - timeMin * 1.1) + Math.random() * 8;
+    RUN.bossAcc = Math.max(38, 62 - timeMin * 1.8) + Math.random() * 10;
     spawnEnemy(true);
-    if ((RUN.level >= 18 || timeMin >= 3.5) && Math.random() < 0.35) {
+    if ((RUN.level >= 20 || timeMin >= 4.0) && Math.random() < 0.35) {
       spawnEnemy(true);
       addPopup(RUN.x, RUN.y - 72, `⚡ 双神降临！两只传说头目同时现身！`, "#ffd600", 1.38);
     }
@@ -6540,6 +6800,10 @@ if (ultBtnEl) {
   ultBtnEl.addEventListener("touchstart", e => { e.stopPropagation(); e.preventDefault(); activateUltimateAwakening(); }, { passive: false });
 }
 document.getElementById("btn-pause").onclick = pauseRun;
+const inspectBtnEl = document.getElementById("btn-inspect");
+if (inspectBtnEl) {
+  inspectBtnEl.onclick = () => openBuildInspectorModal("moves");
+}
 document.getElementById("btn-bgm").onclick = () => {
   playBgmTrack(curBgmIdx + 1, false);
 };
