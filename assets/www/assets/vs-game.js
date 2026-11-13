@@ -319,56 +319,55 @@ const DIFFICULTIES = [
   {
     id: "n1",
     code: "N1",
-    name: "N1 · 爽快割草",
-    tag: "构筑爽游",
+    name: "N1 · 标准冒险",
+    tag: "正统爽游",
     color: "#69f0ae",
-    hpMul: 0.48,
-    atkMul: 0.56,
-    spdMul: 0.84,
-    timeScaleMul: 0.44,
-    capMul: 0.85,
-    eliteMul: 0.70,
-    lvOffset: -2,
-    desc: "怪潮血量大幅下调、经验与宝箱掉落丰厚，轻松凑齐★催化超武与★★双超武合体，体验满屏烟花割草！",
+    hpMul: 0.72,
+    atkMul: 0.78,
+    spdMul: 0.90,
+    timeScaleMul: 0.65,
+    capMul: 0.90,
+    eliteMul: 0.85,
+    lvOffset: 0,
+    desc: "正统《吸血鬼幸存者》曲线：前2分钟走位聚怪（2~3下清小怪），中期合成★超武迎来割草爽感，后期迎战尸潮与传说头目！",
     condText: "初始开放",
     check: s => true
   },
   {
     id: "n2",
     code: "N2",
-    name: "N2 · 道馆挑战",
-    tag: "黄金平衡",
+    name: "N2 · 精英道馆",
+    tag: "高压进阶",
     color: "#ffd54f",
-    hpMul: 0.72,
-    atkMul: 0.76,
-    spdMul: 0.92,
-    timeScaleMul: 0.68,
-    capMul: 0.95,
-    eliteMul: 0.90,
-    lvOffset: 0,
-    desc: "标准类幸存者黄金难度，怪群密度与压迫感适中，利用跨属性武器、被动催化与元素共鸣迎战传说Boss！",
-    condText: "在 N1 存活满 2 分钟或击败 1 只 Boss 解锁",
-    check: s => s.maxTime >= 120 || s.bossKills >= 1
+    hpMul: 1.00,
+    atkMul: 0.98,
+    spdMul: 0.98,
+    timeScaleMul: 0.88,
+    capMul: 1.02,
+    eliteMul: 1.05,
+    lvOffset: 1,
+    desc: "进阶高压挑战：怪潮密度与韧性提升，3分钟后重甲怪潮合围，考验跨系武器搭配、★超武催化与元素套装羁绊！",
+    condText: "在 N1 存活满 3 分钟或击败 1 只 Boss 解锁",
+    check: s => s.maxTime >= 180 || s.bossKills >= 1
   },
   {
     id: "n3",
     code: "N3",
     name: "N3 · 冠军深渊",
-    tag: "硬核狂潮",
+    tag: "硬核地狱",
     color: "#ff5252",
-    hpMul: 1.00,
-    atkMul: 0.95,
-    spdMul: 1.00,
-    timeScaleMul: 0.95,
-    capMul: 1.08,
-    eliteMul: 1.15,
-    lvOffset: 1,
-    desc: "高密度狂暴怪潮 + 双神同屏降临，需要合理规划6件携带被动、★催化超武、基因改造遗物与超进化时机！",
-    condText: "累计击败 3 只 Boss 或单局达到 Lv.20 解锁",
-    check: s => s.bossKills >= 3 || s.maxLevel >= 20
+    hpMul: 1.32,
+    atkMul: 1.20,
+    spdMul: 1.05,
+    timeScaleMul: 1.12,
+    capMul: 1.15,
+    eliteMul: 1.25,
+    lvOffset: 2,
+    desc: "硬核地狱难度：全期高强度尸潮 + 双神同屏弹幕压制，必须善用基因遗物取舍、★★双超武合体与大招无敌帧方能通关！",
+    condText: "累计击败 3 只 Boss 或单局达到 Lv.22 解锁",
+    check: s => s.bossKills >= 3 || s.maxLevel >= 22
   }
 ];
-
 function getActiveDiff() {
   if (RUN && RUN.diff) return RUN.diff;
   const sel = (SAVE && SAVE.selectedDiff) || "n1";
@@ -392,63 +391,63 @@ const VITAMIN_DROPS = [
 const PASSIVE_HELD_POOL = [
   {
     id: "muscle_band", name: "力量头带", short: "头带", icon: "./assets/items/muscle-band.png", maxLv: 5,
-    desc: "每级物攻与特攻+9%，近战挥砍/长鞭/拳击伤害额外+8%。",
-    evoHint: "★超武催化：【藤鞭/水流尾/强力鞭打】或【叶刃/火焰踢/贝壳刃/暗袭要害】"
+    desc: "每级物攻与特攻+5%，近战挥砍/长鞭/拳击伤害额外+5%。",
+    evoHint: "★超武催化(需嵌满2词条+本道具Lv.2)：【藤鞭/水流尾/强力鞭打】或【叶刃/火焰踢/贝壳刃】"
   },
   {
     id: "wise_glasses", name: "博识眼镜", short: "眼镜", icon: "./assets/items/wise-glasses.png", maxLv: 5,
-    desc: "每级特攻与物攻+9%，招式攻击范围与体积扩大+7%。",
-    evoHint: "★超武催化：【飞叶快刀/落英缤纷/花瓣舞/流水旋舞】或【爆音波/闪焰高歌/咏叹调】"
+    desc: "每级特攻与物攻+5%，招式攻击范围与体积扩大+5%。",
+    evoHint: "★超武催化(需嵌满2词条+本道具Lv.2)：【飞叶快刀/落英缤纷/花瓣舞/旋舞】或【爆音波/高歌/咏叹调】"
   },
   {
     id: "choice_scarf", name: "讲究围巾", short: "围巾", icon: "./assets/items/choice-scarf.png", maxLv: 5,
-    desc: "每级全招式冷却缩减-7%，移动速度提升+4%。",
-    evoHint: "★超武催化：【飞水手里剑/空气斩/十字剪】或【电光一闪/突袭/影子偷袭】"
+    desc: "每级全招式冷却缩减-5%，移动速度提升+3%。",
+    evoHint: "★超武催化(需嵌满2词条+本道具Lv.2)：【飞水手里剑/空气斩/十字剪】或【电光一闪/突袭/影子偷袭】"
   },
   {
     id: "scope_lens", name: "焦点镜", short: "焦点镜", icon: "./assets/items/scope-lens.png", maxLv: 5,
-    desc: "每级暴击率+8%，暴击伤害倍率+14%。",
-    evoHint: "★超武催化：【水枪/水炮/加农水炮/狙击/日光束】或【树叶/魔法叶/月亮之力/高速星星】"
+    desc: "每级暴击率+6%，暴击伤害倍率+10%。",
+    evoHint: "★超武催化(需嵌满2词条+本道具Lv.2)：【水枪/水炮/加农水炮/狙击/日光束】或【树叶/魔法叶/月亮之力】"
   },
   {
     id: "charcoal", name: "木炭火核", short: "木炭", icon: "./assets/items/charcoal.png", maxLv: 5,
-    desc: "每级火/龙/电系伤害+14%，灼烧持续伤害+25%且爆燃。",
-    evoHint: "★超武催化：【火花/喷射火焰/热风/大字爆炎/爆炸烈焰】或【喷火/疯狂植物/流星群】"
+    desc: "每级火/龙/电系伤害+8%，灼烧持续伤害+15%且死亡小范围爆燃。",
+    evoHint: "★超武催化(需嵌满2词条+本道具Lv.2)：【火花/喷射火焰/热风/大字爆炎】或【喷火/疯狂植物/流星群】"
   },
   {
     id: "mystic_water", name: "神秘水滴", short: "水滴", icon: "./assets/items/mystic-water.png", maxLv: 5,
-    desc: "每级水/冰/超能系伤害+14%，弹道飞行速度与持续时间+12%。",
-    evoHint: "★超武催化：【潮旋/冲浪/浊流/飞叶风暴】或【冰冻之风/暴风雪/冰冻光束】"
+    desc: "每级水/冰/超能系伤害+8%，弹道飞行速度与持续时间+10%。",
+    evoHint: "★超武催化(需嵌满2词条+本道具Lv.2)：【潮旋/冲浪/浊流/飞叶风暴】或【冰冻之风/暴风雪/冰冻光束】"
   },
   {
     id: "miracle_seed", name: "奇迹种子", short: "种子", icon: "./assets/items/miracle-seed.png", maxLv: 5,
-    desc: "每级草/毒/虫系伤害+14%，寄生/毒素附加率+15%且附带减速。",
-    evoHint: "★超武催化：【寄生种子/终极吸取】或【种子炸弹/污泥炸弹/魔法火焰/千变万花】"
+    desc: "每级草/毒/虫系伤害+8%，寄生/毒素附加率+10%且附带减速。",
+    evoHint: "★超武催化(需嵌满2词条+本道具Lv.2)：【寄生种子/终极吸取】或【种子炸弹/污泥炸弹/千变万花】"
   },
   {
     id: "shell_bell", name: "贝壳之铃", short: "贝壳铃", icon: "./assets/items/shell-bell.png", maxLv: 5,
-    desc: "每级全招式生命偷取+2.5%，最大HP+8%。",
-    evoHint: "★超武催化：【撞击/闪焰冲锋/波动冲/勇鸟猛攻】或【咬住/咬碎/火焰牙/冰冻牙】"
+    desc: "每级全招式生命偷取+1.5%，最大HP+6%。",
+    evoHint: "★超武催化(需嵌满2词条+本道具Lv.2)：【撞击/闪焰冲锋/波动冲/勇鸟猛攻】或【咬住/咬碎/火焰牙】"
   },
   {
     id: "rocky_helmet", name: "凸凸头盔", short: "头盔", icon: "./assets/items/rocky-helmet.png", maxLv: 5,
-    desc: "每级双防+12%，受击释放高伤荆棘震波并提升击退。",
-    evoHint: "★超武催化：【地震/木槌/大地之力/鼓击】或【落石/岩崩/双刃头锤】"
+    desc: "每级双防+9%，受击释放荆棘震波并提升击退。",
+    evoHint: "★超武催化(需嵌满2词条+本道具Lv.2)：【地震/木槌/大地之力/鼓击】或【落石/岩崩/双刃头锤】"
   },
   {
     id: "quick_claw", name: "先制之爪", short: "先制爪", icon: "./assets/items/quick-claw.png", maxLv: 5,
-    desc: "每级投射物穿透+1、弹道速度+12%，有概率立即重置冷却。",
-    evoHint: "★超武催化：【音速拳/近身战/十字劈/蛮力】或【木枝突刺/缝影/超级角击/铁头】"
+    desc: "每2级投射物穿透+1、弹道速度+10%，有概率缩减当前冷却。",
+    evoHint: "★超武催化(需嵌满2词条+本道具Lv.2)：【音速拳/近身战/十字劈/蛮力】或【木枝突刺/缝影/超级角击】"
   },
   {
     id: "life_orb", name: "生命宝珠", short: "命玉", icon: "./assets/items/life-orb.png", maxLv: 5,
-    desc: "每级全招式独立增伤+15%，对精英与传说头目伤害额外+10%。",
-    evoHint: "★超武催化：【暗影球/精神强念/预知未来】或【滚动/能量球/恶之波动/火焰球】"
+    desc: "每级全招式增伤+9%，对精英与传说头目伤害额外+6%（代价：每秒流失1点HP）。",
+    evoHint: "★超武催化(需嵌满2词条+本道具Lv.2)：【暗影球/精神强念/预知未来】或【滚动/能量球/恶之波动/火焰球】"
   },
   {
     id: "magnet_core", name: "磁力增幅器", short: "磁铁", icon: "./assets/items/magnet.png", maxLv: 5,
-    desc: "每级拾取半径+28%，经验获取量+8%，满级额外使全体投射物数量+1！",
-    evoHint: "★超武催化：任意嵌满2词条的招式皆可借满级磁力增幅器突破为★超武！"
+    desc: "每级拾取半径+20%，经验获取量+5%，满级(Lv.5)额外使全体投射物数量+1！",
+    evoHint: "★超武催化：任意嵌满2词条的招式皆可借满级(Lv.5)磁力增幅器突破为★超武！"
   }
 ];
 
@@ -542,40 +541,40 @@ const WEAPON_UNIONS = [
 // ============================================================================
 const GENETIC_RELICS = [
   {
-    id: "relic_glass_cannon", icon: "🔮", name: "基因遗物·双刀流玻璃大炮",
-    desc: "【规则改写】物攻与特攻直接提升 +55%、所有招式冷却缩减 -18%，但最大生命值降低 -25%！"
+    id: "relic_glass_cannon", icon: "🔮", name: "基因遗物·薄命双刀流",
+    desc: "【高风险代价】物攻与特攻提升 +28%、冷却缩减 -10%；但最大生命值降低 -35% 且双防降低 -20%（极易被秒，高手向）！"
   },
   {
-    id: "relic_blood_mage", icon: "🩸", name: "基因遗物·鲜血转换反应堆",
-    desc: "【规则改写】每拥有 10 点最大生命值额外转化为 +2.5% 全招式伤害；获得 +5% 全能吸血与每秒 1.5% 生命恢复！"
+    id: "relic_blood_mage", icon: "🩸", name: "基因遗物·燃血狂战炉",
+    desc: "【高风险代价】每拥有 20 点最大HP转化为 +3% 招式伤害，获得 +4% 吸血；但每秒持续燃烧流失 1.5% 当前生命值！"
   },
   {
-    id: "relic_lone_wolf", icon: "🐺", name: "基因遗物·孤高独行剑圣",
-    desc: "【规则改写】当场上没有同行同伴时，主角所有招式伤害提升 +45%、投射物数量 +1、移动速度 +15%！（若招募同伴则转为全同伴伤害+60%）"
+    id: "relic_lone_wolf", icon: "🐺", name: "基因遗物·孤高独行侠",
+    desc: "【构筑限制】不带任何同伴时，主角招式伤害 +24%、移速 +10%；若招募同伴，则主角自身伤害降低 -25%，全同伴伤害 +45%！"
   },
   {
-    id: "relic_elemental_conductor", icon: "⚛️", name: "基因遗物·万物元素交响曲",
-    desc: "【规则改写】所有跨属性招式皆享受 1.6× 本系加成(STAB)！每装备 1 种不同属性的招式，全伤害提升 +14% 且必定附带异常状态！"
+    id: "relic_elemental_conductor", icon: "⚛️", name: "基因遗物·跨系元素同调",
+    desc: "【构筑法则】跨属性招式享受本系加成(STAB)；每装备 1 种不同属性的招式伤害 +7%，但同属性招式冷却增加 +10%！"
   },
   {
-    id: "relic_turret_fortress", icon: "🏰", name: "基因遗物·重装移动炮台",
-    desc: "【规则改写】攻击范围与体积扩大 +35%、双防提升 +35%、投射物穿透 +2；站立不动时冷却速度额外加快 +25%！"
+    id: "relic_turret_fortress", icon: "🏰", name: "基因遗物·重装定身炮台",
+    desc: "【构筑限制】攻击范围 +25%、双防 +22%、站立不动时冷却加快 18%；但移动速度降低 -18%！"
   },
   {
-    id: "relic_gambler_dice", icon: "🎰", name: "基因遗物·命运赌徒黄金骰",
-    desc: "【规则改写】立即获得 +5 颗刷新骰子与 +3 次封印！每次使用🎲刷新骰子时，永久提升 +4% 全伤害与 +3% 暴击率（上限20次）！"
+    id: "relic_gambler_dice", icon: "🎰", name: "基因遗物·命运赌徒之骰",
+    desc: "【成长投资】立即获得 +4 颗刷新骰子与 +2 次封印；每次使用🎲刷新骰子时永久提升 +2.5% 伤害与 +2% 暴击率（上限12层）！"
   },
   {
-    id: "relic_crit_nova", icon: "💥", name: "基因遗物·星芒暴击连锁核",
-    desc: "【规则改写】暴击率 +18%；每次打出暴击时，从目标体内向四周分裂迸发 3 枚穿透星界飞刀（内置0.18秒冷却）！"
+    id: "relic_crit_nova", icon: "💥", name: "基因遗物·精密星芒刺客",
+    desc: "【高风险代价】暴击率 +14%，暴击时向四周分裂 3 枚星界飞针（内置0.35秒冷却）；但未暴击时基础伤害降低 -20%！"
   },
   {
-    id: "relic_swarm_commander", icon: "👑", name: "基因遗物·军团统帅同调",
-    desc: "【规则改写】开局立即免费获得 1 颗同伴精灵球！主角每次释放第 1 槽位招式，全体同伴立即同步齐射，且同伴继承主角 50% 暴击率！"
+    id: "relic_swarm_commander", icon: "👑", name: "基因遗物·召唤师契约",
+    desc: "【构筑限制】立即获得 1 颗同伴精灵球，释放第1槽招式时有 50% 概率号令同伴齐射；但主角自身招式伤害降低 -20%！"
   },
   {
-    id: "relic_speed_demon", icon: "⚡", name: "基因遗物·极速幻影引擎",
-    desc: "【规则改写】移动速度 +20%、拾取范围 +50%；你每拥有 1% 移动速度加成，转化为 +1.5% 全招式伤害与暴击伤害！"
+    id: "relic_speed_demon", icon: "⚡", name: "基因遗物·疾风游侠引擎",
+    desc: "【高风险代价】移速 +14%、拾取范围 +30%，移速加成的 80% 转化为伤害加成；但最大生命值降低 -20%！"
   }
 ];
 
@@ -844,7 +843,8 @@ function getEquippedPassiveIds() {
   return Object.keys(RUN.heldItems).filter(k => PASSIVE_HELD_MAP[k] && RUN.heldItems[k] > 0);
 }
 
-// Check if a move slot is eligible for ★Catalyst Evolution (2+ sockets OR Lv.12+ AND matching catalyst passive owned!)
+// Check if a move slot is eligible for ★Catalyst Evolution:
+// Requires at least 2 socket mods AND the matching Catalyst Passive at Lv.2+ (or Magnet Core at Lv.5)!
 function canMoveCatalystEvolve(mSlot) {
   if (!RUN || !mSlot) return false;
   if (mSlot.evolvedSuper || mSlot.mods.length >= 3) return true;
@@ -854,7 +854,7 @@ function canMoveCatalystEvolve(mSlot) {
   const rec = WEAPON_EVO_RECIPES[m.pat];
   if (!rec) return false;
   if (getPassiveLv("magnet_core") >= 5) return true;
-  return rec.cats.some(cid => getPassiveLv(cid) >= 1);
+  return rec.cats.some(cid => getPassiveLv(cid) >= 2);
 }
 
 function isMoveSuperWeapon(mSlot) {
@@ -866,16 +866,21 @@ function getMaxMoveSlots() {
   return 4 + Math.min(2, RUN.unionBonusSlots || 0);
 }
 
+// Coupled Enemy Level Scaling: Enemy level NEVER falls behind your player level (`pLv * 0.96 + timeLv`)!
+// Coupled Enemy Level Scaling: Keeps enemy level within a tight band of player level (`pLv` to `pLv + 6`)
+// so the Pokémon `(A / D)` defense ratio never crushes player damage into 1-damage scratches!
 function getTargetEnemyLevel(isBoss = false, isElite = false) {
-  if (!RUN) return 4;
+  if (!RUN) return 5;
   const df = getActiveDiff();
   const pLv = RUN.level || 5;
   const timeMin = RUN.time / 60;
   const tScale = df.timeScaleMul;
-  const timeLv = (timeMin * 2.4 + Math.pow(Math.max(0, timeMin - 3.0), 1.38) * 1.7) * tScale;
-  const baseLv = Math.round(Math.max(pLv * (0.80 + tScale * 0.10), 4 + timeLv) + RUN.stage.lvOffset + df.lvOffset);
-  const offset = isBoss ? (df.id === "n1" ? 2 : (df.id === "n2" ? 4 : 5)) : (isElite ? 1 : 0);
-  return Math.max(3, baseLv + offset);
+  const timeLv = (timeMin * 2.3 + Math.pow(Math.max(0, timeMin - 4.0), 1.18) * 1.15) * tScale;
+  const rawLv = Math.round(Math.max(pLv * 0.92, 5 + timeLv) + RUN.stage.lvOffset * 0.6 + df.lvOffset);
+  // Cap enemy level relative to player level so D never explodes out of control, while still punishing under-leveled play
+  const cappedBase = Math.min(pLv + Math.round(4 + timeMin * 0.7 * tScale), rawLv);
+  const offset = isBoss ? (df.id === "n1" ? 2 : (df.id === "n2" ? 3 : 4)) : (isElite ? 1 : 0);
+  return Math.max(4, cappedBase + offset);
 }
 
 function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false, runBuffs = null) {
@@ -888,24 +893,25 @@ function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false,
   const timeMin = RUN ? (RUN.time / 60) : 0;
 
   const df = getActiveDiff();
-  // Smooth, non-spongey wave fortitude curve so builds feel powerful and crispy all run long!
-  const vsWaveFortitude = 1 + (Math.max(0, timeMin - 1.8) * 0.26 + Math.pow(Math.max(0, timeMin - 3.8), 1.45) * 0.36) * df.timeScaleMul;
-  const evoScale = (1 + pEvo * 0.22 + Math.max(0, pLv - 8) * 0.026) * vsWaveFortitude * df.hpMul;
+  // Calibrated Wave Fortitude: Keeps wild TTK at ~2.5 hits early, ~1.2 hits at ★Super-Weapon spike, and ~2.8 hits in late horde waves!
+  const vsWaveFortitude = 1 + (Math.max(0, timeMin - 1.0) * 0.20 + Math.pow(Math.max(0, timeMin - 3.5), 1.25) * 0.22) * df.timeScaleMul;
+  const evoScale = (1 + pEvo * 0.24 + Math.max(0, pLv - 6) * 0.028) * vsWaveFortitude * df.hpMul;
 
   let maxHp = coreHp;
   if (isPlayer) {
     const evPct = getEvBonusPct("hp") * 0.01;
     const vitStacks = (RUN && RUN.hexes && RUN.hexes.sv_vitality) || 0;
-    const shellBonus = getPassiveLv("shell_bell") * 0.08;
+    const shellBonus = getPassiveLv("shell_bell") * 0.06;
     const goliathBonus = RUN ? (RUN.goliathHpBonus || 0) : 0;
-    const goliathMul = (RUN && RUN.hexes && RUN.hexes.goliath) ? 1.22 : 1.0;
-    const turtwigBonus = (RUN && RUN.baseId === 387) ? 1.22 : 1.0;
-    const glassMul = hasGeneticRelic("relic_glass_cannon") ? 0.75 : 1.0;
-    maxHp = Math.floor(((coreHp * 2.65 + 64) * (1 + evPct + vitStacks * 0.15 + shellBonus) * goliathMul * turtwigBonus * glassMul) + goliathBonus);
+    const goliathMul = (RUN && RUN.hexes && RUN.hexes.goliath) ? 1.18 : 1.0;
+    const turtwigBonus = (RUN && RUN.baseId === 387) ? 1.20 : 1.0;
+    const glassMul = hasGeneticRelic("relic_glass_cannon") ? 0.70 : 1.0;
+    const speedDemonMul = hasGeneticRelic("relic_speed_demon") ? 0.82 : 1.0;
+    maxHp = Math.floor(((coreHp * 2.45 + 54) * (1 + evPct + vitStacks * 0.12 + shellBonus) * goliathMul * turtwigBonus * glassMul * speedDemonMul) + goliathBonus);
   } else if (isBoss) {
-    maxHp = Math.floor((coreHp * 14.5 + 260) * evoScale);
+    maxHp = Math.floor((coreHp * 11.5 + 220) * evoScale);
   } else {
-    maxHp = Math.floor((coreHp * 1.32 + 12) * evoScale);
+    maxHp = Math.floor((coreHp * 1.28 + 14) * evoScale);
   }
 
   const syns = isPlayer ? getActiveSynergyCounts() : null;
@@ -913,38 +919,43 @@ function computePokemonStats(speciesId, level, isPlayer = false, isBoss = false,
   const statFn = (base, key) => {
     const raw = Math.floor(((2 * base + 31) * level) / 100) + 8;
     if (!isPlayer) {
-      const enemyTimeMul = (1 + pEvo * 0.12 + (Math.max(0, timeMin - 2.5) * 0.14 + Math.pow(Math.max(0, timeMin - 4.5), 1.22) * 0.11) * df.timeScaleMul) * df.atkMul;
-      return Math.max(6, Math.floor(raw * enemyTimeMul));
+      // Important: Enemy DEF/SPD scales gently (only +5%/min) so player damage grows crisply,
+      // while Enemy ATK/SPA scales firmly (+12%/min) so enemies remain dangerous!
+      if (key === "def" || key === "spd") {
+        const defMul = 1 + pEvo * 0.08 + Math.max(0, timeMin - 2.0) * 0.045 * df.timeScaleMul;
+        return Math.max(6, Math.floor(raw * defMul));
+      }
+      const enemyAtkMul = (1 + pEvo * 0.14 + (timeMin * 0.10 + Math.pow(Math.max(0, timeMin - 3.5), 1.18) * 0.10) * df.timeScaleMul) * df.atkMul;
+      return Math.max(8, Math.floor(raw * enemyAtkMul));
     }
-    let bonusPct = getEvBonusPct(key) * 0.01 + ((runBuffs && runBuffs[key]) || 0) * 0.05;
+    let bonusPct = getEvBonusPct(key) * 0.01 + ((runBuffs && runBuffs[key]) || 0) * 0.04;
     if (RUN && RUN.hexes) {
-      if ((key === "atk" || key === "spa") && RUN.hexes.sv_might) bonusPct += Math.min(5, RUN.hexes.sv_might) * 0.10;
-      if ((key === "def" || key === "spd") && RUN.hexes.sv_armor) bonusPct += Math.min(5, RUN.hexes.sv_armor) * 0.12;
-      if (RUN.hexes.sv_dice_bag && (key === "def" || key === "spd")) bonusPct += RUN.hexes.sv_dice_bag * 0.06;
+      if ((key === "atk" || key === "spa") && RUN.hexes.sv_might) bonusPct += Math.min(5, RUN.hexes.sv_might) * 0.08;
+      if ((key === "def" || key === "spd") && RUN.hexes.sv_armor) bonusPct += Math.min(5, RUN.hexes.sv_armor) * 0.10;
+      if (RUN.hexes.sv_dice_bag && (key === "def" || key === "spd")) bonusPct += RUN.hexes.sv_dice_bag * 0.05;
     }
-    // Passive Held Item Stat Scaling
     if (key === "atk" || key === "spa") {
-      bonusPct += getPassiveLv("muscle_band") * 0.09 + getPassiveLv("wise_glasses") * 0.09;
+      bonusPct += getPassiveLv("muscle_band") * 0.05 + getPassiveLv("wise_glasses") * 0.05;
     }
     if (key === "def" || key === "spd") {
-      bonusPct += getPassiveLv("rocky_helmet") * 0.12;
+      bonusPct += getPassiveLv("rocky_helmet") * 0.09;
     }
-    // Genetic Relic Stat Rules
-    if (hasGeneticRelic("relic_glass_cannon") && (key === "atk" || key === "spa")) bonusPct += 0.55;
-    if (hasGeneticRelic("relic_turret_fortress") && (key === "def" || key === "spd")) bonusPct += 0.35;
-    // Elemental Synergy Set Stat Bonuses
+    if (hasGeneticRelic("relic_glass_cannon")) {
+      if (key === "atk" || key === "spa") bonusPct += 0.28;
+      if (key === "def" || key === "spd") bonusPct -= 0.20;
+    }
+    if (hasGeneticRelic("relic_turret_fortress") && (key === "def" || key === "spd")) bonusPct += 0.22;
     if (syns) {
-      if (syns.syn_earth >= 2 && (key === "atk" || key === "def" || key === "spd")) bonusPct += 0.20;
-      if (syns.syn_astral >= 2 && key === "spa") bonusPct += 0.20;
+      if (syns.syn_earth >= 2 && (key === "atk" || key === "def" || key === "spd")) bonusPct += 0.14;
+      if (syns.syn_astral >= 2 && key === "spa") bonusPct += 0.14;
     }
-    // Starter Innate Stat Passives
     if (RUN) {
-      if (RUN.baseId === 7 && (key === "def" || key === "spd")) bonusPct += 0.20;
-      if (RUN.baseId === 252 && key === "spe") bonusPct += 0.18;
-      if (RUN.baseId === 155 && key === "spa" && RUN.hp >= RUN.maxHp * 0.6) bonusPct += 0.22;
-      if (RUN.baseId === 909 && key === "spa") bonusPct += Math.min(0.42, (RUN.fuecocoStacks || 0) * 0.006);
+      if (RUN.baseId === 7 && (key === "def" || key === "spd")) bonusPct += 0.18;
+      if (RUN.baseId === 252 && key === "spe") bonusPct += 0.15;
+      if (RUN.baseId === 155 && key === "spa" && RUN.hp >= RUN.maxHp * 0.65) bonusPct += 0.18;
+      if (RUN.baseId === 909 && key === "spa") bonusPct += Math.min(0.32, (RUN.fuecocoStacks || 0) * 0.005);
     }
-    return Math.floor(raw * (1 + bonusPct));
+    return Math.max(6, Math.floor(raw * Math.max(0.4, 1 + bonusPct)));
   };
 
   let add = [0, 0, 0, 0, 0, 0];
@@ -982,195 +993,211 @@ function hasMoveMod(mSlot, modId) {
 
 function computeMoveCooldown(moveId, attackerStats, heldItems = null, mSlot = null) {
   const m = MOVES_DB[moveId];
-  if (!m) return 1.10;
+  if (!m) return 1.15;
   const effPower = m.p * (m.h > 1 ? (m.h > 2 ? 2.1 : 1.55) : 1.0);
-  let baseCd = 0.68 + Math.pow(effPower / 44, 0.65) * 0.42;
-  if (m.pat === "bible_orbit") baseCd = 2.3;
-  else if (m.pat === "santa_hazard" || m.pat === "gravity_well") baseCd = 1.95;
-  else if (m.pat === "sonic_boom") baseCd = 0.96;
-  else if (m.pat === "fist_flurry" || m.pat === "spear_thrust") baseCd *= 0.84;
+  let baseCd = 0.74 + Math.pow(effPower / 42, 0.68) * 0.45;
+  if (m.pat === "bible_orbit") baseCd = 2.4;
+  else if (m.pat === "santa_hazard" || m.pat === "gravity_well") baseCd = 2.1;
+  else if (m.pat === "sonic_boom") baseCd = 1.04;
+  else if (m.pat === "fist_flurry" || m.pat === "spear_thrust") baseCd *= 0.86;
 
-  const speFactor = Math.max(0.64, Math.min(1.10, 110 / (85 + attackerStats.spe * 0.44)));
-  const scarfBonus = Math.pow(0.93, getPassiveLv("choice_scarf"));
+  const speFactor = Math.max(0.68, Math.min(1.12, 110 / (85 + attackerStats.spe * 0.42)));
+  const scarfBonus = Math.pow(0.95, getPassiveLv("choice_scarf"));
 
   let hexCdMul = 1.0;
   if (mSlot) {
     const scd = hasMoveMod(mSlot, "s_cd");
-    if (scd > 0) hexCdMul *= Math.pow(0.88, scd);
+    if (scd > 0) hexCdMul *= Math.pow(0.90, scd);
     const gat = hasMoveMod(mSlot, "gatling");
-    if (gat > 0) hexCdMul *= Math.pow(0.68, gat);
-    if (isMoveSuperWeapon(mSlot)) hexCdMul *= 0.84;
-    if (mSlot.unionData) hexCdMul *= 0.85;
+    if (gat > 0) hexCdMul *= Math.pow(0.75, gat);
+    if (isMoveSuperWeapon(mSlot)) hexCdMul *= 0.88;
+    if (mSlot.unionData) hexCdMul *= 0.88;
   }
   if (RUN && attackerStats === RUN.stats) {
     if (RUN.hexes) {
-      if (RUN.hexes.sv_haste) hexCdMul *= Math.pow(0.92, Math.min(4, RUN.hexes.sv_haste));
-      if (RUN.hexes.berserker_drive) hexCdMul *= Math.pow(0.88, RUN.hexes.berserker_drive);
-      if (RUN.hexes.gd_swift_exec && mSlot && mSlot !== RUN.moves[0]) hexCdMul *= 0.80;
+      if (RUN.hexes.sv_haste) hexCdMul *= Math.pow(0.93, Math.min(4, RUN.hexes.sv_haste));
+      if (RUN.hexes.berserker_drive) hexCdMul *= Math.pow(0.90, RUN.hexes.berserker_drive);
+      if (RUN.hexes.gd_swift_exec && mSlot && mSlot !== RUN.moves[0]) hexCdMul *= 0.84;
     }
-    if (hasGeneticRelic("relic_glass_cannon")) hexCdMul *= 0.82;
-    if (hasGeneticRelic("relic_turret_fortress") && Math.hypot(RUN.vx || 0, RUN.vy || 0) < 0.08) hexCdMul *= 0.75;
+    if (hasGeneticRelic("relic_glass_cannon")) hexCdMul *= 0.90;
+    if (hasGeneticRelic("relic_turret_fortress") && Math.hypot(RUN.vx || 0, RUN.vy || 0) < 0.08) hexCdMul *= 0.82;
+    if (hasGeneticRelic("relic_elemental_conductor") && attackerStats.types.includes(m.t)) hexCdMul *= 1.10;
     const syns = getActiveSynergyCounts();
-    if (syns.syn_water >= 4) hexCdMul *= 0.82;
+    if (syns.syn_water >= 4) hexCdMul *= 0.86;
 
-    if (RUN.baseId === 252 && (m.pat === "iaijutsu_slash" || m.t === "grass")) hexCdMul *= 0.84;
-    if (RUN.baseId === 255) hexCdMul *= (1 - Math.min(0.20, (RUN.torchicCombo || 0) * 0.01));
-    if (RUN.baseId === 912 && (RUN.quaxlyDanceT || 0) > 0) hexCdMul *= 0.80;
-    if (RUN.ultActive) hexCdMul *= 0.72;
+    if (RUN.baseId === 252 && (m.pat === "iaijutsu_slash" || m.t === "grass")) hexCdMul *= 0.86;
+    if (RUN.baseId === 255) hexCdMul *= (1 - Math.min(0.18, (RUN.torchicCombo || 0) * 0.01));
+    if (RUN.baseId === 912 && (RUN.quaxlyDanceT || 0) > 0) hexCdMul *= 0.82;
+    if (RUN.ultActive) hexCdMul *= 0.76;
   }
-  return Math.max(0.32, baseCd * speFactor * scarfBonus * hexCdMul);
+  return Math.max(0.38, baseCd * speFactor * scarfBonus * hexCdMul);
 }
 
+// ============================================================================
+// Additive Damage Bucket Architecture (Prevents Exponential 12x One-Shot Inflation!)
+// Instead of multiplying 14 separate multipliers (`1.3^10 = 13.7x`), all passive/hex/relic
+// % damage bonuses sum into an Additive Bucket (`1 + bonusDmgPct`), with soft diminishing returns!
+// ============================================================================
 function calculatePokemonDamage(attackerLv, attackerStats, moveId, defenderLv, defenderStats, aoeScale = 1.0, heldItems = null, mSlot = null, targetEnemy = null) {
   const m = MOVES_DB[moveId];
-  if (!m) return { dmg: 6, eff: 1.0, isCrit: false, stab: 1.0 };
+  if (!m) return { dmg: 5, eff: 1.0, isCrit: false, stab: 1.0 };
 
   const isPhys = m.c === "physical";
-  // Adaptive Hybrid Scaling: uses 100% of matching stat OR 82% of your higher offensive stat so cross-category moves always hit hard!
   const rawA = isPhys ? attackerStats.atk : attackerStats.spa;
   const bestA = Math.max(attackerStats.atk, attackerStats.spa);
-  const A = Math.max(rawA, Math.floor(bestA * 0.82));
+  const A = Math.max(rawA, Math.floor(bestA * 0.80));
   const D = Math.max(1, isPhys ? defenderStats.def : defenderStats.spd);
 
   const isPlayerAtk = (RUN && attackerStats === RUN.stats);
   const isTera = isPlayerAtk && RUN.ultActive && RUN.awakening && RUN.awakening.kind === "tera";
   const hasProtean = isPlayerAtk && (RUN.baseId === 656 || RUN.baseId === 813 || hasGeneticRelic("relic_elemental_conductor"));
-  const stab = (hasProtean || attackerStats.types.includes(m.t)) ? (isTera ? 2.1 : (hasGeneticRelic("relic_elemental_conductor") ? 1.6 : 1.5)) : 1.0;
-  const awkMul = (isPlayerAtk && RUN.ultActive) ? 1.38 : 1.0;
+  const stab = (hasProtean || attackerStats.types.includes(m.t)) ? (isTera ? 1.85 : 1.35) : 1.0;
+  const awkMul = (isPlayerAtk && RUN.ultActive) ? 1.30 : 1.0;
 
   let eff = getTypeEffectiveness(m.t, defenderStats.types);
 
-  let extraCrit = getPassiveLv("scope_lens") * 8;
-  let critDmgMul = 1.55 + getPassiveLv("scope_lens") * 0.14;
+  let extraCrit = getPassiveLv("scope_lens") * 6;
+  let critDmgMul = 1.45 + getPassiveLv("scope_lens") * 0.10;
 
   if (mSlot) {
-    extraCrit += hasMoveMod(mSlot, "s_crit") * 12;
-    critDmgMul += hasMoveMod(mSlot, "s_crit") * 0.20;
-    if (isMoveSuperWeapon(mSlot)) extraCrit += 8;
+    extraCrit += hasMoveMod(mSlot, "s_crit") * 10;
+    critDmgMul += hasMoveMod(mSlot, "s_crit") * 0.15;
+    if (isMoveSuperWeapon(mSlot)) extraCrit += 6;
   }
   if (isPlayerAtk && RUN.hexes) {
-    if (RUN.hexes.sv_crit_rate) extraCrit += RUN.hexes.sv_crit_rate * 8;
-    if (RUN.hexes.sv_crit_dmg) critDmgMul += RUN.hexes.sv_crit_dmg * 0.22;
+    if (RUN.hexes.sv_crit_rate) extraCrit += RUN.hexes.sv_crit_rate * 7;
+    if (RUN.hexes.sv_crit_dmg) critDmgMul += RUN.hexes.sv_crit_dmg * 0.18;
     if (RUN.hexes.jeweled_gauntlet) {
-      extraCrit += 25;
-      critDmgMul += 0.45;
+      extraCrit += 20;
+      critDmgMul += 0.35;
     }
   }
   if (isPlayerAtk) {
-    if (hasGeneticRelic("relic_crit_nova")) extraCrit += 18;
-    if (hasGeneticRelic("relic_gambler_dice")) extraCrit += Math.min(20, RUN.gamblerStacks || 0) * 3;
+    if (hasGeneticRelic("relic_crit_nova")) extraCrit += 14;
+    if (hasGeneticRelic("relic_gambler_dice")) extraCrit += Math.min(12, RUN.gamblerStacks || 0) * 2;
     if (RUN.baseId === 4 && (m.t === "fire" || m.t === "dragon")) {
-      extraCrit += 12;
-      if (targetEnemy && targetEnemy.burnT > 0) critDmgMul += 0.30;
+      extraCrit += 10;
+      if (targetEnemy && targetEnemy.burnT > 0) critDmgMul += 0.22;
     }
-    if (RUN.baseId === 255) extraCrit += 14;
-    if (RUN.baseId === 501) critDmgMul += 0.30;
-    if (RUN.baseId === 816) { extraCrit += 16; critDmgMul += 0.45; }
-    if (RUN.baseId === 906) extraCrit += 16;
+    if (RUN.baseId === 255) extraCrit += 12;
+    if (RUN.baseId === 501) critDmgMul += 0.24;
+    if (RUN.baseId === 816) { extraCrit += 14; critDmgMul += 0.35; }
+    if (RUN.baseId === 906) extraCrit += 14;
   } else if (hasGeneticRelic("relic_swarm_commander")) {
-    extraCrit += 20;
+    extraCrit += 15;
   }
 
-  const isCrit = Math.random() * 100 < ((m.cr || 8) + extraCrit);
-  const critMul = isCrit ? critDmgMul : 1.0;
+  const isCrit = Math.random() * 100 < ((m.cr || 6) + extraCrit);
+  const critMul = isCrit ? critDmgMul : (isPlayerAtk && hasGeneticRelic("relic_crit_nova") ? 0.80 : 1.0);
 
-  let modDmgMul = 1.0;
+  // Additive Bonus Damage Bucket (`bonusDmgPct`)
+  let bonusDmgPct = 0;
+  let evoTierMul = 1.0;
+
   if (mSlot) {
-    modDmgMul *= (1 + mSlot.mods.length * 0.10);
-    if (hasMoveMod(mSlot, "s_power") > 0) modDmgMul *= (1 + 0.18 * hasMoveMod(mSlot, "s_power"));
-    if (hasMoveMod(mSlot, "colossal") > 0) modDmgMul *= (1 + 0.25 * hasMoveMod(mSlot, "colossal"));
-    if (hasMoveMod(mSlot, "reaper") > 0) modDmgMul *= 1.35;
-    if (targetEnemy && hasMoveMod(mSlot, "s_exec") > 0 && targetEnemy.hp <= targetEnemy.maxHp * 0.45) {
-      modDmgMul *= (1 + 0.28 * hasMoveMod(mSlot, "s_exec"));
+    bonusDmgPct += mSlot.mods.length * 0.06;
+    bonusDmgPct += hasMoveMod(mSlot, "s_power") * 0.14;
+    bonusDmgPct += hasMoveMod(mSlot, "colossal") * 0.18;
+    if (hasMoveMod(mSlot, "reaper") > 0) bonusDmgPct += 0.24;
+    if (targetEnemy && hasMoveMod(mSlot, "s_exec") > 0 && targetEnemy.hp <= targetEnemy.maxHp * 0.40) {
+      bonusDmgPct += hasMoveMod(mSlot, "s_exec") * 0.22;
     }
     if (targetEnemy && (targetEnemy.isElite || targetEnemy.isBoss) && hasMoveMod(mSlot, "s_boss") > 0) {
-      modDmgMul *= (1 + 0.25 * hasMoveMod(mSlot, "s_boss"));
+      bonusDmgPct += hasMoveMod(mSlot, "s_boss") * 0.20;
     }
-    if (isMoveSuperWeapon(mSlot)) modDmgMul *= 1.38; // ★Super-Weapon Evolution Power Spike!
-    if (mSlot.unionData) modDmgMul *= 1.45; // ★★Mythic Union Super-Weapon Multiplier!
+    if (isMoveSuperWeapon(mSlot)) evoTierMul *= 1.24;
+    if (mSlot.unionData) evoTierMul *= 1.25;
   }
 
   if (isPlayerAtk && RUN) {
-    // Passive Held Item Multipliers
+    // Passive Held Item Additive Bonuses
     if (getPassiveLv("life_orb") > 0) {
-      modDmgMul *= (1 + 0.15 * getPassiveLv("life_orb"));
-      if (targetEnemy && (targetEnemy.isElite || targetEnemy.isBoss)) modDmgMul *= (1 + 0.10 * getPassiveLv("life_orb"));
+      bonusDmgPct += 0.09 * getPassiveLv("life_orb");
+      if (targetEnemy && (targetEnemy.isElite || targetEnemy.isBoss)) bonusDmgPct += 0.06 * getPassiveLv("life_orb");
     }
     if (getPassiveLv("charcoal") > 0 && ["fire", "dragon", "electric"].includes(m.t)) {
-      modDmgMul *= (1 + 0.14 * getPassiveLv("charcoal"));
+      bonusDmgPct += 0.08 * getPassiveLv("charcoal");
     }
     if (getPassiveLv("mystic_water") > 0 && ["water", "ice", "psychic"].includes(m.t)) {
-      modDmgMul *= (1 + 0.14 * getPassiveLv("mystic_water"));
+      bonusDmgPct += 0.08 * getPassiveLv("mystic_water");
     }
     if (getPassiveLv("miracle_seed") > 0 && ["grass", "poison", "bug"].includes(m.t)) {
-      modDmgMul *= (1 + 0.14 * getPassiveLv("miracle_seed"));
+      bonusDmgPct += 0.08 * getPassiveLv("miracle_seed");
     }
     if (getPassiveLv("muscle_band") > 0 && ["whip_wave", "iaijutsu_slash", "fist_flurry", "crunch_fangs", "spear_thrust"].includes(m.pat)) {
-      modDmgMul *= (1 + 0.08 * getPassiveLv("muscle_band"));
+      bonusDmgPct += 0.05 * getPassiveLv("muscle_band");
     }
 
-    // Genetic Relic Multipliers
+    // Genetic Relic Trade-Off Bonuses & Penalties!
     if (hasGeneticRelic("relic_blood_mage")) {
-      modDmgMul *= (1 + Math.floor(RUN.maxHp / 10) * 0.025);
+      bonusDmgPct += Math.min(0.45, Math.floor(RUN.maxHp / 20) * 0.03);
     }
-    if (hasGeneticRelic("relic_lone_wolf") && RUN.companions.length === 0) {
-      modDmgMul *= 1.45;
+    if (hasGeneticRelic("relic_lone_wolf")) {
+      if (RUN.companions.length === 0) bonusDmgPct += 0.24;
+      else bonusDmgPct -= 0.25;
+    }
+    if (hasGeneticRelic("relic_swarm_commander")) {
+      bonusDmgPct -= 0.20;
     }
     if (hasGeneticRelic("relic_elemental_conductor")) {
       const uniqueTypes = new Set(RUN.moves.map(ms => MOVES_DB[ms.id]?.t).filter(Boolean)).size;
-      modDmgMul *= (1 + uniqueTypes * 0.14);
+      bonusDmgPct += uniqueTypes * 0.07;
     }
     if (hasGeneticRelic("relic_gambler_dice") && (RUN.gamblerStacks || 0) > 0) {
-      modDmgMul *= (1 + Math.min(20, RUN.gamblerStacks) * 0.04);
+      bonusDmgPct += Math.min(12, RUN.gamblerStacks) * 0.025;
     }
     if (hasGeneticRelic("relic_speed_demon")) {
-      const spdBonusPct = Math.max(0, ((RUN.curSpdMul || 1.0) - 1.0) * 100);
-      modDmgMul *= (1 + spdBonusPct * 0.015);
+      const spdBonus = Math.max(0, (RUN.curSpdMul || 1.0) - 1.0);
+      bonusDmgPct += spdBonus * 0.80;
     }
 
-    // Elemental Synergy Set Multipliers
+    // Elemental Synergy Set Additive Bonuses
     const syns = getActiveSynergyCounts();
-    if (syns.syn_fire >= 2 && ["fire", "dragon"].includes(m.t)) modDmgMul *= 1.18;
-    if (syns.syn_water >= 2 && ["water", "ice"].includes(m.t)) modDmgMul *= 1.18;
-    if (syns.syn_water >= 4 && targetEnemy && targetEnemy.slowT > 0) modDmgMul *= 1.35;
-    if (syns.syn_grass >= 2 && ["grass", "poison", "bug"].includes(m.t)) modDmgMul *= 1.18;
+    if (syns.syn_fire >= 2 && ["fire", "dragon"].includes(m.t)) bonusDmgPct += 0.14;
+    if (syns.syn_water >= 2 && ["water", "ice"].includes(m.t)) bonusDmgPct += 0.14;
+    if (syns.syn_water >= 4 && targetEnemy && targetEnemy.slowT > 0) bonusDmgPct += 0.22;
+    if (syns.syn_grass >= 2 && ["grass", "poison", "bug"].includes(m.t)) bonusDmgPct += 0.14;
 
     if (RUN.hexes) {
       if (RUN.hexes.berserker_drive) {
         const missingPct = Math.max(0, (1 - RUN.hp / Math.max(1, RUN.maxHp)) * 10);
-        modDmgMul *= (1 + missingPct * 0.07 * RUN.hexes.berserker_drive);
+        bonusDmgPct += missingPct * 0.05 * RUN.hexes.berserker_drive;
       }
-      if (RUN.hexes.gd_heavy_ord) modDmgMul *= (1 + 0.28 * RUN.hexes.gd_heavy_ord);
+      if (RUN.hexes.gd_heavy_ord) bonusDmgPct += 0.20 * RUN.hexes.gd_heavy_ord;
       if (RUN.hexes.sv_boss_hunt && targetEnemy && (targetEnemy.isElite || targetEnemy.isBoss)) {
-        modDmgMul *= (1 + 0.18 * RUN.hexes.sv_boss_hunt);
+        bonusDmgPct += 0.15 * RUN.hexes.sv_boss_hunt;
       }
       if (RUN.hexes.sv_water_tide && targetEnemy && (targetEnemy.slowT > 0 || targetEnemy.burnT > 0 || targetEnemy.leechT > 0 || targetEnemy.rootT > 0)) {
-        modDmgMul *= (1 + 0.18 * RUN.hexes.sv_water_tide);
+        bonusDmgPct += 0.15 * RUN.hexes.sv_water_tide;
       }
     }
 
-    if (RUN.baseId === 158 && (m.pat === "crunch_fangs" || m.pat === "iaijutsu_slash")) modDmgMul *= 1.25;
-    if (RUN.baseId === 258 && targetEnemy && targetEnemy.slowT > 0) modDmgMul *= 1.25;
+    if (RUN.baseId === 158 && (m.pat === "crunch_fangs" || m.pat === "iaijutsu_slash")) bonusDmgPct += 0.18;
+    if (RUN.baseId === 258 && targetEnemy && targetEnemy.slowT > 0) bonusDmgPct += 0.18;
     if (RUN.baseId === 498) {
       const miss = Math.max(0, (1 - RUN.hp / Math.max(1, RUN.maxHp)) * 10);
-      modDmgMul *= (1 + miss * 0.07);
+      bonusDmgPct += miss * 0.05;
     }
-    if (RUN.baseId === 722 && targetEnemy && Math.hypot(targetEnemy.x - RUN.x, targetEnemy.y - RUN.y) >= 120) modDmgMul *= 1.28;
-    if (RUN.baseId === 725 && (m.t === "fire" || m.t === "dark")) modDmgMul *= 1.25;
-    if (RUN.baseId === 810) modDmgMul *= 1.20;
+    if (RUN.baseId === 722 && targetEnemy && Math.hypot(targetEnemy.x - RUN.x, targetEnemy.y - RUN.y) >= 120) bonusDmgPct += 0.20;
+    if (RUN.baseId === 725 && (m.t === "fire" || m.t === "dark")) bonusDmgPct += 0.18;
+    if (RUN.baseId === 810) bonusDmgPct += 0.15;
   }
 
   if (!isPlayerAtk && RUN) {
-    if (RUN.hexes && RUN.hexes.sv_comp_train) modDmgMul *= (1 + 0.14 * RUN.hexes.sv_comp_train);
-    if (RUN.hexes && RUN.hexes.gd_companion) modDmgMul *= (1 + 0.30 * RUN.hexes.gd_companion);
-    if (hasGeneticRelic("relic_lone_wolf")) modDmgMul *= 1.60;
+    if (RUN.hexes && RUN.hexes.sv_comp_train) bonusDmgPct += 0.14 * RUN.hexes.sv_comp_train;
+    if (RUN.hexes && RUN.hexes.gd_companion) bonusDmgPct += 0.25 * RUN.hexes.gd_companion;
+    if (hasGeneticRelic("relic_lone_wolf")) bonusDmgPct += 0.45;
   }
 
+  // Soft diminishing returns above +160% bonus damage so player DPS stays in the sweet spot!
+  const effectiveBonus = bonusDmgPct > 1.60 ? (1.60 + (bonusDmgPct - 1.60) * 0.45) : bonusDmgPct;
+  const totalModMul = Math.max(0.45, 1 + effectiveBonus) * evoTierMul;
+
   const randVar = 0.94 + Math.random() * 0.12;
-  const baseDmg = (((2 * attackerLv / 5 + 2) * m.p * (A / D)) / 46 + 3);
-  let finalDmg = Math.max(2, Math.round(baseDmg * stab * eff * critMul * aoeScale * awkMul * modDmgMul * randVar));
+  const baseDmg = (((2 * attackerLv / 5 + 2) * m.p * (A / D)) / 52 + 2);
+  let finalDmg = Math.max(2, Math.round(baseDmg * stab * eff * critMul * aoeScale * awkMul * totalModMul * randVar));
   if (isPlayerAtk && RUN.baseId === 390) {
-    finalDmg += Math.round(RUN.level * 2.0);
+    finalDmg += Math.round(RUN.level * 1.5);
   }
   return { dmg: finalDmg, eff, isCrit, stab };
 }
@@ -2060,8 +2087,8 @@ resizeCanvas();
 const ALL_BOSS_POOL = Object.values(GEN_BOSSES).flat();
 
 function getMaxHexSocketsForStage(evoStage) {
-  // Unlocked 3 sockets right from the start so players can rush a ★Super-Weapon early if they focus it!
-  return 3;
+  // Progressive Socket Unlock: Stage 0 = 1 socket, Stage 1 = 2 sockets (unlocks ★Catalyst Super-Weapon!), Stage 2 = 3 sockets!
+  return Math.min(3, (evoStage || 0) + 1);
 }
 
 function addUltimateCharge(amount) {
@@ -2178,10 +2205,8 @@ function startRun() {
   const lsData = STARTER_LEARNSETS[charId];
   const initLv = 5;
   const sigChain = SIGNATURE_EVO_MOVES[charId] || [33, 36, 63];
-  const startMoveIds = getStartingMoves(charId);
-  if (!startMoveIds.includes(sigChain[0])) {
-    startMoveIds[0] = sigChain[0];
-  }
+  // Authentic Vampire Survivors Start: Begin with ONLY your 1st weapon so early levels require real kiting & build choices!
+  const startMoveIds = [sigChain[0]];
 
   const wildPool = [];
   const bossPool = [];
@@ -2315,9 +2340,6 @@ function startRun() {
   }
 
   for (let i = 0; i < 8; i++) spawnEnemy(false);
-
-  // Immediately offer the Opening Genetic Relic Draft (Arcana / Brotato style build-defining rule!)
-  triggerGeneticRelicDraft("🧬 开局基因改造：选择你的本局核心构筑法则");
 }
 
 function updateHudSlots() {
@@ -2350,7 +2372,7 @@ function updateHudSlots() {
         <span class="sname" style="color:${isUnion ? '#ffd600' : (isSuper ? '#00e5ff' : '#90caf9')};">${badgePrefix}${m.n.slice(0, 4)}</span>
         <img src="${tm.icon}" alt="" />
         <div class="hex-pips">${pipsHtml}</div>
-        <span class="slv">${isUnion ? "合体" : (isSuper ? "超武" : slot.mods.length + "/3")}</span>
+        <span class="slv">${isUnion ? "合体" : (isSuper ? "超武" : slot.mods.length + "/" + maxSockets)}</span>
       `;
     } else {
       cell.innerHTML = `<span style="font-size:9px;color:#555;">空</span>`;
@@ -2544,11 +2566,14 @@ function triggerGeneticRelicDraft(titleText = "🧬 基因改造空投：选择 
 function rollHexTier() {
   const r = Math.random();
   if (!RUN || RUN.evoStage === 0) {
-    return r < 0.08 ? "prismatic" : (r < 0.36 ? "gold" : "silver");
+    // Early Game: 80% Silver, 18% Gold, 2% Prismatic
+    return r < 0.02 ? "prismatic" : (r < 0.20 ? "gold" : "silver");
   } else if (RUN.evoStage === 1) {
-    return r < 0.12 ? "prismatic" : (r < 0.44 ? "gold" : "silver");
+    // Mid Game: 70% Silver, 25% Gold, 5% Prismatic
+    return r < 0.05 ? "prismatic" : (r < 0.30 ? "gold" : "silver");
   } else {
-    return r < 0.16 ? "prismatic" : (r < 0.50 ? "gold" : "silver");
+    // Late Game: 60% Silver, 32% Gold, 8% Prismatic
+    return r < 0.08 ? "prismatic" : (r < 0.40 ? "gold" : "silver");
   }
 }
 
@@ -3530,7 +3555,7 @@ function triggerCompanionBallModal() {
 // ============================================================================
 function computeNextLevelXpNeed(lv) {
   const d = Math.max(1, lv - 4);
-  return Math.round(12 + d * 6 + Math.pow(d, 1.92) * 1.10);
+  return Math.round(16 + d * 8 + Math.pow(d, 2.08) * 1.35);
 }
 
 function triggerEvolutionBranchModal(newSpeciesId, newSigMoveId) {
@@ -3642,11 +3667,15 @@ function triggerPlayerLevelUp() {
   const sigChain = SIGNATURE_EVO_MOVES[RUN.baseId] || [33, 36, 63];
   let evolvedNow = false;
 
+  // Unlock 1st Genetic Relic at Lv.8 (earned mid-run milestone instead of free Lv.5 god-mode!)
+  if (RUN.level === 8 && RUN.relics.length === 0) {
+    triggerGeneticRelicDraft("🧬 Lv.8 基因突破：选择你的核心构筑法则（收益与代价并存）");
+  }
+
   if (RUN.evoStage < 2) {
     let newStage = RUN.evoStage;
-    // Lowered evolution thresholds slightly so Stage 1 & Stage 2 feel brisk and rewarding!
-    const evoLv1 = Math.max(11, (lsData.evoLevels[0] || 16) - 3);
-    const evoLv2 = Math.max(22, (lsData.evoLevels[1] || 32) - 8);
+    const evoLv1 = Math.max(13, (lsData.evoLevels[0] || 16) - 1);
+    const evoLv2 = Math.max(26, (lsData.evoLevels[1] || 32) - 4);
     if (RUN.level >= evoLv2) newStage = 2;
     else if (RUN.level >= evoLv1) newStage = 1;
 
@@ -4459,7 +4488,7 @@ function spawnEnemy(isBoss = false, customAng = null, customDist = null, isElite
 
   const eStats = computePokemonStats(species, enemyLv, false, isBoss);
   if (isElite && !isBoss) {
-    eStats.maxHp = Math.floor(eStats.maxHp * (2.1 + Math.min(1.5, timeMin * 0.18)));
+    eStats.maxHp = Math.floor(eStats.maxHp * (2.5 + Math.min(1.6, timeMin * 0.20)));
   }
   if (affix) {
     eStats.maxHp = Math.floor(eStats.maxHp * affix.hpMul);
@@ -4831,31 +4860,33 @@ function updateRun(dt) {
     }
   }
 
-  // Passive Regeneration (Shell Bell + Silver Regen + Blood Mage Relic + Chikorita 152 / Grookey 810 Innate!)
+  // Passive Regeneration & Blood Mage / Life Orb Self-Burn Trade-Off!
   const svRegenLv = (RUN.hexes && RUN.hexes.sv_regen) || 0;
-  const bloodMageRegen = hasGeneticRelic("relic_blood_mage") ? Math.max(1, Math.round(RUN.maxHp * 0.015)) : 0;
-  const innateRegen = (RUN.baseId === 152 || RUN.baseId === 810) ? Math.max(1, Math.round(RUN.maxHp * 0.015)) : 0;
-  if ((svRegenLv > 0 || bloodMageRegen > 0 || innateRegen > 0) && RUN.hp < RUN.maxHp) {
-    RUN.regenAcc += dt;
-    if (RUN.regenAcc >= 1.0) {
-      RUN.regenAcc -= 1.0;
-      const heal = Math.round(svRegenLv * 2.0) + bloodMageRegen + innateRegen;
-      RUN.hp = Math.min(RUN.maxHp, RUN.hp + Math.max(1, heal));
+  const innateRegen = (RUN.baseId === 152 || RUN.baseId === 810) ? Math.max(1, Math.round(RUN.maxHp * 0.012)) : 0;
+  const bloodDrain = hasGeneticRelic("relic_blood_mage") ? Math.max(1, Math.round(RUN.hp * 0.015)) : 0;
+  const lifeOrbDrain = getPassiveLv("life_orb") > 0 ? 1 : 0;
+  RUN.regenAcc += dt;
+  if (RUN.regenAcc >= 1.0) {
+    RUN.regenAcc -= 1.0;
+    const netHeal = Math.round(svRegenLv * 1.8) + innateRegen - bloodDrain - lifeOrbDrain;
+    if (netHeal !== 0) {
+      RUN.hp = Math.max(1, Math.min(RUN.maxHp, RUN.hp + netHeal));
       updateHpHud();
     }
   }
 
   const syns = getActiveSynergyCounts();
 
-  // Move Speed with Choice Scarf, Relics & Synergies
-  let spdMul = 1.0 + getPassiveLv("choice_scarf") * 0.04;
+  // Move Speed with Choice Scarf, Relics (including Turret Fortress -18% penalty!) & Synergies
+  let spdMul = 1.0 + getPassiveLv("choice_scarf") * 0.03;
   if (RUN.hexes) {
-    if (RUN.hexes.sv_move_spd) spdMul += Math.min(4, RUN.hexes.sv_move_spd) * 0.07;
-    if (RUN.hexes.gd_swift_exec) spdMul += 0.10;
+    if (RUN.hexes.sv_move_spd) spdMul += Math.min(4, RUN.hexes.sv_move_spd) * 0.06;
+    if (RUN.hexes.gd_swift_exec) spdMul += 0.08;
   }
-  if (hasGeneticRelic("relic_speed_demon")) spdMul += 0.20;
-  if (hasGeneticRelic("relic_lone_wolf") && RUN.companions.length === 0) spdMul += 0.15;
-  if (syns.syn_storm >= 2) spdMul += 0.10;
+  if (hasGeneticRelic("relic_speed_demon")) spdMul += 0.14;
+  if (hasGeneticRelic("relic_turret_fortress")) spdMul -= 0.18;
+  if (hasGeneticRelic("relic_lone_wolf") && RUN.companions.length === 0) spdMul += 0.10;
+  if (syns.syn_storm >= 2) spdMul += 0.08;
   if (RUN.baseId === 255) spdMul += Math.min(0.16, (RUN.torchicCombo || 0) * 0.008);
   if (RUN.baseId === 912 && RUN.quaxlyDanceT > 0) spdMul += 0.14;
   if (RUN.ultActive) spdMul += 0.15;
@@ -5504,7 +5535,7 @@ function updateRun(dt) {
       if (RUN.baseId === 725) eAtk = Math.floor(eAtk * 0.80);
       const pDef = Math.max(1, usePhys ? RUN.stats.def : RUN.stats.spd);
       const eff = getTypeEffectiveness(e.stats.types[0], RUN.stats.types);
-      const rawHit = (((2 * e.level / 5 + 2) * (e.isBoss ? 52 : (e.isElite ? 40 : 32)) * (eAtk / pDef)) / 50 + 2) * eff;
+      const rawHit = (((2 * e.level / 5 + 2) * (e.isBoss ? 68 : (e.isElite ? 52 : 42)) * (eAtk / pDef)) / 45 + 4) * eff;
       let dmgTaken = Math.max(2, Math.round(rawHit) - ((RUN.hexes && RUN.hexes.sv_armor) ? RUN.hexes.sv_armor * 3 : 0));
       if (RUN.baseId === 7) dmgTaken = Math.max(2, Math.round(dmgTaken * 0.85));
       if (RUN.baseId === 387 && Math.hypot(RUN.vx, RUN.vy) < 0.1) dmgTaken = Math.max(2, Math.round(dmgTaken * 0.75));
