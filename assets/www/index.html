@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>宝可梦幸存者 v4.3.2 — 海克斯超武与极限超进化版</title>
+  <title>宝可梦幸存者 v5.0.0 — 开放构筑·超武进化·基因遗物</title>
   <style>
     * {
       box-sizing: border-box;
@@ -242,6 +242,11 @@
       box-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
       background: linear-gradient(135deg, #2a1142, #0d324d);
     }
+    .slot-cell.union-move {
+      border-color: #ffd600;
+      box-shadow: 0 0 12px rgba(255, 214, 0, 0.95), inset 0 0 8px rgba(255, 64, 129, 0.7);
+      background: linear-gradient(135deg, #4a148c, #b71c1c, #ff8f00);
+    }
     .slot-cell img {
       width: 24px;
       height: 24px;
@@ -327,7 +332,7 @@
 
     #boss-bar {
       position: absolute;
-      top: 128px;
+      top: 156px;
       left: 50%;
       transform: translateX(-50%);
       width: min(350px, 90vw);
@@ -528,6 +533,18 @@
       flex-shrink: 0;
       box-shadow: 0 2px 0 #062356;
     }
+    .banish-mini-btn {
+      background: linear-gradient(180deg, #c62828, #6a1010);
+      border: 1.5px solid #ff8a80;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 900;
+      padding: 4px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: 0 2px 0 #3e0606;
+    }
   </style>
 </head>
 <body>
@@ -537,8 +554,8 @@
   <div id="scr-menu">
     <div class="vs-panel menu-wrap">
       <div class="title-banner">
-        <h1>⚡ 宝可梦幸存者 v4.3.2 · 海克斯超武觉醒 ⚡</h1>
-        <p>每次升级海克斯三选一 · 进化蜕变本命技 · 3嵌槽合成★超武 · 稀有钥石充能超进化大招</p>
+        <h1>⚡ 宝可梦幸存者 v5.0.0 · 超武合成 & 开放构筑 ⚡</h1>
+        <p>全开放跨属性武器池 · 招式+被动合成★超武 · 双超武★合体技 · 基因改造遗物</p>
       </div>
 
       <div>
@@ -563,7 +580,7 @@
 
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;align-items:center;padding-top:4px;border-top:1.5px solid #594322;">
         <button id="btn-powerups" class="vs-btn blue" style="flex:1;">🧬 局外成长 & 成就</button>
-        <button id="btn-evolutions" class="vs-btn" style="flex:1;">📖 海克斯与技能图鉴</button>
+        <button id="btn-evolutions" class="vs-btn" style="flex:1;">📖 超武合成 & 构筑图鉴</button>
         <button id="btn-unlock-all" class="vs-btn" style="padding:8px 8px;font-size:11px;">🔓 全解锁</button>
       </div>
       <button id="btn-start-run" class="vs-btn gold" style="width:100%;font-size:16px;padding:11px;">▶ 立即出发狩猎</button>
@@ -580,8 +597,12 @@
     <div class="hud-top-row">
       <div class="hud-slots-col">
         <div class="slot-bar">
-          <span class="slot-label">招式</span>
+          <span class="slot-label">武器</span>
           <div id="hud-moves" style="display:flex;gap:3px;"></div>
+        </div>
+        <div class="slot-bar">
+          <span class="slot-label" style="color:#ffd54f;">道具</span>
+          <div id="hud-items" style="display:flex;gap:3px;"></div>
         </div>
         <div class="slot-bar">
           <span class="slot-label" style="color:#81d4fa;">同伴</span>
@@ -595,7 +616,7 @@
           <span id="hud-wave" style="color:#ff8a80;font-weight:bold;">波次1</span> · 击败 <b id="hud-kills">0</b>
         </div>
         <div class="hud-sub" style="margin-top:2px;">
-          ❤️ <b id="hud-hp" style="color:#69f0ae;">100/100</b> · 🎲骰子 <b id="hud-rerolls" style="color:#80d8ff;">3</b>
+          ❤️ <b id="hud-hp" style="color:#69f0ae;">100/100</b> · 🎲<b id="hud-rerolls" style="color:#80d8ff;">3</b> · 🚫<b id="hud-banishes" style="color:#ff8a80;">2</b>
         </div>
         <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:4px;">
           <button id="btn-bgm" class="vs-btn blue" style="padding:3px 6px;font-size:10px;">🎵 切歌</button>

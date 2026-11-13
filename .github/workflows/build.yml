@@ -75,20 +75,17 @@ jobs:
             --ks-key-alias pokebonk \
             --ks-pass pass:pokebonk123 \
             --key-pass pass:pokebonk123 \
-            --out PokeSurvivors-v4.3.2.apk \
+            --out PokeSurvivors-v5.0.0.apk \
             build/PokeSurvivors-aligned.apk
 
-          ls -lh PokeSurvivors-v4.3.2.apk
+          ls -lh PokeSurvivors-v5.0.0.apk
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v4.3.2"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" PokeSurvivors-v4.3.2.apk --clobber
-          else
-            gh release create "$TAG" PokeSurvivors-v4.3.2.apk \
-              --title "PokéSurvivors v4.3.2 (GPU显存占用暴降97%根治高密度怪潮掉帧·原生零拦截硬件加速·Mega/羁绊/超极巨/太晶化版)" \
-              --notes "1. 揪出并彻底根治怪多卡顿的终极硬件元凶（GPU 纹理缓存颠簸）：此前 617 张 PMD 全动作精灵表（单张高达 1792x5320 像素，单张解码占 37MB 显存，总计达 4.85GB 未压缩 RGBA 显存）在同屏出现 20+ 种宝可梦怪潮时直接撑爆手机 WebView 的 GPU 纹理缓存上限（约 96MB~128MB），导致每帧发生上百兆的 CPU->GPU 纹理重解码与重上传！现已将全部 617 张 PMD 精灵表精准裁剪并规范化为纯 8 方向行走帧（总未压缩 GPU 显存从 4,845 MB 暴降至 131 MB，单局同屏怪潮显存仅需 ~4MB，缩减 97.3%！）。2. WebView 底层加载优化：改为原生 file:///android_asset/ 直读 + LAYER_TYPE_HARDWARE 硬件合成层 + 开局预热当前世代全部精灵纹理 + 同怪连击伤害数字自动合并，彻底消灭新怪刷出与多段AOE时的掉帧卡顿！"
-          fi
+          TAG="v5.0.0"
+          gh release delete "$TAG" --yes || true
+          gh release create "$TAG" PokeSurvivors-v5.0.0.apk \
+            --title "PokéSurvivors v5.0.0 (构筑大重制：招式+被动★超武催化·★★双超武合体·开放18系武器池·9大基因改造遗物)" \
+            --notes "深度对标《吸血鬼幸存者》《土豆兄弟》《苦痛庄园》《众神终结》重制底层构筑与数值体系：1) 彻底打破开局宝可梦固定套路：开放全18属性跨系武器池，进化时提供三路线自由抉择（进化本命技 / 保留原招并双修新招 / 强化全招式），任意槽位皆可自由替换并继承词条；2) 12件可升级携带被动道具（Lv.1~5）与★超武催化合成配方：招式嵌满2词条+对应催化被动即可突破为★超武形态；3) ★★双超武合体技（Unions）：两把指定属性★超武可合体为一槽神话合体技，双招齐发并额外腾出1个武器槽；4) 9大开局/波次基因改造遗物（玻璃大炮、鲜血反应堆、孤高剑圣、元素交响曲、移动炮台、命运赌徒骰、暴击星芒、军团统帅、极速幻影）与6大元素套装羁绊（2件/4件套）；5) 新增🚫封印（Banish）与豪华进化宝箱开箱，重构N1/N2/N3难度曲线并修复全部底层Bug。"
